@@ -1,0 +1,31 @@
+{
+  "id": "bootstrap-nga-platform-contracts",
+  "name": "bootstrap-nga-platform-contracts",
+  "title": "Bootstrap NGA Platform Contracts",
+  "description": "Audit every NGA platform interaction in the untouched Justwen upstream snapshot and turn its observed wire behavior, evidence limits, and migration rules into durable Trellis specs.",
+  "status": "completed",
+  "dev_type": "docs",
+  "scope": "backend",
+  "package": null,
+  "priority": "P0",
+  "creator": "toph",
+  "assignee": "toph",
+  "createdAt": "2026-07-26",
+  "completedAt": "2026-07-26",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "00-bootstrap-guidelines",
+  "relatedFiles": [
+    ".trellis/spec/backend/network-foundation-contract.md",
+    ".trellis/spec/backend/nga-platform-access-rules.md",
+    ".trellis/spec/backend/nga-platform-operation-registry.md",
+    ".trellis/spec/backend/index.md"
+  ],
+  "notes": "Pinned Justwen source and upstream ref verified at 5d807617f8058950f7ea81dda405e38fb0cc37ec. All 33 entry-point search hits classified; no live traffic. Context validation passes for this task and all affected tasks except the foundation task's pre-existing missing docs/source-provenance.md entry.",
+  "meta": {}
+}

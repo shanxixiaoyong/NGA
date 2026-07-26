@@ -1,0 +1,8 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"The inventory must trace request, transport, parser, domain/UI side effects, account state, and mutation rollback across module boundaries."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Operation IDs, encoding rules, Cookie ownership, response semantics, and error policy must have one documented owner rather than repeated per endpoint."}
+{"file":".trellis/tasks/07-26-bootstrap-nga-platform-contracts/research/original-justwen-nga-network-inventory.md","reason":"Pinned-source boundary and planning baseline for the exhaustive untouched Justwen call-site ledger."}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"Prior endpoint, field, Cookie, encoding, upload, message, and unsafe-pattern leads that must be re-verified against the untouched pinned checkout."}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"Evidence boundary: anonymous 403/challenge/site-message observations do not establish an official, stable, or authorized API."}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Maintain the compatibility entry point for pinned transport, original Web login, active-account Cookie, and project safety rules."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Maintain the single owner for evidence, host, identity, Cookie, encoding, error, mutation, privacy, and validation rules."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Maintain the concise pinned-source operation registry and current-fork migration deltas."}
