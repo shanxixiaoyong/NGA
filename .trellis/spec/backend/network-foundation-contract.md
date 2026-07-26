@@ -137,129 +137,129 @@ rg -n "ProxyBridge" nga_phone_base_3.0/src/main
 git diff --name-status upstream-justwen/master -- <product paths>
 ```
 
-## Scenario: Native NGA Password Login Acquisition
+## Scenario: Controlled Web Login With Justwen Multi-Account Sessions
 
 ### 1. Scope / Trigger
 
-Use this contract when changing the login route, account/password transport,
-CAPTCHA handling, Web login fallback, or the `uid`/`cid` handoff into
-`UserManager`. Native login is the primary screen; Web login remains a
-controlled secondary action. This contract does not authorize registration,
-OAuth, Cookie paste, CAPTCHA bypass, or a broader account-storage migration.
+Use this contract when changing the login route, WebView navigation or
+completion, Passport Cookie parsing, saved-account selection, or request-time
+active-account Cookie injection. Native password POST, RSA keys, CAPTCHA
+sessions, response parsers, and quick-cookie emulation are forbidden fork
+protocols; credentials remain inside the NGA-controlled Web page.
 
 ### 2. Signatures
 
-The network owner exposes an isolated, cancellable temporary session:
-
 ```kotlin
-fun NgaLoginClient.createSession(): NgaLoginSession
-fun NgaLoginSession.submit(
-    account: String,
-    accountType: NgaLoginAccountType,
-    password: CharSequence,
-    captcha: CharSequence? = null,
-): NgaLoginResult
-fun NgaLoginSession.refreshCaptcha(): NgaCaptchaResult
-fun NgaLoginSession.cancel()
+fun WebLoginPolicy.isAllowed(url: String?): Boolean
+fun WebLoginPolicy.shouldCheckCookies(
+    trigger: CompletionTrigger,
+    url: String?,
+    message: String? = null,
+): Boolean
+fun WebLoginPolicy.isValidSession(uid: String, cid: String): Boolean
+fun WebLoginPolicy.extractLoginSession(cookies: String): LoginSession?
+fun UserManager.addUserAndSelect(uid: String, cid: String, name: String)
+fun UserManager.setActiveIndex(index: Int)
 ```
 
-Successful native and Web results cross the account boundary as `uid`, `cid`,
-and username only, and both paths validate through:
+Normal Retrofit requests retain the existing provider boundary:
 
-```kotlin
-fun NgaLoginSessionContract.isValid(uid: String, cid: String): Boolean
-fun UserManager.addUserAndSelect(uid: String, cid: String, name: String)
+```java
+RetrofitHelper.setCookieProvider(() -> UserManagerImpl.getInstance().getCookie());
 ```
 
 ### 3. Contracts
 
-- Native transport uses canonical HTTPS origin `https://bbs.nga.cn/` and an
-  isolated temporary `CookieJar`; it must not use the active-account request
-  interceptor or general request logger.
-- Login form fields are `__lib=login`, `__act=login`, `__output=1`, `name`,
-  `type`, RSA-encrypted `password`, and `__inchst=UTF-8`. Account type values
-  are username/nickname `""`, email `mail`, user ID `id`, and phone `phone`.
-- Password encryption is RSA/PKCS#1 v1.5 with the independently observed
-  public key fingerprint
-  `1d49cb2093d1577917a576910b23dea5c51053f47771696930a5a79acb5fe3cc`.
-- CAPTCHA is fetched only after an upstream challenge. Refresh and resubmit use
-  the same temporary session and send `rid`, user-entered `captcha`, and
-  `prid`. Never solve, bypass, or automatically retry a challenge.
-- A successful response must contain a positive decimal `uid` and a bounded,
-  Cookie-safe `token`/`cid`. Complete the observed quick-cookie call once,
-  then add/update and select the account through `UserManager`.
-- Password, ciphertext, CAPTCHA, raw response, Cookie, and `cid` must not be
-  persisted or logged. Result `toString()` output must redact `cid`; terminal
-  failures and lifecycle stop clear password/CAPTCHA UI state.
-- `LoginActivity` remains the native ARouter destination. Its secondary top
-  action uses the shared `btn_ic_browser` drawable and launches an unexported
-  `WebLoginActivity`.
-- Web fallback enables JavaScript only for the first-party page, disables
-  file/content access, mixed content, and third-party Cookies, and allows only
-  exact HTTPS hosts `ngabbs.com`, `bbs.nga.cn`, and `bbs.ngacn.cc` on port 443.
-  Navigation and subresources use the same allowlist. Success requires valid
-  uid/cid Cookies from an allowed origin, not JavaScript dialog text alone.
+- `LoginActivity` is an account-entry screen. It selects a saved account by
+  stable uid resolved against the current list, or launches the same
+  unexported `WebLoginActivity` from “登录新账号” and the shared globe-lock
+  top action.
+- Web login starts at
+  `https://ngabbs.com/nuke.php?__lib=login&__act=account&login`. Navigation,
+  subresources, and Cookie reads require an exact allowed HTTPS host, no
+  user-info, and the default port or 443.
+- `onPageFinished` may record an allowed URL only. It must be structurally
+  unable to read Cookies or complete login because persisted WebView Cookies
+  do not prove a new authentication event.
+- Only the exact legacy confirmation on the exact login URL, or a deliberate
+  user exit, may trigger an origin-bound Cookie check. Confirmation text alone
+  is never success.
+- Parse exact Passport Cookie names. A result requires a bounded positive
+  ASCII-decimal uid and bounded Cookie-safe cid; malformed/blank username may
+  fall back to uid without weakening session validation.
+- The browser result contains only validated uid, cid, and username.
+  `LoginActivity` revalidates it, then `addUserAndSelect` appends or replaces
+  that uid and makes it active. Passwords, raw Cookie headers, and WebView
+  objects never cross the result boundary or enter logs.
+- `RetrofitHelper` reads the active account Cookie when its interceptor builds
+  an outgoing request. That header is fixed for the resulting in-flight
+  request; switching accounts affects subsequent interceptor executions.
+  There is no separate account-snapshot/session-vault architecture.
+- Removing an account retains the current `UserManager` behavior: delete its
+  Room record and choose a valid remaining active index. WebView Cookie state
+  is independent from App request Cookies and is not cleared by account
+  removal/replacement; cross-store session cleanup remains a separately
+  scoped migration.
 
 ### 4. Validation & Error Matrix
 
 | Condition | Required result |
 | --- | --- |
-| Blank account/password | Local actionable error; no network request |
-| Positive decimal uid plus Cookie-safe cid | Complete account handoff and return `RESULT_OK` |
-| uid `0`, non-decimal/oversized uid, blank/oversized/delimited cid | Fail closed; do not persist an account |
-| CAPTCHA required or incorrect | Keep the active temporary session, show/refresh the image, allow one user-driven resubmit |
-| HTTP redirect | Do not follow; return a typed protocol failure |
-| Timeout, non-2xx, oversized or malformed payload, missing uid/token | Return a controlled typed error and clear terminal sensitive UI state |
-| Activity stop or ViewModel clear | Cancel current work, invalidate late results, clear temporary Cookies and sensitive UI state |
-| Web URL outside the exact HTTPS allowlist | Block navigation/subresource; never expose NGA Cookies |
-| Upstream public key or response shape changes | Fail closed and keep the controlled Web fallback available |
+| Page finishes with an old valid Passport Cookie | Remain in Web login; do not inspect the Cookie |
+| Exact success confirmation, Cookie already propagated | Validate, return the minimal result, and close Web login |
+| Exact success confirmation, Cookie not yet propagated | Consume the dialog, retry once after the bounded delay, otherwise stay open |
+| Other dialog text or non-exact login URL | Use normal WebView handling; never check login Cookies |
+| HTTP, foreign/subdomain host, non-443 custom port, user-info, file/content URL | Block the WebView request and never expose NGA Cookies |
+| uid is zero/non-ASCII/non-decimal/oversized, or cid is blank/oversized/delimited/control text | Reject without mutating saved accounts |
+| Saved-account list changes before a row tap is handled | Resolve the captured uid in the current list; select it or no-op if removed |
+| Valid Web result for a new/existing uid | Append or replace by uid, select it, and return `RESULT_OK` |
+| User exits with no valid Cookie | Return cancellation and leave accounts unchanged |
 
 ### 5. Good/Base/Bad Cases
 
-- **Good**: the server requests CAPTCHA, the existing temporary session loads
-  it, the user refreshes or submits it, and only a validated success reaches
-  `UserManager.addUserAndSelect`.
-- **Base**: upstream changes the key or response wrapper. Show a protocol error
-  and let the user choose the globe-and-lock Web fallback.
-- **Bad**: store a password in `SavedStateHandle`, log a result data class that
-  renders `cid`, accept any non-empty Web Cookie, follow a redirect, or add an
-  external host to make a Web CAPTCHA widget load.
+- **Good**: an existing Web Cookie is present when the page opens, but nothing
+  completes until the exact success event or deliberate exit; a validated new
+  uid is then upserted and selected while all other accounts remain.
+- **Base**: NGA changes the page or legacy message. The screen remains open and
+  the user can exit; the App does not fall back to a private password protocol.
+- **Bad**: complete from `onPageFinished`, accept `message.contains(...)`,
+  persist whichever account remains at a stale list index, or replace the
+  Room-backed account list with one global CookieJar.
 
 ### 6. Tests Required
 
-- Pin RSA output size/random padding and the public-key fingerprint.
-- Parse GB18030 wrapped and pure object responses; assert typed credential,
-  CAPTCHA, malformed, missing-session, HTTP, redirect, timeout, and oversized
-  failures without contacting NGA.
-- Use a local fake server to assert temporary Cookie/CAPTCHA reuse, one
-  quick-cookie completion, cancellation before a late exchange, and safe
-  session reuse after cancellation.
-- Assert duplicate submit prevention, challenge retry, terminal sensitive
-  clearing, lifecycle stale-result rejection, and success consumption.
-- Assert exact Web origin/port rejection, Cookie parsing, positive uid and
-  Cookie-safe cid validation, unexported manifests, one shared browser icon,
-  and no sensitive login logging.
-- Build/test debug and release variants, inspect lint, and compare a minified
-  release APK against a same-key baseline. Real credential tests require
-  explicit authorization and stop on challenge/rate limiting.
+- Unit-test exact HTTPS host/port/user-info rejection and every completion
+  trigger, including decorated success text rejection.
+- Unit-test exact Cookie parsing, double GB18030 username decoding/fallback,
+  positive ASCII uid bounds, and Cookie-safe cid bounds.
+- Unit-test stable-uid account lookup after list reorder/removal.
+- Assert both activities are unexported, only one shared `btn_ic_browser`
+  source exists, and no native password/RSA/CAPTCHA/quick-cookie symbols or
+  dedicated dependencies remain.
+- Build and run focused account/network tests plus App debug assemble/test/lint.
+  Real login remains a manually authorized device smoke and must stop on
+  challenge, CAPTCHA, or rate limiting.
 
 ### 7. Wrong vs Correct
 
 #### Wrong
 
 ```kotlin
-val cid = CookieManager.getInstance().getCookie(url)
-UserManager.addUser(uid, cid, username)
-Log.d("login", result.toString())
+override fun onPageFinished(view: WebView?, url: String?) {
+    completeFromCookies(url)
+}
 ```
 
-This conflates the Cookie header with the session token, skips origin/session
-validation, may select the wrong account, and can disclose credentials.
+This confuses persisted browser state with proof that the current login flow
+succeeded and causes the Web page to close immediately.
 
 #### Correct
 
 ```kotlin
-if (WebLoginPolicy.isAllowed(url) && NgaLoginSessionContract.isValid(uid, cid)) {
-    UserManager.addUserAndSelect(uid, cid, username.ifBlank { uid })
+override fun onPageFinished(view: WebView?, url: String?) {
+    if (WebLoginPolicy.isAllowed(url)) currentAllowedUrl = requireNotNull(url)
 }
 ```
+
+Cookie extraction remains reachable only from the exact success confirmation
+or deliberate user-exit paths.
