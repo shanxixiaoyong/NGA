@@ -48,7 +48,7 @@ public class PhoneConfiguration extends PreferenceKey implements SharedPreferenc
     public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
         switch (key) {
             case PreferenceKey.NOTIFIACTION_SOUND:
-                mNotificationSoundEnabled = sp.getBoolean(key, true);
+                mNotificationSoundEnabled = sp.getBoolean(key, Constants.NOTIFICATION_SOUND_DEFAULT);
                 break;
             case PreferenceKey.ENABLE_NOTIFIACTION:
                 mNotificationEnabled = sp.getBoolean(key, true);
@@ -106,7 +106,7 @@ public class PhoneConfiguration extends PreferenceKey implements SharedPreferenc
     private void initialize() {
         SharedPreferences sp = ContextUtils.getContext().getSharedPreferences(PreferenceKey.PERFERENCE, Context.MODE_PRIVATE);
         sp.registerOnSharedPreferenceChangeListener(this);
-        mNotificationSoundEnabled = sp.getBoolean(PreferenceKey.NOTIFIACTION_SOUND, true);
+        mNotificationSoundEnabled = sp.getBoolean(PreferenceKey.NOTIFIACTION_SOUND, Constants.NOTIFICATION_SOUND_DEFAULT);
         mNotificationEnabled = sp.getBoolean(PreferenceKey.ENABLE_NOTIFIACTION, true);
         mShowSignature = sp.getBoolean(PreferenceKey.SHOW_SIGNATURE, false);
         mShowColorText = sp.getBoolean(PreferenceKey.SHOW_COLORTXT, false);
@@ -240,4 +240,3 @@ public class PhoneConfiguration extends PreferenceKey implements SharedPreferenc
     }
 
 }
-

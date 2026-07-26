@@ -15,6 +15,7 @@ import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.base.util.ThreadUtils;
 import gov.anzong.androidnga.common.PreferenceKey;
+import sp.phone.common.Constants;
 
 public class ThemeManager implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -48,9 +49,9 @@ public class ThemeManager implements SharedPreferences.OnSharedPreferenceChangeL
             mNightMode = sp.getBoolean(key, false);
             applyDayNight();
         } else if (key.equals(PreferenceKey.MATERIAL_THEME)) {
-            mThemeIndex = Integer.parseInt(sp.getString(key, "0"));
+            mThemeIndex = Integer.parseInt(sp.getString(key, Constants.MATERIAL_THEME_DEFAULT));
         } else if (key.equals(PreferenceKey.KEY_NIGHT_MODE_FOLLOW_SYSTEM)) {
-            mNightModeFollowSystem = sp.getBoolean(key, false);
+            mNightModeFollowSystem = sp.getBoolean(key, Constants.NIGHT_MODE_FOLLOW_SYSTEM_DEFAULT);
             applyDayNight();
         }
         mWebViewTheme = null;
@@ -66,8 +67,8 @@ public class ThemeManager implements SharedPreferences.OnSharedPreferenceChangeL
         SharedPreferences sp = mContext.getSharedPreferences(PreferenceKey.PERFERENCE, Context.MODE_PRIVATE);
         sp.registerOnSharedPreferenceChangeListener(this);
         mNightMode = sp.getBoolean(PreferenceKey.NIGHT_MODE, false);
-        mThemeIndex = Integer.parseInt(sp.getString(PreferenceKey.MATERIAL_THEME, "1"));
-        mNightModeFollowSystem = sp.getBoolean(PreferenceKey.KEY_NIGHT_MODE_FOLLOW_SYSTEM, false);
+        mThemeIndex = Integer.parseInt(sp.getString(PreferenceKey.MATERIAL_THEME, Constants.MATERIAL_THEME_DEFAULT));
+        mNightModeFollowSystem = sp.getBoolean(PreferenceKey.KEY_NIGHT_MODE_FOLLOW_SYSTEM, Constants.NIGHT_MODE_FOLLOW_SYSTEM_DEFAULT);
         applyDayNightDelay(0);
     }
 

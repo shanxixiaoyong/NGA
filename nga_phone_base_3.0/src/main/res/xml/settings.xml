@@ -23,7 +23,7 @@
             android:title="@string/nightmode" />
 
         <SwitchPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="key_night_mode_follow_system"
             android:title="夜间模式跟随系统"/>
 
@@ -44,14 +44,14 @@
             android:title="@string/notification_on" />
 
         <SwitchPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:dependency="enableNotification"
             android:key="notificationSound"
             android:title="@string/notification_sound" />
 
 
         <ListSummaryPreference
-            android:defaultValue="1"
+            android:defaultValue="2"
             android:entries="@array/material_theme"
             android:entryValues="@array/material_theme_value"
             android:key="material_theme"
@@ -82,6 +82,7 @@
 
 
         <SwitchPreference
+            android:defaultValue="false"
             android:key="filter_sub_board"
             android:title="@string/setting_title_filter_sub_board" />
 
