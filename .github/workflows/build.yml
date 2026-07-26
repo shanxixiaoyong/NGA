@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
     tags: ["*.*.*"]
+    paths-ignore:
+      - ".trellis/**"
+      - "**/*.md"
   workflow_dispatch:
 
 permissions:
@@ -11,6 +14,7 @@ permissions:
 
 jobs:
   build-apk:
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout project sources
@@ -32,6 +36,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          cache-cleanup: on-success
 
       - name: Restore release keystore
         env:
@@ -41,12 +48,6 @@ jobs:
           test -n "$SIGNING_KEYSTORE_BASE64"
           printf '%s' "$SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/nga-just-works-release.p12"
           chmod 600 "$RUNNER_TEMP/nga-just-works-release.p12"
-
-      - name: Verify release tag
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: ./gradlew verifyReleaseTag --no-daemon
 
       - name: Build signed release APK
         env:
@@ -80,17 +81,50 @@ jobs:
           if-no-files-found: error
 
   publish-release:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build-apk
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: write
     steps:
+      - name: Find successful main build
+        id: main-build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          main_run_id="$(
+            gh api --method GET \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/build.yml/runs" \
+              -f branch=main \
+              -f event=push \
+              -f head_sha="$GITHUB_SHA" \
+              -f status=success \
+              -F per_page=100 \
+              --jq '.workflow_runs | sort_by(.run_number) | last | .id // empty'
+          )"
+          test -n "$main_run_id"
+          printf 'run_id=%s\n' "$main_run_id" >> "$GITHUB_OUTPUT"
+          printf 'artifact_name=NGA-Just-Works-%s\n' "$main_run_id" >> "$GITHUB_OUTPUT"
+
       - name: Download signed release APK
         uses: actions/download-artifact@v4
         with:
-          name: NGA-Just-Works-${{ github.run_id }}
+          name: ${{ steps.main-build.outputs.artifact_name }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.main-build.outputs.run_id }}
           path: dist
+
+      - name: Verify release files
+        run: |
+          set -euo pipefail
+          release_apk="dist/NGA-Just-Works-${GITHUB_REF_NAME}.apk"
+          checksum_file="${release_apk}.sha256"
+          test -f "$release_apk"
+          test -f "$checksum_file"
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
+          (cd dist && sha256sum -c "$(basename "$checksum_file")")
 
       - name: Create GitHub Release
         env:
