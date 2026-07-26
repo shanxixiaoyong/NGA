@@ -1,9 +1,6 @@
 package gov.anzong.androidnga.activity;
 
-import android.content.ActivityNotFoundException;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -50,16 +47,9 @@ public class AboutActivity extends MaterialAboutActivity {
                 .text("版本")
                 .subText(BuildConfig.VERSION_NAME)
                 .icon(R.drawable.ic_about)
-                .setOnClickAction(() -> {
-                    try {
-                        String url = "market://details?id=" + getPackageName();
-                        Intent intent = new Intent("android.intent.action.VIEW");
-                        intent.setData(Uri.parse(url));
-                        startActivity(intent);
-                    } catch (ActivityNotFoundException e) {
-                        //FunctionUtils.openUrlByDefaultBrowser(AboutActivity.this, "https://www.coolapk.com/apk/gov.anzong.androidnga");
-                    }
-                })
+                .setOnClickAction(() -> FunctionUtils.openUrlByDefaultBrowser(
+                        AboutActivity.this,
+                        "https://github.com/tophtab/nga-just-works/releases"))
                 .build());
 
         builder.addItem(new MaterialAboutActionItem.Builder()
@@ -78,7 +68,7 @@ public class AboutActivity extends MaterialAboutActivity {
                 .text("检测更新")
                 .setOnClickAction(() -> {
                     ARouterUtils.build(ARouterConstants.ACTIVITY_FRAGMENT_TEMPLATE)
-                            .withString("url", "https://github.com/Justwen/NGA-CLIENT-VER-OPEN-SOURCE/releases")
+                            .withString("url", "https://github.com/tophtab/nga-just-works/releases")
                             .withString("fragment", WebViewFragment.class.getName())
                             .navigation(this);
 
@@ -113,7 +103,7 @@ public class AboutActivity extends MaterialAboutActivity {
         builder.addItem(new MaterialAboutActionItem.Builder()
                 .text("Github")
                 .subText("bug & 建议")
-                .setOnClickAction(() -> FunctionUtils.openUrlByDefaultBrowser(AboutActivity.this, "https://github.com/Justwen/NGA-CLIENT-VER-OPEN-SOURCE/issues"))
+                .setOnClickAction(() -> FunctionUtils.openUrlByDefaultBrowser(AboutActivity.this, "https://github.com/tophtab/nga-just-works/issues"))
                 .icon(R.drawable.ic_github)
                 .build());
 

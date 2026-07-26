@@ -43,12 +43,30 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
+tasks.register('printAppVersion') {
+    doLast {
+        println project.appVersionName
+    }
+}
+
+tasks.register('verifyReleaseTag') {
+    doLast {
+        def releaseTag = providers.environmentVariable('RELEASE_TAG').orNull
+        if (!releaseTag) {
+            throw new GradleException('RELEASE_TAG is required')
+        }
+        if (releaseTag != project.appVersionName) {
+            throw new GradleException("Release tag ${releaseTag} does not match appVersionName ${project.appVersionName}")
+        }
+    }
+}
+
 project.ext {
     minSdkVersion = 30
     targetSdkVersion = 35
     compileSdkVersion = 35
-    appVersionName = '4.2.1'
-    appVersionCode = 4021
+    appVersionName = '4.3.0'
+    appVersionCode = 4030
 
     rxAndroid = '2.1.1'
 
@@ -56,5 +74,4 @@ project.ext {
 
     preference_version = "1.1.1"
 }
-
 

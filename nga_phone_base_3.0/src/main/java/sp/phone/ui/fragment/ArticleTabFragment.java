@@ -216,9 +216,9 @@ public class ArticleTabFragment extends BaseRxFragment {
         }
         builder.append(Utils.getNGAHost()).append("read.php?");
         if (mRequestParam.pid != 0) {
-            builder.append("pid=").append(mRequestParam.pid).append(" (分享自NGA安卓客户端开源版)");
+            builder.append("pid=").append(mRequestParam.pid).append(" (分享自 NGA Just Works)");
         } else {
-            builder.append("tid=").append(mRequestParam.tid).append(" (分享自NGA安卓客户端开源版)");
+            builder.append("tid=").append(mRequestParam.tid).append(" (分享自 NGA Just Works)");
         }
         ShareUtils.INSTANCE.shareText(getContext(), title, builder.toString());
     }

@@ -1,20 +1,54 @@
-# nga-just-works
+# NGA Just Works
 
-This is an unofficial, modified fork of
-[Justwen/NGA-CLIENT-VER-OPEN-SOURCE](https://github.com/Justwen/NGA-CLIENT-VER-OPEN-SOURCE),
-based on commit `5d807617f8058950f7ea81dda405e38fb0cc37ec`.
+`NGA Just Works` 是基于
+[Justwen/NGA-CLIENT-VER-OPEN-SOURCE](https://github.com/Justwen/NGA-CLIENT-VER-OPEN-SOURCE)
+进行的二次开发，当前代码基线为上游提交
+[`5d807617f8058950f7ea81dda405e38fb0cc37ec`](https://github.com/Justwen/NGA-CLIENT-VER-OPEN-SOURCE/commit/5d807617f8058950f7ea81dda405e38fb0cc37ec)。
 
-The fork restores the upstream client behavior while retaining direct
-long-press sorting for favorite boards and a single contextual post/reply
-floating action button. It is not affiliated with or endorsed by NGA or the
-upstream author.
+本项目是非官方客户端，与 NGA 及原项目作者不存在隶属、授权或背书关系。
 
-Build the debug application with:
+## 当前差异
+
+相较原项目，当前版本主要包含以下两个差异：
+
+1. 添加了收藏板块顺序编辑功能，可通过长按拖动调整收藏板块顺序。
+2. 去除了二级菜单“警报”，将“发帖/回复”按钮设为一级按钮，并去除了刷新按钮。
+
+除此之外，项目尽量保留原项目的功能、页面结构和交互方式。
+
+## 应用信息
+
+- 应用名称：`NGA Just Works`
+- Android applicationId：`com.github.tophtab.ngajustworks`
+- 当前版本：`4.3.0`
+
+由于使用独立 applicationId，本应用会作为一个新应用安装，可以与原版客户端共存，但不会继承原版或旧 fork 的登录状态、数据库、收藏和设置，也不能覆盖升级这些应用。
+
+正式签名安装包通过本项目的
+[GitHub Releases](https://github.com/tophtab/nga-just-works/releases)
+提供。release 签名材料不会提交到仓库。
+
+## 未来计划
+
+计划在后续版本中加入 `nga_harmony` 版本的 AI 功能。当前 `4.3.0` 不包含这些 AI 功能。
+
+## 风险说明与参与开发
+
+本项目基于原项目进行 AI 辅助的 vibe coding。代码可能存在尚未发现的缺陷、安全问题或兼容性问题；安装和使用前请自行审查并评估风险，安装者自行承担使用风险。
+
+欢迎其他开发者审查代码、提交问题和改进，并在遵守许可证与来源声明的前提下继续二次开发。
+
+## 从源码构建
+
+本地调试构建：
 
 ```bash
 ./gradlew :nga_phone_base_3.0:assembleDebug
 ```
 
-Release signing credentials are intentionally not stored in this repository.
-The source is distributed under GNU GPL version 2; see `LICENSE` and
-`SOURCE_LEDGER.md`.
+正式 release 构建需要通过环境变量提供项目自己的 Android release keystore、alias 和口令。仓库不包含任何签名密钥或默认签名凭据。
+
+## 许可证与来源
+
+本项目依据 GNU GPL version 2 发布。请参阅 [`LICENSE`](LICENSE) 和
+[`SOURCE_LEDGER.md`](SOURCE_LEDGER.md) 了解许可证、上游来源和修改范围。

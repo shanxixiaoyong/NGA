@@ -1,6 +1,6 @@
 {
   "easyGoVersion": "1.0",
-  "client": "gov.anzong.androidnga",
+  "client": "com.github.tophtab.ngajustworks",
   "logicEntities": [
     {
       "head": {
