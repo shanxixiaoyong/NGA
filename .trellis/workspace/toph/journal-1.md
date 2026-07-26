@@ -187,3 +187,24 @@ Restored the Room-backed multi-account chooser and controlled NGA Web login flow
 ### Status
 
 [OK] **Completed**
+
+
+## Session 9: Bootstrap original NGA platform contracts
+
+**Date**: 2026-07-26
+**Task**: Bootstrap original NGA platform contracts
+**Branch**: `main`
+
+### Summary
+
+Derived the NGA platform operation contracts exclusively from untouched Justwen commit 5d807617, documented access and migration rules, indexed 28 operations from 33 classified network entry points, propagated the specs into downstream task contexts, and archived the completed bootstrap task. No live NGA traffic or product source changes were made.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bdbca7e0` | (see git log) |
+
+### Status
+
+[OK] **Completed**
