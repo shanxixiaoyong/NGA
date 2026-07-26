@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "登录表单、RSA/transport、响应解析、ViewModel、UserManager 和 Web fallback 的跨层数据合同。"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "确保账号类型、解析器、错误分类、成功处理和浏览器图标只有一个 owner。"}
+{"file": ".trellis/spec/backend/network-foundation-contract.md", "reason": "现有 NGA Cookie、域名、挑战、日志和兼容性边界。"}
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "Android build/lint/unit/instrumentation、真机和 release 验证门。"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "保持 Justwen 现有 Material/Compose UI 基线，不引入平行视觉架构。"}
+{"file": ".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md", "reason": "当前 Web 登录、Passport Cookie、GBK、多账号和已知安全风险证据。"}
+{"file": ".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md", "reason": "非官方协议、低频授权验证、挑战/限流停止和编码风险边界。"}
+{"file": ".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md", "reason": "NgaLite 无许可证观察边界与 Justwen GPL 产品基线。"}
