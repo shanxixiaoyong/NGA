@@ -20,7 +20,7 @@
 
 - 应用名称：`NGA Just Works`
 - Android applicationId：`com.github.tophtab.ngajustworks`
-- 当前版本：`4.3.0`
+- 当前版本：`4.5.0`
 
 由于使用独立 applicationId，本应用会作为一个新应用安装，可以与原版客户端共存，但不会继承原版或旧 fork 的登录状态、数据库、收藏和设置，也不能覆盖升级这些应用。
 
@@ -30,7 +30,7 @@
 
 ## 未来计划
 
-计划在后续版本中加入 `nga_harmony` 版本的 AI 功能。当前 `4.3.0` 不包含这些 AI 功能。
+计划在后续版本中加入 `nga_harmony` 版本的 AI 功能。当前 `4.5.0` 不包含这些 AI 功能。
 
 ## 风险说明与参与开发
 

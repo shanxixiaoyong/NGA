@@ -61,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           app_version="$(./gradlew -q printAppVersion --no-daemon --console=plain | tail -n 1)"
-          test "$app_version" = "4.3.0"
+          test "$app_version" = "4.5.0"
           source_apk="$(find nga_phone_base_3.0/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' ! -name '*unsigned*' -print -quit)"
           test -n "$source_apk"
           mkdir -p dist
@@ -69,7 +69,7 @@ jobs:
           cp "$source_apk" "$release_apk"
           test "$(apkanalyzer manifest application-id "$release_apk")" = "com.github.tophtab.ngajustworks"
           test "$(apkanalyzer manifest version-name "$release_apk")" = "$app_version"
-          test "$(apkanalyzer manifest version-code "$release_apk")" = "4030"
+          test "$(apkanalyzer manifest version-code "$release_apk")" = "4050"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$release_apk"
           (cd dist && sha256sum "$(basename "$release_apk")" > "$(basename "$release_apk").sha256")
 
