@@ -165,3 +165,25 @@ Published CI-signed production-ID Debug prereleases with debug naming, preview b
 ### Status
 
 [OK] **Completed**
+
+
+## Session 8: Restore Justwen multi-account Web login
+
+**Date**: 2026-07-26
+**Task**: Restore Justwen multi-account Web login
+**Branch**: `main`
+
+### Summary
+
+Restored the Room-backed multi-account chooser and controlled NGA Web login flow, removed the unofficial native password protocol, fixed stale-index and persisted-Cookie completion bugs, and documented the request-time Cookie contract.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bf715d66` | (see git log) |
+| `c5b2a781` | (see git log) |
+
+### Status
+
+[OK] **Completed**
