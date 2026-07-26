@@ -20,7 +20,7 @@ This directory contains guidelines for backend development. Fill in each file wi
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
 | [Android Quality and Instrumentation](./android-quality-guidelines.md) | Restored build, JVM-test, lint, and optional device gates | Active |
-| [Justwen Network Compatibility Contract](./network-foundation-contract.md) | Restored upstream read, account, mutation, and vote paths plus fork identity hygiene | Active |
+| [Justwen Network Compatibility Contract](./network-foundation-contract.md) | Restored upstream transport plus native/Web login acquisition and session handoff | Active |
 
 ---
 
