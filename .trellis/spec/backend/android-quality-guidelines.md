@@ -227,6 +227,16 @@ ANDROID_SIGNING_STORE_PASSWORD=<secret>
 ANDROID_SIGNING_KEY_ALIAS=<secret>
 ANDROID_SIGNING_KEY_PASSWORD=<secret>
 RELEASE_TAG=<versionName without a v prefix>
+GITHUB_SHA=<tag commit SHA>
+GITHUB_REF_NAME=<version tag without refs/tags/>
+MAIN_ARTIFACT_NAME=NGA-Just-Works-<successful-main-run-id>
+```
+
+The source-run lookup contract is:
+
+```text
+GET /repos/${GITHUB_REPOSITORY}/actions/workflows/build.yml/runs
+  ?branch=main&event=push&status=success&head_sha=${GITHUB_SHA}
 ```
 
 The current release identity is `com.github.tophtab.ngajustworks`; the source
@@ -240,8 +250,24 @@ scoped package migration is approved.
 - Signing files and credentials must stay outside the repository and outside
   uploaded artifacts. GitHub stores the equivalent values as repository
   secrets and restores the keystore only in the runner temporary directory.
-- A `main` push may upload a signed Actions artifact. A tag matching the Gradle
-  `versionName` creates the GitHub Release; a mismatched tag must fail.
+- A non-documentation-only `main` push uploads a signed Actions artifact named
+  with its run ID. Pushes containing only `.trellis/**` and Markdown files do
+  not build; mixed pushes with any other path still build.
+- A version tag must reuse the artifact from a successful `main` push of the
+  exact same commit. The tag job must constrain repository, workflow, branch,
+  event, conclusion, and `head_sha`; it must never rebuild, use a manual run,
+  or select a nearby commit.
+- The tag job requires `actions: read` and `contents: write`, but no signing
+  secrets. It must require `NGA-Just-Works-${GITHUB_REF_NAME}.apk` and its
+  SHA-256 sidecar, reject extra files, and verify the checksum before creating
+  the Release. A mismatched tag therefore fails on the expected filename.
+- Missing, failed, or expired same-SHA main artifacts are hard failures. Wait
+  for or rerun the main workflow, then rerun the tag workflow; do not fall back
+  to a second release build.
+- Gradle task output caching is enabled with `org.gradle.caching=true` and
+  persisted by `setup-gradle@v4`. The default branch may write cache entries;
+  non-main manual builds are read-only. Do not layer another Gradle User Home
+  cache action on top of `setup-gradle`.
 - The APK must be non-debuggable and must expose the expected applicationId,
   versionName, versionCode, app label, signer certificate, and embedded runtime
   client identity before publication.
@@ -254,6 +280,11 @@ scoped package migration is approved.
 | --- | --- |
 | Any signing environment value is absent or blank | `assembleRelease` fails; no unsigned fallback |
 | `RELEASE_TAG` differs from Gradle `versionName` | Tag verification fails before publication |
+| No successful `main` push run has the tag's exact `GITHUB_SHA` | Fail before artifact download and publication |
+| The exact main artifact is absent or expired | Cross-run download fails; rerun main, never rebuild in the tag job |
+| APK filename differs from `GITHUB_REF_NAME` | Reject the artifact before publication |
+| APK sidecar is missing, checksum fails, or extra files exist | Reject the artifact before `gh release create` |
+| A `.trellis`/Markdown-only main push occurs | Skip Build Artifacts; tag pushes remain eligible because GitHub does not apply path filters to tags |
 | APK applicationId or embedded EasyGo client differs | Block publication and fix every runtime identity reference |
 | APK is debuggable or signer verification fails | Block publication |
 | Keystore/private-key material is tracked or packaged | Remove it from the release path and rotate if exposed |
@@ -261,13 +292,15 @@ scoped package migration is approved.
 
 ### 5. Good/Base/Bad Cases
 
-- **Good**: CI builds one signed release APK, verifies its identity and signer,
-  emits a checksum, and publishes it only for a matching version tag.
-- **Base**: A local signed build and static APK checks pass without a connected
-  device; installation remains explicitly unverified.
-- **Bad**: Falling back to debug signing, uploading an unsigned APK, embedding
-  credentials in Gradle, or renaming the applicationId without updating
-  shortcuts and runtime client metadata.
+- **Good**: `main` builds one signed release APK, verifies its identity and
+  signer, and emits a checksum; the matching tag downloads that exact artifact
+  by main run ID and publishes it without Gradle or signing secrets.
+- **Base**: The tag arrives before the same-SHA main run succeeds and fails
+  closed. After main succeeds, rerunning the tag workflow publishes the exact
+  validated artifact.
+- **Bad**: Rebuilding on a tag, selecting the latest artifact without exact
+  SHA/event/branch filters, falling back to debug signing, layering competing
+  Gradle caches, or publishing before the checksum passes.
 
 ### 6. Tests Required
 
@@ -277,6 +310,16 @@ scoped package migration is approved.
   static shortcut targets, and `assets/easygo.json` in the built APK.
 - Validate the workflow YAML, run `git diff --check`, scan tracked files and APK
   entries for key material, and test both matching and mismatched tags.
+- Assert the source-run query returns only a successful `main` push for the
+  exact tag SHA and returns empty for an unknown SHA. Verify that the tag job
+  has `actions: read`/`contents: write` but no SDK, Gradle, keystore, or signing
+  secret steps.
+- Download a known main artifact through its run ID, require exactly the APK
+  and `.sha256` sidecar, and run `sha256sum -c`. Exercise missing-run,
+  mismatched-filename, missing-sidecar, extra-file, and bad-checksum failures.
+- Run Gradle with build cache enabled and validate the workflow with
+  `actionlint`. Confirm `main` may write setup-gradle cache entries while other
+  manually dispatched refs are read-only.
 - After pushing `main` and the release tag, download each remote artifact and
   repeat checksum, signer, identity, and version verification.
 
@@ -300,4 +343,28 @@ release {
     keyAlias System.getenv('ANDROID_SIGNING_KEY_ALIAS')
     keyPassword System.getenv('ANDROID_SIGNING_KEY_PASSWORD')
 }
+```
+
+#### Wrong
+
+```yaml
+publish-release:
+  needs: build-apk
+  steps:
+    - run: ./gradlew assembleRelease
+```
+
+#### Correct
+
+```yaml
+publish-release:
+  permissions:
+    actions: read
+    contents: write
+  steps:
+    - uses: actions/download-artifact@v4
+      with:
+        github-token: ${{ github.token }}
+        repository: ${{ github.repository }}
+        run-id: ${{ steps.main-build.outputs.run_id }}
 ```
