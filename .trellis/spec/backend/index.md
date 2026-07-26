@@ -1,40 +1,31 @@
 # Backend Development Guidelines
 
-> Best practices for backend development in this project.
+## Active Contracts
 
----
+| Guide | Use it when | Authority |
+| --- | --- | --- |
+| [Android Quality and Instrumentation](./android-quality-guidelines.md) | Building, testing, linting, instrumenting, or releasing Android modules | Project quality gates |
+| [Justwen Network Foundation](./network-foundation-contract.md) | Changing transport, account Cookie handoff, Web login, shared error handling, or the vote bridge | Pinned transport/session compatibility plus project safety boundary |
+| [NGA Platform Access Rules](./nga-platform-access-rules.md) | Any code crosses an NGA host, WebView, redirect, upload/media host, session, encoding, logging, or mutation boundary | Mandatory evidence, security, privacy, retry, and validation rules |
+| [NGA Platform Operation Registry](./nga-platform-operation-registry.md) | Implementing or reviewing a concrete read, post, upload, interaction, account mutation, message, or notification | Operation IDs and pinned Justwen wire/source facts |
 
-## Overview
+## Pre-Development Checklist
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+For work that touches NGA platform interaction:
 
----
+1. Read the access rules and locate the operation ID in the registry.
+2. Read the network foundation contract when transport, account/session,
+   WebView login, or JavaScript bridge behavior is involved.
+3. Keep pinned original behavior, current-fork delta, and desired migration
+   behavior separate. The pinned source is compatibility evidence, not an
+   official or current API promise.
+4. Trace request construction through account selection, encoding, parser,
+   error classification, persistence, and UI side effects.
+5. Use offline fixtures/fake servers. Live NGA traffic requires a separate
+   explicit authorization and stop plan.
 
-## Guidelines Index
+The generic directory, database, error, quality, and logging files in this
+directory are unbootstrapped templates and are not active project contracts.
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
-| [Android Quality and Instrumentation](./android-quality-guidelines.md) | Restored build, JVM-test, lint, and optional device gates | Active |
-| [Justwen Network Compatibility Contract](./network-foundation-contract.md) | Restored upstream transport plus native/Web login acquisition and session handoff | Active |
-
----
-
-## How to Fill These Guidelines
-
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
-
----
-
-**Language**: All documentation should be written in **English**.
+All maintained specification prose is written in English. Wire field names and
+server messages remain in their original form where needed for compatibility.

@@ -8,3 +8,6 @@
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-ecosystem-and-risks.md","reason":"核对 Cookie/URL/redirect、授权、限流、AI consent 和平台风险。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"核对 GPL/第三方来源、无许可证项目和资产权利边界。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"确认没有挑战绕过、未经授权 provider/host 或自动化签到行为。"}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Verify WebView, bridge, transport, session, and neutral-identity foundation rules."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Check URL/media/Cookie isolation, redaction, bounded automation, errors, and offline validation."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Check advanced features against pinned operation IDs and explicit media/dormant exclusions."}

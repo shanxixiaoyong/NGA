@@ -6,3 +6,6 @@
 {"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/lib_base_ui_compose/src/main/java/com/justwen/androidnga/ui/compose/widget/TabLayoutWithPager.kt","reason":"验证先横滑切页、长按后暂停 Pager、结束后恢复的手势仲裁。"}
 {"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/nga_phone_base_3.0/src/main/java/gov/anzong/androidnga/activity/compose/board/ForumBoardModel.kt","reason":"验证稳定 board key、顺序交换、持久化和失败回滚边界。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-favorites-gesture-audit.md","reason":"验证短按/长按/横滑的事件仲裁、恢复状态、自动滚动和无障碍动作。"}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Verify read transport/account behavior remains compatible without copying automatic account rotation or raw logging."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Check origin, encoding, parser/error, privacy, and account-scoped read/cache boundaries."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Check reading and favorite behavior against the pinned operation IDs and delta labels."}

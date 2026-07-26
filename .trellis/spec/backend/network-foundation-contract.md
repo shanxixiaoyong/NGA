@@ -1,141 +1,122 @@
-# Justwen Network Compatibility Contract
+# Justwen Network Foundation Contract
 
-## Scenario: Pinned Upstream Transport With Fork Identity Hygiene
+## Source And Scope
 
-### 1. Scope / Trigger
+This compatibility entry point applies to NGA transport, session acquisition,
+account selection, reads, writes, uploads, messages, notifications, and
+WebViews. Original behavior comes only from the untouched Justwen checkout at
+commit `5d807617f8058950f7ea81dda405e38fb0cc37ec`, independently matched to
+`upstream-justwen/master`.
 
-This contract applies when changing NGA reads, login/account selection,
-cookies, posts, replies, uploads, messages, notifications, sign-in, vote, or
-the Retrofit/`HttpURLConnection` transports. The compatibility baseline is
-`Justwen/NGA-CLIENT-VER-OPEN-SOURCE@5d807617`.
+The complete wire inventory is in
+[NGA Platform Operation Registry](./nga-platform-operation-registry.md). The
+mandatory migration and safety policy is in
+[NGA Platform Access Rules](./nga-platform-access-rules.md). Source observation
+does not establish an official, stable, authorized, or currently available API.
 
-The removed foundation access policy, request context, response classifier,
-session vault, reviewed-read transport, and default-deny mutation gate are not
-active contracts. Do not reintroduce a partial copy of those layers.
+## Original Transport Signatures
 
-### 2. Signatures
-
-Active Retrofit signatures return upstream scalar payloads:
+The pinned Java Retrofit surface is:
 
 ```java
+Observable<String> RetrofitService.get(@QueryMap Map<String, String> fields)
+Observable<String> RetrofitService.getByForum(@QueryMap Map<String, String> fields)
 Observable<String> RetrofitService.get(@Url String url)
-Observable<String> RetrofitService.get(@Url String url, @HeaderMap Map<String, String> headers)
+Observable<String> RetrofitService.get(@Url String url,
+                                        @HeaderMap Map<String, String> headers)
+Observable<String> RetrofitService.post(@Url String url)
+Observable<String> RetrofitService.post(@FieldMap Map<String, String> fields)
 Observable<String> RetrofitService.post(@QueryMap Map<String, String> query,
-                                        @FieldMap Map<String, String> fields)
+                                         @FieldMap Map<String, String> fields)
+Observable<ResponseBody> RetrofitService.uploadFile(@Url String url,
+                                                    @Body MultipartBody body)
 ```
 
+The pinned Kotlin surface is:
+
 ```kotlin
+suspend fun RetrofitServiceKt.getString(@QueryMap fields: Map<String, String>): String
 suspend fun RetrofitServiceKt.getString(@Url url: String): String
+suspend fun RetrofitServiceKt.post(
+    @QueryMap query: Map<String, String>,
+    @FieldMap fields: Map<String, String>,
+): String
 suspend fun RetrofitServiceKt.postString(
-    @QueryMap queryMap: Map<String, String>,
-    @HeaderMap headerMap: Map<String, String>,
-    @FieldMap fieldMap: Map<String, String>,
+    @QueryMap query: Map<String, String>,
+    @HeaderMap headers: Map<String, String>,
+    @FieldMap fields: Map<String, String>,
 ): String
 ```
 
-The legacy write transport remains:
+Legacy post/reply/comment/vote/avatar paths use:
 
 ```java
-HttpPostClient(String urlString)
-HttpPostClient(String urlString, String cookie)
+HttpPostClient(String url)
+HttpPostClient(String url, String cookie)
 HttpURLConnection post_body(String body)
 ```
 
-Vote pages expose exactly this bridge name:
+Evidence:
+`lib_base_network/.../retrofit/RetrofitService.java:24-73`,
+`RetrofitServiceKt.kt:12-41`, and
+`nga_phone_base_3.0/.../param/HttpPostClient.java:10-73` in the pinned checkout.
 
-```java
-webView.addJavascriptInterface(new ProxyBridge(webView), "ProxyBridge")
-```
+## Original Shared Behavior
 
-### 3. Contracts
+- `RetrofitHelper` chooses a preference-backed NGA base URL. Its interceptor
+  injects the process-global active-account Cookie unless a caller supplied
+  `Cookie`, sends the configured browser UA and
+  `X-User-Agent: Nga_Official`, and logs the request.
+- The shared converter reads all Retrofit `String` bodies as GBK and logs the
+  entire body. I/O failure becomes an empty string.
+- A POST body containing `charset=gbk` is decoded as UTF-8 and rebuilt with an
+  `application/x-www-form-urlencoded;charset=GBK` media type.
+- `HttpPostClient` disables redirects, accepts a caller Cookie, writes a form
+  body through a platform-default `OutputStreamWriter`, advertises GBK, and
+  returns the open connection for caller-specific response parsing.
+- Original parser wrappers include `window.script_muti_get_var_store=`, HTML
+  `<title>`, HTML-embedded JS, error-fill comments, and non-standard numeric
+  JSON tokens. Individual operation parsers own their legacy repairs.
 
-- Board categories call `app_api.php?__lib=home&__act=category`; topic lists
-  call `thread.php`; article pages call `read.php` through the upstream
-  Retrofit service and existing parsers.
-- The selected upstream account supplies the Cookie through upstream
-  `UserManager`/`RetrofitHelper`; requests do not require an account snapshot,
-  request tag, or response classifier.
-- Posts, replies, uploads, messages, notifications, sign-in, and vote must not
-  be rejected by a local default-deny gate before the upstream call.
-- `assets/vote/vote.js` calls `window.ProxyBridge.postURL(...)`; Java must
-  register the same bridge name.
-- Do not send `X-User-Agent: Nga_Official` or use an equivalent official-client
-  identity. `HttpUtil` uses the neutral `nga-just-works` identifier.
-- Do not commit Cookies, account data, API keys, signing credentials, or
-  keystores. Release signing is injected outside version control.
-- Favorite persistence is local and transport-independent. Board code must not
-  import a network policy, response classifier, or account-scoped store.
-- Automated checks do not send real NGA traffic or bypass CAPTCHA, challenges,
-  rate limits, or access controls.
+Evidence:
+`lib_base_network/.../retrofit/RetrofitHelper.java:34-40,46-64,91-140` and
+`.../converter/JsonStringConvertFactory.java:25-45`.
 
-### 4. Validation & Error Matrix
+These are `original-source-observed` compatibility facts. The official-client
+identity, global session lookup, broad GBK conversion, raw logging, and silent
+empty response are legacy defects and must not be copied.
 
-| Condition | Required result |
-| --- | --- |
-| Valid upstream read payload | Existing parser receives the scalar payload |
-| Parser returns an NGA error/site message | Existing UI error path handles it; no local `read rejected` wrapper |
-| Network exception | Existing subscriber/callback error path receives it |
-| Write endpoint invoked | Dispatch through existing Retrofit/`HttpPostClient`; no local deny gate |
-| Vote JS calls `ProxyBridge.postURL` | Registered Java bridge receives the call |
-| Official identity header or UA found | Remove it before handoff |
-| Foundation/classifier/session-vault symbol found in active product | Restore upstream path; scan must fail |
-| Real credential or signing material found | Block commit and remove the material |
-| CAPTCHA/challenge/rate-limit response | Surface/stop through existing behavior; never add bypass logic |
+## Original Web Login And Multi-Account Contract
 
-### 5. Good/Base/Bad Cases
+The original login path is WebView-based. Fork-only native password clients,
+RSA keys, CAPTCHA sessions, and password response parsers are not part of the
+pinned Justwen contract.
 
-- **Good**: `TopicListModel` calls `RetrofitService.get(url)`, passes the
-  returned string to `TopicConvertFactory`, and reports parser/network errors
-  through its existing callback.
-- **Base**: an upstream endpoint is no longer accepted by NGA. Preserve the
-  original call and report the observed service failure; do not fabricate a
-  success or add an unreviewed workaround.
-- **Bad**: add `NgaRequestContext`, allow only three operation IDs, classify an
-  HTTP 200 before the upstream parser, or deny all mutations locally.
-- **Bad**: restore `Nga_Official`, commit a Cookie/keystore password, or add a
-  challenge bypass to make an old endpoint appear functional.
+### Original Behavior
 
-### 6. Tests Required
+1. `LoginActivity` loads
+   `https://ngabbs.com/nuke.php?__lib=login&__act=account&login` with JavaScript
+   and automatic window opening enabled.
+2. Its `WebViewClient` records and explicitly loads every navigation without a
+   scheme, host, redirect, or subresource allowlist.
+3. A JavaScript confirm triggers completion only when the callback URL exactly
+   equals the login URL and the message contains `登录成功 是否返回首页`.
+   Activity finish also polls Cookies for the last recorded URL.
+4. `LoginViewModel` obtains the WebView Cookie string and searches for
+   `ngaPassportUid`, `ngaPassportCid`, and `ngaPassportUrlencodedUname` using
+   substring matching. Username is URL-decoded twice with GBK.
+5. Non-empty uid, cid, and username are passed to `UserManager.addUser`.
+6. `UserManager` stores ordered users plus one active index and emits request
+   Cookie text exactly as
+   `ngaPassportUid=<uid>; ngaPassportCid=<cid>`. The original add path updates
+   the list but does not explicitly select a newly added account.
+7. `NgaClientApp` registers a static Cookie provider backed by the active user;
+   every normal Retrofit request resolves it at interception time.
 
-- Build the App to compile all restored read/write/account/vote call paths.
-- Assert the active-product residue scan returns no foundation, classifier,
-  mutation-gate, or session-vault symbols.
-- Assert `ProxyBridge` appears in both Java registration and `vote.js` call
-  sites.
-- Assert official identity strings do not appear in active request builders.
-- Classify every remaining product path relative to the pinned upstream tree
-  as favorite, Pager, direct FAB, focused test, or publishing hygiene.
-- Do not use automated tests that contact real NGA endpoints.
-
-### 7. Wrong vs Correct
-
-#### Wrong
-
-```java
-NgaRequestContext context = new NgaRequestContext("article.list", ...);
-RawNgaResponse raw = RawNgaResponse.from(service.getUrlRaw(context, url));
-return new NgaResponseClassifier().classify(raw);
-```
-
-This recreates the rejected reviewed-read layer and can block valid upstream
-payloads before their established parser runs.
-
-#### Correct
-
-```java
-mService.get(url)
-        .map(ArticleConvertFactory::getArticleInfo)
-        .subscribe(/* existing success/error callbacks */);
-```
-
-## Verification Commands
-
-```bash
-rg -n "NGA read rejected|ReviewedNgaRead|FoundationAccess|NgaResponseClassifier|FoundationMutationGate|NgaRequestContext|RawNgaResponse|SessionVault|AccountSessionSnapshot" \
-  lib_* nga_phone_base_3.0/src/main
-rg -n "ProxyBridge" nga_phone_base_3.0/src/main
-git diff --name-status upstream-justwen/master -- <product paths>
-```
+Evidence:
+`lib_bu_account/.../login/LoginActivity.kt:20-92`,
+`LoginViewModel.kt:13-77`, `UserManager.kt:12-149`, and
+`nga_phone_base_3.0/.../NgaClientApp.java:101-105` in the pinned checkout.
 
 ## Scenario: Controlled Web Login With Justwen Multi-Account Sessions
 
@@ -263,3 +244,65 @@ override fun onPageFinished(view: WebView?, url: String?) {
 
 Cookie extraction remains reachable only from the exact success confirmation
 or deliberate user-exit paths.
+
+## Request Identity And Privacy
+
+- Never send `X-User-Agent: Nga_Official`, `Nga_Official/...`, or any equivalent
+  claim of official-client identity. Use a truthful neutral product identifier.
+- Never commit or log Cookies, cid, account records, passwords, CAPTCHA data,
+  private messages, post/report/filter text, upload bytes or tokens, signing
+  secrets, or raw NGA responses.
+- Validate exact HTTPS hosts before forwarding Cookie, authorization, Referer,
+  Origin, or sensitive form fields. Redirects and media/upload hosts are new
+  boundaries and default to no Cookie.
+- Browser/WebView fallbacks are not typed transport retries and do not inherit
+  an account session automatically.
+
+## Error And Mutation Contract
+
+Reads preserve the operation parser's recognized NGA data/error union. HTTP
+200 alone, an empty body, malformed JSON, an HTML challenge, or a generic site
+message is not success. Never rotate accounts automatically after a parser or
+access failure; the original `THREAD.PAGE` next-account retry is a do-not-copy
+anti-pattern.
+
+Every write must produce one of: confirmed success, confirmed business
+rejection, authentication rejection, challenge/CAPTCHA/access-control stop,
+rate limit, pre-send network/protocol failure, or post-send `UnknownOutcome`.
+No state-changing request is automatically retried without proven idempotency.
+Original checks for `成功`, `操作成功`, `发贴完毕`, or HTML titles are legacy
+parser evidence, not stable success definitions.
+
+## JavaScript Bridge Contract
+
+Original vote HTML calls exactly:
+
+```javascript
+window.ProxyBridge.postURL(/* nuke.php query/form fields */)
+```
+
+and Java registers exactly:
+
+```java
+webView.addJavascriptInterface(new ProxyBridge(context, toast), "ProxyBridge")
+```
+
+The original bridge accepts vote/settle fields and performs a Cookie POST to
+`nuke.php`. Preserve the name only when rendering trusted local vote content.
+Do not expose a network-bearing bridge to remote/untrusted HTML, and do not
+reuse it as a generic mutation transport. Evidence:
+`nga_phone_base_3.0/src/main/assets/vote/vote.js:124-182` and
+`.../util/FunctionUtils.java:149-185`.
+
+## Validation
+
+- Resolve the pinned checkout and upstream ref to the fixed full commit.
+- Map every affected call site to a registry operation ID or explicit
+  dormant/link-only/external exclusion.
+- Use offline fixtures or local fake servers only; automated checks never send
+  real NGA or related upload/media traffic.
+- Test account snapshotting, exact origin/redirect rejection, encoding and
+  wrapper boundaries, redaction, cancellation, duplicate suppression, and all
+  mutation outcomes including `UnknownOutcome`.
+- Search for official identity strings, raw response logging, global Cookie
+  lookup in new operations, cleartext hosts, and sensitive data in artifacts.

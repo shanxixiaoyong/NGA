@@ -6,3 +6,6 @@
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查旧 app/core 未在活动 build graph 中形成第二套契约。"}
 {"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"验证 API 35 首门、API 26 回归、AndroidX runner、secret scan 和设备报告。"}
 {"file":"docs/source-provenance.md","reason":"导入完成后必须从 clean-room 说明更新为 Justwen GPL 根分叉和逐文件来源账本。"}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Verify transport/session and original Web-login compatibility without reviving fork-only or unsafe legacy behavior."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Check exact origins, account binding, encoding ownership, error classes, redaction, and offline-only validation."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Check every platform call against a pinned operation ID and preserve original-versus-delta provenance."}

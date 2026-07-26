@@ -8,3 +8,6 @@
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-ecosystem-and-risks.md","reason":"检查授权、限流、unknown outcome、外部媒体 Cookie、根 fork 和许可证风险。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"检查 Justwen GPL 来源台账、无许可证项目观察边界和资产清单。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"确认没有将挑战/403/短消息或匿名探针当成写入成功。"}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Verify interaction transports and account handoff against pinned Justwen facts without official identity or raw logging."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Check every mutation distinguishes success, rejection, challenge, rate limit, network failure, and UnknownOutcome."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Check request fields, encoding, parsers, side effects, and retry risk for every interaction operation ID."}

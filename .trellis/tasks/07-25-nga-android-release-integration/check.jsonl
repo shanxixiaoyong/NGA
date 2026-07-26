@@ -8,3 +8,6 @@
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"核对 GPL-2.0-only/第三方来源、对应源码、无许可证项目和品牌/资产边界。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-ecosystem-and-risks.md","reason":"核对授权、限流、Cookie、unknown outcome、平台和发布撤回风险。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"最终检查无访问控制绕过、官方身份伪装或把探针响应当作发布契约。"}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Verify final transport, Web login, account/session, bridge, and neutral-identity compatibility."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Run the final host/Cookie/codec/error/mutation/privacy/offline-access review."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Verify no operation, dormant path, external host, or fork delta is silently omitted at release."}
