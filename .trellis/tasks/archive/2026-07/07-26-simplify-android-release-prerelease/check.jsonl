@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "Check signed APK identity, signing, version ordering, workflow permissions, and publication behavior."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Check all version and release constants for cross-file consistency."}
+{"file": ".trellis/tasks/07-26-simplify-android-release-prerelease/research/pt-mate-release.md", "reason": "Check the implementation against the researched tag and prerelease semantics."}
+{"file": ".trellis/tasks/07-26-simplify-android-release-prerelease/research/android-versioning-comparison.md", "reason": "Verify the selected versionCode policy matches established project patterns and preserves upgrade ordering."}

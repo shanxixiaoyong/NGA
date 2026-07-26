@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "Signed APK identity, signing, version, workflow, and release validation contract."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Version and publication constants must remain consistent across Gradle, workflow, and documentation."}
+{"file": ".trellis/tasks/07-26-simplify-android-release-prerelease/research/pt-mate-release.md", "reason": "Reference evidence for tag-driven stable and beta prerelease behavior."}
+{"file": ".trellis/tasks/07-26-simplify-android-release-prerelease/research/android-versioning-comparison.md", "reason": "Real-project evidence and migration formula for same-package preview/stable Android versionCode ordering."}
