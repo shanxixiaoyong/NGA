@@ -144,3 +144,24 @@ Changed Android publishing to create a signed prerelease on eligible main pushes
 ### Status
 
 [OK] **Completed**
+
+
+## Session 7: Publish debuggable Android prerelease
+
+**Date**: 2026-07-26
+**Task**: Publish debuggable Android prerelease
+**Branch**: `main`
+
+### Summary
+
+Published CI-signed production-ID Debug prereleases with debug naming, preview build-type verification, prerelease cleanup migration, an explicit CI-only APK packaging boundary in the Android spec, and an ADB in-place upgrade to 4.5.0-debug.9 without login verification.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a01b5e55` | (see git log) |
+
+### Status
+
+[OK] **Completed**

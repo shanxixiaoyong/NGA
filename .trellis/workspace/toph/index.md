@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 6
+- **Total Sessions**: 7
 - **Last Active**: 2026-07-26
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~146 | Active |
+| `journal-1.md` | ~167 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 7 | 2026-07-26 | Publish debuggable Android prerelease | `a01b5e55` | `main` |
 | 6 | 2026-07-26 | Simplify Android release and add main previews | `0927cdbd` | `main` |
 | 5 | 2026-07-26 | Native NGA account login | `ceb5e239`, `6ed1c7e9` | `main` |
 | 4 | 2026-07-26 | Publish NGA Just Works 4.5.0 | `e9a9018f` | `main` |
