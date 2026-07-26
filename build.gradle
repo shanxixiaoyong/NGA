@@ -56,7 +56,7 @@ def effectiveAppVersionName = localAppVersionName
 def effectiveAppVersionCode = localAppVersionCode
 
 if (ciVersionName != null) {
-    if (!(ciVersionName ==~ /[0-9]+\.[0-9]+\.[0-9]+(?:-preview\.[0-9]+)?/)) {
+    if (!(ciVersionName ==~ /[0-9]+\.[0-9]+\.[0-9]+(?:-debug\.[0-9]+)?/)) {
         throw new GradleException("Invalid CI_VERSION_NAME: ${ciVersionName}")
     }
 
@@ -108,4 +108,3 @@ project.ext {
 
     preference_version = "1.1.1"
 }
-

@@ -44,6 +44,9 @@ jobs:
             release_tag="$GITHUB_REF_NAME"
             release_title="NGA Just Works $GITHUB_REF_NAME"
             prerelease=false
+            gradle_task=assembleRelease
+            apk_dir=release
+            expected_debuggable=false
           else
             stable_base=""
             while IFS= read -r candidate; do
@@ -58,10 +61,13 @@ jobs:
             fi
 
             short_sha="${GITHUB_SHA:0:12}"
-            version_name="${stable_base}-preview.${GITHUB_RUN_NUMBER}"
-            release_tag="preview-${short_sha}"
-            release_title="NGA Just Works ${version_name}"
+            version_name="${stable_base}-debug.${GITHUB_RUN_NUMBER}"
+            release_tag="debug-${short_sha}"
+            release_title="NGA Just Works ${version_name} (Debug)"
             prerelease=true
+            gradle_task=assemblePreview
+            apk_dir=preview
+            expected_debuggable=true
           fi
 
           {
@@ -72,6 +78,9 @@ jobs:
             echo "tag=$release_tag"
             echo "title=$release_title"
             echo "prerelease=$prerelease"
+            echo "gradle_task=$gradle_task"
+            echo "apk_dir=$apk_dir"
+            echo "expected_debuggable=$expected_debuggable"
           } >> "$GITHUB_OUTPUT"
 
       - name: Setup Java
@@ -101,27 +110,32 @@ jobs:
           printf '%s' "$SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/nga-just-works-release.p12"
           chmod 600 "$RUNNER_TEMP/nga-just-works-release.p12"
 
-      - name: Build signed release APK
+      - name: Build signed APK
         env:
           ANDROID_SIGNING_STORE_FILE: ${{ runner.temp }}/nga-just-works-release.p12
           ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
           ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
           ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
-        run: ./gradlew :nga_phone_base_3.0:assembleRelease --no-daemon
+        run: ./gradlew :nga_phone_base_3.0:${{ steps.release.outputs.gradle_task }} --no-daemon
 
       - name: Verify and stage APK
         run: |
           set -euo pipefail
           app_version="$(./gradlew -q printAppVersion --no-daemon --console=plain | tail -n 1)"
           test "$app_version" = "$CI_VERSION_NAME"
-          source_apk="$(find nga_phone_base_3.0/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' ! -name '*unsigned*' -print -quit)"
-          test -n "$source_apk"
+          mapfile -t source_apks < <(
+            find "nga_phone_base_3.0/build/outputs/apk/${{ steps.release.outputs.apk_dir }}" \
+              -maxdepth 1 -type f -name '*.apk' ! -name '*unsigned*' -print
+          )
+          test "${#source_apks[@]}" -eq 1
+          source_apk="${source_apks[0]}"
           mkdir -p dist
           release_apk="dist/NGA-Just-Works-${app_version}.apk"
           cp "$source_apk" "$release_apk"
           test "$(apkanalyzer manifest application-id "$release_apk")" = "com.github.tophtab.ngajustworks"
           test "$(apkanalyzer manifest version-name "$release_apk")" = "$app_version"
           test "$(apkanalyzer manifest version-code "$release_apk")" = "$CI_VERSION_CODE"
+          test "$(apkanalyzer manifest debuggable "$release_apk")" = "${{ steps.release.outputs.expected_debuggable }}"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$release_apk"
           (cd dist && sha256sum "$(basename "$release_apk")" > "$(basename "$release_apk").sha256")
 
@@ -171,19 +185,19 @@ jobs:
               --verify-tag
           fi
 
-      - name: Remove older previews
+      - name: Remove older debug prereleases
         if: steps.release.outputs.prerelease == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          CURRENT_PREVIEW_TAG: ${{ steps.release.outputs.tag }}
+          CURRENT_DEBUG_TAG: ${{ steps.release.outputs.tag }}
         run: |
           set -euo pipefail
           old_tags="$(
             gh api --paginate "repos/${GITHUB_REPOSITORY}/releases" \
-              --jq '.[] | select(.prerelease == true and (.tag_name | startswith("preview-"))) | .tag_name'
+                --jq '.[] | select(.prerelease == true and ((.tag_name | startswith("preview-")) or (.tag_name | startswith("debug-")))) | .tag_name'
           )"
           while IFS= read -r old_tag; do
-            if [[ -n "$old_tag" && "$old_tag" != "$CURRENT_PREVIEW_TAG" ]]; then
+            if [[ -n "$old_tag" && "$old_tag" != "$CURRENT_DEBUG_TAG" ]]; then
               gh release delete "$old_tag" \
                 --repo "$GITHUB_REPOSITORY" \
                 --cleanup-tag \

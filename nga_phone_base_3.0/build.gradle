@@ -24,7 +24,7 @@ def signingConfigured = [
 
 gradle.taskGraph.whenReady { taskGraph ->
     def releasePackageRequested = taskGraph.allTasks.any { task ->
-        task.project == project && task.name.toLowerCase().matches('.*(assemble|bundle|package).*release.*')
+        task.project == project && task.name.toLowerCase().matches('.*(assemble|bundle|package).*(release|preview).*')
     }
     if (releasePackageRequested && !signingConfigured) {
         throw new GradleException('Release signing requires ANDROID_SIGNING_STORE_FILE, ANDROID_SIGNING_STORE_PASSWORD, ANDROID_SIGNING_KEY_ALIAS, and ANDROID_SIGNING_KEY_PASSWORD')
@@ -95,6 +95,15 @@ android {
             applicationIdSuffix '.debug'
             debuggable true
             minifyEnabled false
+        }
+        preview {
+            initWith release
+            matchingFallbacks = ['release']
+            debuggable true
+            minifyEnabled false
+            if (signingConfigured) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 

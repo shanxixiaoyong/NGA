@@ -227,7 +227,7 @@ ANDROID_SIGNING_STORE_FILE=<absolute path outside the repository>
 ANDROID_SIGNING_STORE_PASSWORD=<secret>
 ANDROID_SIGNING_KEY_ALIAS=<secret>
 ANDROID_SIGNING_KEY_PASSWORD=<secret>
-CI_VERSION_NAME=<X.Y.Z or X.Y.Z-preview.RUN_NUMBER>
+CI_VERSION_NAME=<X.Y.Z or X.Y.Z-debug.RUN_NUMBER>
 CI_VERSION_CODE=<1..2100000000>
 RELEASE_TAG=<stable X.Y.Z tag, for Gradle verification>
 GITHUB_SHA=<triggering commit SHA>
@@ -239,19 +239,20 @@ GITHUB_RUN_NUMBER=<long-lived build.yml workflow sequence>
 The publication identities are:
 
 ```text
-preview tag       = preview-<first 12 characters of GITHUB_SHA>
-preview version   = <newest reachable stable X.Y.Z tag>-preview.<GITHUB_RUN_NUMBER>
-stable version    = <exact X.Y.Z trigger tag>
-versionCode       = 4043 + GITHUB_RUN_NUMBER
-APK               = NGA-Just-Works-<CI_VERSION_NAME>.apk
-checksum          = <APK filename>.sha256
+debug tag       = debug-<first 12 characters of GITHUB_SHA>
+debug version   = <newest reachable stable X.Y.Z tag>-debug.<GITHUB_RUN_NUMBER>
+stable version  = <exact X.Y.Z trigger tag>
+versionCode     = 4043 + GITHUB_RUN_NUMBER
+APK             = NGA-Just-Works-<CI_VERSION_NAME>.apk
+checksum        = <APK filename>.sha256
 ```
 
 The `4043` migration offset maps workflow run 8 to versionCode `4051`, one
-greater than the published `4.5.0` APK. The workflow path must remain the
-long-lived publication workflow. If its GitHub workflow identity is recreated
-and the run sequence resets, recalculate the offset from the highest published
-versionCode before publishing again.
+greater than the published `4.5.0` APK. The first Debug-named run after
+`4.5.0-preview.8` therefore remains upgrade-compatible. The workflow path must
+remain the long-lived publication workflow. If its GitHub workflow identity is
+recreated and the run sequence resets, recalculate the offset from the highest
+published versionCode before publishing again.
 
 The release applicationId is `com.github.tophtab.ngajustworks`; the source and
 resource namespace remains `gov.anzong.androidnga` until a separately scoped
@@ -263,11 +264,14 @@ package migration is approved.
   Missing or blank values must fail before an unsigned release APK is emitted.
 - Signing files and credentials stay outside the repository and release
   assets. GitHub restores the keystore only in runner temporary storage.
-- The root Gradle build keeps local fallback values and accepts
-  `CI_VERSION_NAME` and `CI_VERSION_CODE` only as a complete, validated pair.
+- The root Gradle build keeps local fallback values and accepts stable
+  `X.Y.Z` or Debug `X.Y.Z-debug.N` names together with `CI_VERSION_CODE` only
+  as a complete, validated pair. Legacy `X.Y.Z-preview.N` is not a valid new
+  publication identity.
 - A non-documentation-only `main` push derives its base from the newest stable
-  `X.Y.Z` tag reachable from `GITHUB_SHA`, builds and signs one release APK,
-  verifies it, then publishes a `preview-<sha12>` GitHub prerelease.
+  `X.Y.Z` tag reachable from `GITHUB_SHA`, builds and signs one `preview`
+  variant APK, verifies it, then publishes a `debug-<sha12>` GitHub
+  prerelease titled with `(Debug)`.
 - Pushes containing only `.trellis/**` and Markdown files do not publish.
   `workflow_dispatch` is disabled so arbitrary refs cannot manufacture a
   preview or stable release.
@@ -275,28 +279,43 @@ package migration is approved.
   tag, uses it as `CI_VERSION_NAME`, builds and signs once, verifies the APK,
   and creates a normal GitHub Release directly from the current job's `dist/`.
   It must not query or download an earlier Actions artifact.
-- Both channels use the production applicationId and signing key. A preview
-  therefore upgrades the stable app without clearing login, settings, or data;
-  the later stable run must receive a higher run number and versionCode so it
-  can upgrade the preview in place.
-- Before replacing a same-SHA preview, an existing matching tag must resolve to
+- The published `preview` build type uses the production applicationId and
+  release signing configuration, sets `debuggable=true`, and disables
+  minification without adding an applicationId suffix. The ordinary local
+  `debug` variant keeps its `.debug` suffix and is never published.
+- Stable tag builds use the same production applicationId and signing key,
+  remain `debuggable=false`, and keep release minification enabled. A Debug
+  prerelease therefore upgrades the stable app without clearing login,
+  settings, or data; the later stable run must receive a higher run number and
+  versionCode so it can upgrade the Debug prerelease in place.
+- Before replacing a same-SHA Debug prerelease, an existing matching tag must resolve to
   `GITHUB_SHA` and any existing Release must be a prerelease. A rerun keeps the
   same run number and asset names, so `gh release upload --clobber` may replace
-  those preview assets. Stable Release assets are immutable; a fix requires a
+  those Debug assets. Stable Release assets are immutable; a fix requires a
   new stable version and versionCode.
-- Delete old previews only after the new preview is published. Cleanup may
-  delete only prereleases whose tag starts with `preview-`, must exclude the
+- Delete old project previews only after the new Debug prerelease is
+  published. During the naming migration, cleanup may delete only prereleases
+  whose tag starts with legacy `preview-` or current `debug-`, must exclude the
   current tag, and must delete the matching tag with the Release. Stable and
   unrelated prereleases are outside the cleanup set.
 - The job requires `contents: write`; it does not require `actions: read`.
   Gradle caching remains owned by `setup-gradle@v4`, with main allowed to write
   and tag refs read-only. Do not layer another Gradle User Home cache action.
+- APK packaging and release-signing verification default to GitHub Actions CI.
+  A request to commit, finish work, push, or wait for CI does not authorize a
+  local `assemblePreview` or `assembleRelease`. Run either packaging task
+  locally only when the maintainer explicitly asks for a local APK build;
+  otherwise use focused unit/static checks before push and the CI job as the
+  build/signing gate.
 - Before publication, require exactly the APK and SHA-256 sidecar in `dist/`,
-  verify the checksum, applicationId, versionName, versionCode, and signer.
-- Local build, unit tests, and lint are the developer quality gate. A successful
-  GitHub job is sufficient automation evidence; remote asset download and
-  repeated APK validation are reserved for failure diagnosis. Installation and
-  functional acceptance are manual maintainer gates.
+  verify the checksum, applicationId, versionName, versionCode, signer, and
+  merged manifest `debuggable` value for the selected channel.
+- Local unit tests, static checks, and lint are the developer quality gate. APK
+  packaging and signing verification run in GitHub Actions unless explicitly
+  authorized for a local build. A successful GitHub job is sufficient
+  automation evidence; remote asset download and repeated APK validation are
+  reserved for failure diagnosis. Installation and functional acceptance are
+  manual maintainer gates.
 
 ### 4. Validation & Error Matrix
 
@@ -304,36 +323,40 @@ package migration is approved.
 | --- | --- |
 | Any signing environment value is absent or blank | `assembleRelease` fails; no unsigned fallback |
 | Only one of `CI_VERSION_NAME` / `CI_VERSION_CODE` is present | Gradle configuration fails |
-| CI versionName is not stable or `X.Y.Z-preview.N` | Gradle configuration fails |
+| CI versionName is not stable or `X.Y.Z-debug.N` | Gradle configuration fails |
 | CI versionCode is nonnumeric, outside Android's range, or not greater than the installed build | Fail before publication; correct the derivation/offset |
 | Main commit has no reachable stable `X.Y.Z` tag | Fail during preview identity derivation |
 | Trigger tag is not exactly `X.Y.Z` | Fail before build/publication |
 | Stable `RELEASE_TAG` differs from effective Gradle versionName | Tag verification fails before publication |
-| Existing preview tag resolves to another SHA | Fail without replacing the tag or Release |
-| Existing `preview-<sha12>` Release is not a prerelease | Fail without replacing its assets |
+| Existing Debug tag resolves to another SHA | Fail without replacing the tag or Release |
+| Existing `debug-<sha12>` Release is not a prerelease | Fail without replacing its assets |
 | Release/tag lookup API fails | Fail visibly; do not treat the error as absence |
 | APK or sidecar is missing, checksum fails, or `dist/` has extra files | Reject before `gh release create` |
 | APK applicationId, versionName, versionCode, or signer differs | Block publication |
-| New preview build/publication fails | Keep the prior preview Release/tag available |
-| Cleanup sees a stable, non-prerelease, or non-`preview-*` Release | Leave it untouched |
+| Debug build/publication fails | Keep the prior Debug/legacy preview Release and tag available |
+| Cleanup sees a stable, non-prerelease, or unrelated-prefix Release | Leave it untouched |
+| Preview APK is not debuggable or uses `.debug` applicationId/debug key | Reject before publication |
+| Stable APK is debuggable or release minification is disabled | Reject the stable build |
 | A `.trellis`/Markdown-only main push occurs | Skip the workflow; mixed pushes remain eligible |
 | Keystore/private-key material is tracked or packaged | Remove it from the release path and rotate if exposed |
+| The task requests commit/push/CI but not a local APK build | Do not run local `assemblePreview` or `assembleRelease`; push and inspect CI |
 
 ### 5. Good/Base/Bad Cases
 
-- **Good**: Run 8 on `main` resolves reachable `4.5.0`, builds
-  `4.5.0-preview.8` with versionCode `4051`, publishes its commit-specific
-  prerelease, then removes only older project preview Releases/tags. A later
-  `4.6.0` tag run builds and publishes stable `4.6.0` directly with a higher
-  versionCode.
-- **Base**: Rerunning the same preview run validates its existing tag and
+- **Good**: Run 9 on `main` resolves reachable `4.5.0`, builds a signed,
+  production-ID, debuggable `4.5.0-debug.9` preview variant with versionCode
+  `4052`, publishes `debug-<sha12>` as a prerelease, then removes only older
+  `preview-*`/`debug-*` prereleases and tags. A later `4.6.0` tag run builds a
+  non-debuggable, minified stable `4.6.0` directly with a higher versionCode.
+- **Base**: Rerunning the same Debug run validates its existing tag and
   prerelease, retains the same version values, and replaces the same-named APK
-  and checksum. No additional preview Release is created.
-- **Bad**: Using a fixed mutable preview tag without SHA validation, deriving a
-  preview from an unreachable/future stable tag, rebuilding with an arbitrary
-  manual ref, deleting the old preview before the new one exists, reusing a
-  prior main artifact for stable publication, or downloading remote assets for
-  routine revalidation.
+  and checksum. No additional Debug Release is created.
+- **Bad**: Publishing the ordinary `.debug` variant, signing the preview with a
+  debug key, using a fixed mutable tag without SHA validation, deriving a
+  Debug version from an unreachable/future stable tag, deleting the old
+  prerelease before the new one exists, or reusing a prior main artifact for
+  stable publication. Treating permission to push and wait for CI as implicit
+  permission to run a local release package is also out of scope.
 
 ### 6. Tests Required
 
@@ -341,26 +364,28 @@ package migration is approved.
   `git diff --check`.
 - Exercise identity derivation for a main commit with a reachable stable tag,
   an exact stable tag, an invalid tag, and a main commit without a stable base.
-- Assert local Gradle defaults, valid preview/stable CI overrides, a partial
+- Assert local Gradle defaults, valid Debug/stable CI overrides, a partial
   override pair, malformed versionName, out-of-range versionCode, matching
-  stable `RELEASE_TAG`, and mismatched/invalid tags.
+  stable `RELEASE_TAG`, mismatched/invalid tags, and rejection of the legacy
+  `X.Y.Z-preview.N` naming form.
 - Assert `4043 + run_number` gives a versionCode greater than the published
   build, a stable run orders after its preceding preview, and a later preview
   derives its versionName base from the newly reachable stable tag.
-- Assert missing signing values fail release packaging. With signing values,
-  run `apksigner verify --print-certs` and inspect APK applicationId,
+- Assert missing signing values fail release packaging. In CI with signing
+  values, run `apksigner verify --print-certs` and inspect APK applicationId,
   versionName, versionCode, `debuggable`, app label, static shortcuts, and
   `assets/easygo.json` as applicable to the task.
-- Exercise preview publication selection with no prior tag/Release, a matching
+- Exercise Debug publication selection with no prior tag/Release, a matching
   same-SHA prerelease, a tag pointing to another SHA, a non-prerelease Release,
   and a failed API call. Assert reruns replace only current preview assets.
-- Exercise cleanup selection against current/older previews, a stable Release,
-  an unrelated prerelease, and a partial deletion failure. Cleanup starts only
-  after successful publication.
-- Run the focused local Android build, unit-test, and lint gate once. After
-  push, use the GitHub job result as automation evidence and leave installation
-  and functional acceptance to the maintainer; do not routinely download the
-  published APK.
+- Exercise cleanup selection against the current Debug tag, older `debug-*`,
+  legacy `preview-*`, a stable Release, an unrelated prerelease, and a partial
+  deletion failure. Cleanup starts only after successful publication.
+- Run focused local unit/static checks and lint before push. Do not run local
+  APK packaging unless the maintainer explicitly requests it. After push, use
+  the GitHub job result as the APK build/signing evidence and leave
+  installation and functional acceptance to the maintainer; do not routinely
+  download the published APK unless installation or diagnosis is in scope.
 
 ### 7. Wrong vs Correct
 
@@ -384,7 +409,7 @@ permissions:
 jobs:
   build-and-publish:
     steps:
-      - run: ./gradlew :nga_phone_base_3.0:assembleRelease --no-daemon
+      - run: ./gradlew :nga_phone_base_3.0:${{ steps.release.outputs.gradle_task }} --no-daemon
       - run: |
           (cd dist && sha256sum -c ./*.sha256)
           gh release create "$RELEASE_TAG" dist/* --verify-tag
@@ -393,14 +418,14 @@ jobs:
 #### Wrong
 
 ```bash
-gh release delete "$OLD_PREVIEW" --cleanup-tag --yes
-gh release create "$NEW_PREVIEW" dist/* --prerelease
+gh release delete "$OLD_DEBUG" --cleanup-tag --yes
+gh release create "$NEW_DEBUG" dist/* --prerelease
 ```
 
 #### Correct
 
 ```bash
-gh release create "$NEW_PREVIEW" dist/* --target "$GITHUB_SHA" --prerelease
+gh release create "$NEW_DEBUG" dist/* --target "$GITHUB_SHA" --prerelease
 # Only after creation succeeds:
-gh release delete "$OLD_PREVIEW" --cleanup-tag --yes
+gh release delete "$OLD_DEBUG" --cleanup-tag --yes
 ```
