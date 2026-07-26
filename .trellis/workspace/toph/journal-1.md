@@ -70,3 +70,34 @@ Tag releases now reuse the exact successful same-SHA main APK, documentation-onl
 ### Status
 
 [OK] **Completed**
+
+
+## Session 4: Publish NGA Just Works 4.5.0
+
+**Date**: 2026-07-26
+**Task**: Publish NGA Just Works 4.5.0
+**Branch**: `main`
+
+### Summary
+
+Bumped the Android release metadata to 4.5.0, published the signed tag release, and verified the public assets.
+
+### Main Changes
+
+- Set versionName 4.5.0 and versionCode 4050 across Gradle, CI, and README.
+- Published annotated tag 4.5.0 from e9a9018f and confirmed the GitHub Release is Latest.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e9a9018f` | (see git log) |
+
+### Testing
+
+- [OK] Passed assembleDebug, testDebugUnitTest, lintDebug, YAML parsing, and missing-signing failure checks.
+- [OK] Verified both Actions and public Release APKs by SHA-256, package identity, version metadata, and APK v2 signature.
+
+### Status
+
+[OK] **Completed**
