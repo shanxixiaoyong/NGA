@@ -63,24 +63,26 @@ fun OptionActionMenu(optionActions: List<OptionMenuData>? = null) {
             }) {
                 Icon(
                     painter = painterResource(it.icon!!),
-                    contentDescription = "",
+                    contentDescription = it.title,
                     tint = Color.White
                 )
             }
 
         }
-        var expanded by remember { mutableStateOf(false) }
-        IconButton(onClick = { expanded = !expanded }) {
-            Icon(imageVector = Icons.Default.MoreVert, contentDescription = "", tint = Color.White)
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                hideItems.forEach(action = {
-                    DropdownMenuItem(onClick = {
-                        expanded = false
-                        it.action()
-                    }) {
-                        Text(text = it.title!!)
-                    }
-                })
+        if (hideItems.isNotEmpty()) {
+            var expanded by remember { mutableStateOf(false) }
+            IconButton(onClick = { expanded = !expanded }) {
+                Icon(imageVector = Icons.Default.MoreVert, contentDescription = "更多选项", tint = Color.White)
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    hideItems.forEach(action = {
+                        DropdownMenuItem(onClick = {
+                            expanded = false
+                            it.action()
+                        }) {
+                            Text(text = it.title!!)
+                        }
+                    })
+                }
             }
         }
 

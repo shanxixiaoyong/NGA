@@ -6,6 +6,10 @@
             android:name="com.justwent.androidnga.bu.login.LoginActivity"
             android:exported="false"
             android:label="登录" />
+        <activity
+            android:name="com.justwent.androidnga.bu.login.WebLoginActivity"
+            android:exported="false"
+            android:label="网页登录" />
     </application>
 
 </manifest>

@@ -86,8 +86,7 @@ public class User implements JavaBean {
     @Override
     public String toString() {
         return "User{" +
-                "mCid='" + mCid + '\'' +
-                ", mUserId='" + mUserId + '\'' +
+                "mUserId='" + mUserId + '\'' +
                 ", mNickName='" + mNickName + '\'' +
                 ", mAvatarUrl='" + mAvatarUrl + '\'' +
                 '}';

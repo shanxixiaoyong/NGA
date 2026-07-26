@@ -101,6 +101,23 @@ object UserManager {
         addUser(user)
     }
 
+    fun addUserAndSelect(uid: String, cid: String, name: String) {
+        val user = User(uid, name, cid)
+        val users = userListLiveData.value!!.toMutableList()
+        var index = users.indexOfFirst { it.userId == uid }
+        if (index < 0) {
+            users.add(user)
+            index = users.lastIndex
+        } else {
+            users[index] = user
+        }
+        userListLiveData.value = users
+        activeIndexLiveData.value = index
+        activeUser = user
+        PreferenceUtils.putData(PreferenceKey.USER_ACTIVE_INDEX, index)
+        saveUsers()
+    }
+
     fun removeUser(index: Int) {
         val userList = userListLiveData.value!!.toMutableList()
         val user = userList.removeAt(index)
