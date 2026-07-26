@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 4
+- **Total Sessions**: 5
 - **Last Active**: 2026-07-26
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~103 | Active |
+| `journal-1.md` | ~125 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 5 | 2026-07-26 | Native NGA account login | `ceb5e239`, `6ed1c7e9` | `main` |
 | 4 | 2026-07-26 | Publish NGA Just Works 4.5.0 | `e9a9018f` | `main` |
 | 3 | 2026-07-26 | Optimize Android CI release | `2d2652fd`, `4c1d8fd7` | `main` |
 | 2 | 2026-07-26 | 发布 NGA Just Works 4.3.0 | `c37d1111`, `fe9b6cdd` | `main` |

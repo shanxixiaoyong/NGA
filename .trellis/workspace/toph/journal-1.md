@@ -101,3 +101,25 @@ Bumped the Android release metadata to 4.5.0, published the signed tag release, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 5: Native NGA account login
+
+**Date**: 2026-07-26
+**Task**: Native NGA account login
+**Branch**: `main`
+
+### Summary
+
+Added native account/password and CAPTCHA login, retained a controlled Web fallback with the shared browser icon, verified security and tests, and kept release APK growth to 49,196 bytes.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ceb5e239` | (see git log) |
+| `6ed1c7e9` | (see git log) |
+
+### Status
+
+[OK] **Completed**
