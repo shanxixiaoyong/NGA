@@ -211,3 +211,93 @@ adb -s REDACTED_SERIAL_MEIZU install --no-streaming -r -t test.apk
 # Preserve INSTALL_FAILED_USER_RESTRICTED, ask the user to enable USB install,
 # then rerun the ordered connected test with the same explicit serial.
 ```
+
+## Scenario: Signed GitHub release APK
+
+### 1. Scope / Trigger
+
+Apply this contract whenever a task changes the application identity, version,
+release signing configuration, or GitHub APK publishing workflow.
+
+### 2. Signatures
+
+```text
+ANDROID_SIGNING_STORE_FILE=<absolute path outside the repository>
+ANDROID_SIGNING_STORE_PASSWORD=<secret>
+ANDROID_SIGNING_KEY_ALIAS=<secret>
+ANDROID_SIGNING_KEY_PASSWORD=<secret>
+RELEASE_TAG=<versionName without a v prefix>
+```
+
+The current release identity is `com.github.tophtab.ngajustworks`; the source
+and resource namespace remains `gov.anzong.androidnga` until a separately
+scoped package migration is approved.
+
+### 3. Contracts
+
+- Release packaging must read all four signing values from the environment.
+  Missing or blank values must fail before an unsigned release APK is emitted.
+- Signing files and credentials must stay outside the repository and outside
+  uploaded artifacts. GitHub stores the equivalent values as repository
+  secrets and restores the keystore only in the runner temporary directory.
+- A `main` push may upload a signed Actions artifact. A tag matching the Gradle
+  `versionName` creates the GitHub Release; a mismatched tag must fail.
+- The APK must be non-debuggable and must expose the expected applicationId,
+  versionName, versionCode, app label, signer certificate, and embedded runtime
+  client identity before publication.
+- Publish the APK with a SHA-256 sidecar. Do not replace an existing version's
+  release asset; fixes require a new version and versionCode.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required result |
+| --- | --- |
+| Any signing environment value is absent or blank | `assembleRelease` fails; no unsigned fallback |
+| `RELEASE_TAG` differs from Gradle `versionName` | Tag verification fails before publication |
+| APK applicationId or embedded EasyGo client differs | Block publication and fix every runtime identity reference |
+| APK is debuggable or signer verification fails | Block publication |
+| Keystore/private-key material is tracked or packaged | Remove it from the release path and rotate if exposed |
+| No ADB device is connected | Record the missing device gate; do not claim installation passed |
+
+### 5. Good/Base/Bad Cases
+
+- **Good**: CI builds one signed release APK, verifies its identity and signer,
+  emits a checksum, and publishes it only for a matching version tag.
+- **Base**: A local signed build and static APK checks pass without a connected
+  device; installation remains explicitly unverified.
+- **Bad**: Falling back to debug signing, uploading an unsigned APK, embedding
+  credentials in Gradle, or renaming the applicationId without updating
+  shortcuts and runtime client metadata.
+
+### 6. Tests Required
+
+- Assert that release packaging fails with the signing environment removed.
+- Build with the external keystore and run `apksigner verify --print-certs`.
+- Inspect applicationId, versionName, versionCode, `debuggable`, app label,
+  static shortcut targets, and `assets/easygo.json` in the built APK.
+- Validate the workflow YAML, run `git diff --check`, scan tracked files and APK
+  entries for key material, and test both matching and mismatched tags.
+- After pushing `main` and the release tag, download each remote artifact and
+  repeat checksum, signer, identity, and version verification.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```groovy
+release {
+    storeFile file('release.p12')
+    storePassword 'committed-password'
+}
+```
+
+#### Correct
+
+```groovy
+release {
+    storeFile file(System.getenv('ANDROID_SIGNING_STORE_FILE'))
+    storePassword System.getenv('ANDROID_SIGNING_STORE_PASSWORD')
+    keyAlias System.getenv('ANDROID_SIGNING_KEY_ALIAS')
+    keyPassword System.getenv('ANDROID_SIGNING_KEY_PASSWORD')
+}
+```
