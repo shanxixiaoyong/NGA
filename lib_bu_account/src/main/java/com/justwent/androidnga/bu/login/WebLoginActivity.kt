@@ -14,14 +14,13 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.viewinterop.AndroidView
-import com.justwen.androidnga.base.network.login.NgaLoginSessionContract
 import com.justwen.androidnga.ui.compose.BaseComposeActivity
 import java.io.ByteArrayInputStream
-import java.net.URLDecoder
 
 class WebLoginActivity : BaseComposeActivity() {
     private var webView: WebView? = null
     private var completed = false
+    private var currentAllowedUrl: String = WebLoginPolicy.LOGIN_URL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +63,7 @@ class WebLoginActivity : BaseComposeActivity() {
 
                         override fun onPageFinished(view: WebView?, url: String?) {
                             super.onPageFinished(view, url)
-                            tryComplete(url)
+                            if (WebLoginPolicy.isAllowed(url)) currentAllowedUrl = requireNotNull(url)
                         }
                     }
                     webChromeClient = object : WebChromeClient() {
@@ -74,9 +73,23 @@ class WebLoginActivity : BaseComposeActivity() {
                             message: String?,
                             result: JsResult?,
                         ): Boolean {
-                            tryComplete(url)
-                            view?.postDelayed({ tryComplete(url) }, 750)
+                            if (!WebLoginPolicy.shouldCheckCookies(
+                                    WebLoginPolicy.CompletionTrigger.LOGIN_CONFIRM,
+                                    url,
+                                    message,
+                                )
+                            ) {
+                                return super.onJsConfirm(view, url, message, result)
+                            }
+
                             result?.cancel()
+                            if (completeFromCookies(url)) {
+                                finish()
+                            } else {
+                                view?.postDelayed({
+                                    if (completeFromCookies(url)) finish()
+                                }, COOKIE_PROPAGATION_DELAY_MS)
+                            }
                             return true
                         }
                     }
@@ -84,29 +97,36 @@ class WebLoginActivity : BaseComposeActivity() {
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
-                    loadUrl(LOGIN_URL)
+                    loadUrl(WebLoginPolicy.LOGIN_URL)
                 }
             },
         )
     }
 
-    private fun tryComplete(url: String?) {
-        if (completed || !WebLoginPolicy.isAllowed(url)) return
-        val cookies = CookieManager.getInstance().getCookie(url) ?: return
-        val values = parseCookies(cookies)
-        val uid = values[TAG_UID].orEmpty()
-        val cid = values[TAG_CID].orEmpty()
-        if (!NgaLoginSessionContract.isValid(uid, cid)) return
+    private fun completeFromCookies(url: String?): Boolean {
+        if (completed || !WebLoginPolicy.isAllowed(url)) return false
+        val cookies = CookieManager.getInstance().getCookie(url) ?: return false
+        val session = WebLoginPolicy.extractLoginSession(cookies) ?: return false
         completed = true
-        val username = decodeUsername(values[TAG_USERNAME].orEmpty()).ifBlank { uid }
         setResult(
             RESULT_OK,
             Intent()
-                .putExtra(EXTRA_UID, uid)
-                .putExtra(EXTRA_CID, cid)
-                .putExtra(EXTRA_USERNAME, username),
+                .putExtra(EXTRA_UID, session.uid)
+                .putExtra(EXTRA_CID, session.cid)
+                .putExtra(EXTRA_USERNAME, session.username),
         )
-        finish()
+        return true
+    }
+
+    override fun finish() {
+        if (WebLoginPolicy.shouldCheckCookies(
+                WebLoginPolicy.CompletionTrigger.USER_EXIT,
+                currentAllowedUrl,
+            )
+        ) {
+            completeFromCookies(currentAllowedUrl)
+        }
+        super.finish()
     }
 
     override fun onDestroy() {
@@ -124,25 +144,6 @@ class WebLoginActivity : BaseComposeActivity() {
         const val EXTRA_CID = "login_cid"
         const val EXTRA_USERNAME = "login_username"
 
-        private const val LOGIN_URL = "https://bbs.nga.cn/nuke.php?__lib=login&__act=account&login"
-        private const val TAG_UID = "ngaPassportUid"
-        private const val TAG_CID = "ngaPassportCid"
-        private const val TAG_USERNAME = "ngaPassportUrlencodedUname"
-
-        internal fun parseCookies(cookies: String): Map<String, String> = cookies
-            .split(';')
-            .mapNotNull { item ->
-                val separator = item.indexOf('=')
-                if (separator <= 0) null else item.substring(0, separator).trim() to item.substring(separator + 1).trim()
-            }
-            .toMap()
-
-        internal fun decodeUsername(value: String): String = try {
-            URLDecoder.decode(URLDecoder.decode(value, "GB18030"), "GB18030")
-        } catch (_: IllegalArgumentException) {
-            ""
-        } catch (_: Exception) {
-            ""
-        }
+        private const val COOKIE_PROPAGATION_DELAY_MS = 750L
     }
 }
