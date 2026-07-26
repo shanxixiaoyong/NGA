@@ -28,6 +28,21 @@
 [GitHub Releases](https://github.com/tophtab/nga-just-works/releases)
 提供。release 签名材料不会提交到仓库。
 
+## 发布流程
+
+每次包含代码变更的 `main` 推送都会构建并发布一个 GitHub prerelease，
+使用 `preview-<12 位提交哈希>` 标签。预览版的版本号基于该提交可访问的
+最新 `X.Y.Z` 正式标签，例如 `4.5.0-preview.8`。新预览版发布成功后，
+工作流才会删除更早的 `preview-*` prerelease 及其标签，仅保留最新版本。
+
+推送严格匹配 `X.Y.Z` 的标签会在同一次工作流中从该标签构建、签名并发布
+正式 GitHub Release，不依赖之前的 `main` 构建产物。仅修改 Markdown 或
+`.trellis/**` 的 `main` 推送不会触发发布。
+
+预览版与正式版使用相同的 applicationId 和签名，因此可以直接升级正式版并
+保留登录状态、设置和应用数据；这也意味着预览版缺陷可能影响现有数据。本地
+构建、单元测试和 lint 是代码质量门禁，安装及功能验收由维护者手动完成。
+
 ## 未来计划
 
 计划在后续版本中加入 `nga_harmony` 版本的 AI 功能。当前 `4.5.0` 不包含这些 AI 功能。

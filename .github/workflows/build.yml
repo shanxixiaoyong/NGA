@@ -1,4 +1,4 @@
-name: Build Artifacts
+name: Build and Publish Android
 
 on:
   push:
@@ -7,20 +7,72 @@ on:
     paths-ignore:
       - ".trellis/**"
       - "**/*.md"
-  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
-  build-apk:
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Derive release identity
+        id: release
+        run: |
+          set -euo pipefail
+
+          version_code=$((4043 + GITHUB_RUN_NUMBER))
+          if ((version_code > 2100000000)); then
+            echo "Derived versionCode exceeds Android's supported range: $version_code" >&2
+            exit 1
+          fi
+
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == refs/tags/* ]]; then
+            if [[ ! "$GITHUB_REF_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Stable release tags must match X.Y.Z exactly: $GITHUB_REF_NAME" >&2
+              exit 1
+            fi
+            version_name="$GITHUB_REF_NAME"
+            release_tag="$GITHUB_REF_NAME"
+            release_title="NGA Just Works $GITHUB_REF_NAME"
+            prerelease=false
+          else
+            stable_base=""
+            while IFS= read -r candidate; do
+              if [[ "$candidate" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                stable_base="$candidate"
+                break
+              fi
+            done < <(git tag --merged "$GITHUB_SHA" --sort=-version:refname)
+            if [[ -z "$stable_base" ]]; then
+              echo "No stable X.Y.Z tag is reachable from $GITHUB_SHA" >&2
+              exit 1
+            fi
+
+            short_sha="${GITHUB_SHA:0:12}"
+            version_name="${stable_base}-preview.${GITHUB_RUN_NUMBER}"
+            release_tag="preview-${short_sha}"
+            release_title="NGA Just Works ${version_name}"
+            prerelease=true
+          fi
+
+          {
+            echo "CI_VERSION_NAME=$version_name"
+            echo "CI_VERSION_CODE=$version_code"
+          } >> "$GITHUB_ENV"
+          {
+            echo "tag=$release_tag"
+            echo "title=$release_title"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -61,7 +113,7 @@ jobs:
         run: |
           set -euo pipefail
           app_version="$(./gradlew -q printAppVersion --no-daemon --console=plain | tail -n 1)"
-          test "$app_version" = "4.5.0"
+          test "$app_version" = "$CI_VERSION_NAME"
           source_apk="$(find nga_phone_base_3.0/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' ! -name '*unsigned*' -print -quit)"
           test -n "$source_apk"
           mkdir -p dist
@@ -69,70 +121,72 @@ jobs:
           cp "$source_apk" "$release_apk"
           test "$(apkanalyzer manifest application-id "$release_apk")" = "com.github.tophtab.ngajustworks"
           test "$(apkanalyzer manifest version-name "$release_apk")" = "$app_version"
-          test "$(apkanalyzer manifest version-code "$release_apk")" = "4050"
+          test "$(apkanalyzer manifest version-code "$release_apk")" = "$CI_VERSION_CODE"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$release_apk"
           (cd dist && sha256sum "$(basename "$release_apk")" > "$(basename "$release_apk").sha256")
-
-      - name: Upload signed release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: NGA-Just-Works-${{ github.run_id }}
-          path: dist/*
-          if-no-files-found: error
-
-  publish-release:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: write
-    steps:
-      - name: Find successful main build
-        id: main-build
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          main_run_id="$(
-            gh api --method GET \
-              "repos/${GITHUB_REPOSITORY}/actions/workflows/build.yml/runs" \
-              -f branch=main \
-              -f event=push \
-              -f head_sha="$GITHUB_SHA" \
-              -f status=success \
-              -F per_page=100 \
-              --jq '.workflow_runs | sort_by(.run_number) | last | .id // empty'
-          )"
-          test -n "$main_run_id"
-          printf 'run_id=%s\n' "$main_run_id" >> "$GITHUB_OUTPUT"
-          printf 'artifact_name=NGA-Just-Works-%s\n' "$main_run_id" >> "$GITHUB_OUTPUT"
-
-      - name: Download signed release APK
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ steps.main-build.outputs.artifact_name }}
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ steps.main-build.outputs.run_id }}
-          path: dist
-
-      - name: Verify release files
-        run: |
-          set -euo pipefail
-          release_apk="dist/NGA-Just-Works-${GITHUB_REF_NAME}.apk"
-          checksum_file="${release_apk}.sha256"
-          test -f "$release_apk"
-          test -f "$checksum_file"
-          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
-          (cd dist && sha256sum -c "$(basename "$checksum_file")")
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release create "$GITHUB_REF_NAME" dist/* \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "NGA Just Works $GITHUB_REF_NAME" \
-            --generate-notes \
-            --verify-tag
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
+          (cd dist && sha256sum -c ./*.sha256)
+          if [[ "${{ steps.release.outputs.prerelease }}" == "true" ]]; then
+            release_tag="${{ steps.release.outputs.tag }}"
+            existing_tag_sha="$(
+              gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/${release_tag}" \
+                --jq ".[] | select(.ref == \"refs/tags/${release_tag}\") | .object.sha"
+            )"
+            if [[ -n "$existing_tag_sha" ]]; then
+              test "$existing_tag_sha" = "$GITHUB_SHA"
+            fi
+            release_id="$(
+              gh api --paginate "repos/${GITHUB_REPOSITORY}/releases" \
+                --jq ".[] | select(.tag_name == \"${release_tag}\") | .id"
+            )"
+            if [[ -n "$release_id" ]]; then
+              test "$(gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" --jq '.prerelease')" = "true"
+              gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/${release_id}" \
+                -f name="${{ steps.release.outputs.title }}" \
+                -f target_commitish="$GITHUB_SHA" \
+                -F prerelease=true >/dev/null
+              gh release upload "$release_tag" dist/* \
+                --repo "$GITHUB_REPOSITORY" \
+                --clobber
+            else
+              gh release create "$release_tag" dist/* \
+                --repo "$GITHUB_REPOSITORY" \
+                --target "$GITHUB_SHA" \
+                --title "${{ steps.release.outputs.title }}" \
+                --generate-notes \
+                --prerelease
+            fi
+          else
+            RELEASE_TAG="${{ steps.release.outputs.tag }}" ./gradlew -q verifyReleaseTag --no-daemon
+            gh release create "${{ steps.release.outputs.tag }}" dist/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "${{ steps.release.outputs.title }}" \
+              --generate-notes \
+              --verify-tag
+          fi
+
+      - name: Remove older previews
+        if: steps.release.outputs.prerelease == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_PREVIEW_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          old_tags="$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/releases" \
+              --jq '.[] | select(.prerelease == true and (.tag_name | startswith("preview-"))) | .tag_name'
+          )"
+          while IFS= read -r old_tag; do
+            if [[ -n "$old_tag" && "$old_tag" != "$CURRENT_PREVIEW_TAG" ]]; then
+              gh release delete "$old_tag" \
+                --repo "$GITHUB_REPOSITORY" \
+                --cleanup-tag \
+                --yes
+            fi
+          done <<< "$old_tags"

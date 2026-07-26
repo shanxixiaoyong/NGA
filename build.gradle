@@ -43,6 +43,37 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
+def localAppVersionName = '4.5.0'
+def localAppVersionCode = 4050
+def ciVersionName = providers.environmentVariable('CI_VERSION_NAME').orNull
+def ciVersionCode = providers.environmentVariable('CI_VERSION_CODE').orNull
+
+if ((ciVersionName == null) != (ciVersionCode == null)) {
+    throw new GradleException('CI_VERSION_NAME and CI_VERSION_CODE must be set together')
+}
+
+def effectiveAppVersionName = localAppVersionName
+def effectiveAppVersionCode = localAppVersionCode
+
+if (ciVersionName != null) {
+    if (!(ciVersionName ==~ /[0-9]+\.[0-9]+\.[0-9]+(?:-preview\.[0-9]+)?/)) {
+        throw new GradleException("Invalid CI_VERSION_NAME: ${ciVersionName}")
+    }
+
+    long parsedVersionCode
+    try {
+        parsedVersionCode = Long.parseLong(ciVersionCode)
+    } catch (NumberFormatException ignored) {
+        throw new GradleException("Invalid CI_VERSION_CODE: ${ciVersionCode}")
+    }
+    if (parsedVersionCode < 1 || parsedVersionCode > 2100000000) {
+        throw new GradleException("CI_VERSION_CODE is outside Android's supported range: ${ciVersionCode}")
+    }
+
+    effectiveAppVersionName = ciVersionName
+    effectiveAppVersionCode = (int) parsedVersionCode
+}
+
 tasks.register('printAppVersion') {
     doLast {
         println project.appVersionName
@@ -55,8 +86,11 @@ tasks.register('verifyReleaseTag') {
         if (!releaseTag) {
             throw new GradleException('RELEASE_TAG is required')
         }
+        if (!(releaseTag ==~ /[0-9]+\.[0-9]+\.[0-9]+/)) {
+            throw new GradleException("Release tag must match X.Y.Z exactly: ${releaseTag}")
+        }
         if (releaseTag != project.appVersionName) {
-            throw new GradleException("Release tag ${releaseTag} does not match appVersionName ${project.appVersionName}")
+            throw new GradleException("Release tag ${releaseTag} does not match effective appVersionName ${project.appVersionName}")
         }
     }
 }
@@ -65,8 +99,8 @@ project.ext {
     minSdkVersion = 30
     targetSdkVersion = 35
     compileSdkVersion = 35
-    appVersionName = '4.5.0'
-    appVersionCode = 4050
+    appVersionName = effectiveAppVersionName
+    appVersionCode = effectiveAppVersionCode
 
     rxAndroid = '2.1.1'
 

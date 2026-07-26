@@ -217,7 +217,8 @@ adb -s REDACTED_SERIAL_MEIZU install --no-streaming -r -t test.apk
 ### 1. Scope / Trigger
 
 Apply this contract whenever a task changes the application identity, version,
-release signing configuration, or GitHub APK publishing workflow.
+release signing configuration, or GitHub APK publishing workflow. Eligible
+`main` pushes publish previews; exact `X.Y.Z` tag pushes publish stable releases.
 
 ### 2. Signatures
 
@@ -226,145 +227,180 @@ ANDROID_SIGNING_STORE_FILE=<absolute path outside the repository>
 ANDROID_SIGNING_STORE_PASSWORD=<secret>
 ANDROID_SIGNING_KEY_ALIAS=<secret>
 ANDROID_SIGNING_KEY_PASSWORD=<secret>
-RELEASE_TAG=<versionName without a v prefix>
-GITHUB_SHA=<tag commit SHA>
-GITHUB_REF_NAME=<version tag without refs/tags/>
-MAIN_ARTIFACT_NAME=NGA-Just-Works-<successful-main-run-id>
+CI_VERSION_NAME=<X.Y.Z or X.Y.Z-preview.RUN_NUMBER>
+CI_VERSION_CODE=<1..2100000000>
+RELEASE_TAG=<stable X.Y.Z tag, for Gradle verification>
+GITHUB_SHA=<triggering commit SHA>
+GITHUB_REF=<refs/heads/main or refs/tags/X.Y.Z>
+GITHUB_REF_NAME=<main or X.Y.Z>
+GITHUB_RUN_NUMBER=<long-lived build.yml workflow sequence>
 ```
 
-The source-run lookup contract is:
+The publication identities are:
 
 ```text
-GET /repos/${GITHUB_REPOSITORY}/actions/workflows/build.yml/runs
-  ?branch=main&event=push&status=success&head_sha=${GITHUB_SHA}
+preview tag       = preview-<first 12 characters of GITHUB_SHA>
+preview version   = <newest reachable stable X.Y.Z tag>-preview.<GITHUB_RUN_NUMBER>
+stable version    = <exact X.Y.Z trigger tag>
+versionCode       = 4043 + GITHUB_RUN_NUMBER
+APK               = NGA-Just-Works-<CI_VERSION_NAME>.apk
+checksum          = <APK filename>.sha256
 ```
 
-The current release identity is `com.github.tophtab.ngajustworks`; the source
-and resource namespace remains `gov.anzong.androidnga` until a separately
-scoped package migration is approved.
+The `4043` migration offset maps workflow run 8 to versionCode `4051`, one
+greater than the published `4.5.0` APK. The workflow path must remain the
+long-lived publication workflow. If its GitHub workflow identity is recreated
+and the run sequence resets, recalculate the offset from the highest published
+versionCode before publishing again.
+
+The release applicationId is `com.github.tophtab.ngajustworks`; the source and
+resource namespace remains `gov.anzong.androidnga` until a separately scoped
+package migration is approved.
 
 ### 3. Contracts
 
 - Release packaging must read all four signing values from the environment.
   Missing or blank values must fail before an unsigned release APK is emitted.
-- Signing files and credentials must stay outside the repository and outside
-  uploaded artifacts. GitHub stores the equivalent values as repository
-  secrets and restores the keystore only in the runner temporary directory.
-- A non-documentation-only `main` push uploads a signed Actions artifact named
-  with its run ID. Pushes containing only `.trellis/**` and Markdown files do
-  not build; mixed pushes with any other path still build.
-- A version tag must reuse the artifact from a successful `main` push of the
-  exact same commit. The tag job must constrain repository, workflow, branch,
-  event, conclusion, and `head_sha`; it must never rebuild, use a manual run,
-  or select a nearby commit.
-- The tag job requires `actions: read` and `contents: write`, but no signing
-  secrets. It must require `NGA-Just-Works-${GITHUB_REF_NAME}.apk` and its
-  SHA-256 sidecar, reject extra files, and verify the checksum before creating
-  the Release. A mismatched tag therefore fails on the expected filename.
-- Missing, failed, or expired same-SHA main artifacts are hard failures. Wait
-  for or rerun the main workflow, then rerun the tag workflow; do not fall back
-  to a second release build.
-- Gradle task output caching is enabled with `org.gradle.caching=true` and
-  persisted by `setup-gradle@v4`. The default branch may write cache entries;
-  non-main manual builds are read-only. Do not layer another Gradle User Home
-  cache action on top of `setup-gradle`.
-- The APK must be non-debuggable and must expose the expected applicationId,
-  versionName, versionCode, app label, signer certificate, and embedded runtime
-  client identity before publication.
-- Publish the APK with a SHA-256 sidecar. Do not replace an existing version's
-  release asset; fixes require a new version and versionCode.
+- Signing files and credentials stay outside the repository and release
+  assets. GitHub restores the keystore only in runner temporary storage.
+- The root Gradle build keeps local fallback values and accepts
+  `CI_VERSION_NAME` and `CI_VERSION_CODE` only as a complete, validated pair.
+- A non-documentation-only `main` push derives its base from the newest stable
+  `X.Y.Z` tag reachable from `GITHUB_SHA`, builds and signs one release APK,
+  verifies it, then publishes a `preview-<sha12>` GitHub prerelease.
+- Pushes containing only `.trellis/**` and Markdown files do not publish.
+  `workflow_dispatch` is disabled so arbitrary refs cannot manufacture a
+  preview or stable release.
+- A stable tag must match `X.Y.Z` exactly. The same workflow checks out that
+  tag, uses it as `CI_VERSION_NAME`, builds and signs once, verifies the APK,
+  and creates a normal GitHub Release directly from the current job's `dist/`.
+  It must not query or download an earlier Actions artifact.
+- Both channels use the production applicationId and signing key. A preview
+  therefore upgrades the stable app without clearing login, settings, or data;
+  the later stable run must receive a higher run number and versionCode so it
+  can upgrade the preview in place.
+- Before replacing a same-SHA preview, an existing matching tag must resolve to
+  `GITHUB_SHA` and any existing Release must be a prerelease. A rerun keeps the
+  same run number and asset names, so `gh release upload --clobber` may replace
+  those preview assets. Stable Release assets are immutable; a fix requires a
+  new stable version and versionCode.
+- Delete old previews only after the new preview is published. Cleanup may
+  delete only prereleases whose tag starts with `preview-`, must exclude the
+  current tag, and must delete the matching tag with the Release. Stable and
+  unrelated prereleases are outside the cleanup set.
+- The job requires `contents: write`; it does not require `actions: read`.
+  Gradle caching remains owned by `setup-gradle@v4`, with main allowed to write
+  and tag refs read-only. Do not layer another Gradle User Home cache action.
+- Before publication, require exactly the APK and SHA-256 sidecar in `dist/`,
+  verify the checksum, applicationId, versionName, versionCode, and signer.
+- Local build, unit tests, and lint are the developer quality gate. A successful
+  GitHub job is sufficient automation evidence; remote asset download and
+  repeated APK validation are reserved for failure diagnosis. Installation and
+  functional acceptance are manual maintainer gates.
 
 ### 4. Validation & Error Matrix
 
 | Condition | Required result |
 | --- | --- |
 | Any signing environment value is absent or blank | `assembleRelease` fails; no unsigned fallback |
-| `RELEASE_TAG` differs from Gradle `versionName` | Tag verification fails before publication |
-| No successful `main` push run has the tag's exact `GITHUB_SHA` | Fail before artifact download and publication |
-| The exact main artifact is absent or expired | Cross-run download fails; rerun main, never rebuild in the tag job |
-| APK filename differs from `GITHUB_REF_NAME` | Reject the artifact before publication |
-| APK sidecar is missing, checksum fails, or extra files exist | Reject the artifact before `gh release create` |
-| A `.trellis`/Markdown-only main push occurs | Skip Build Artifacts; tag pushes remain eligible because GitHub does not apply path filters to tags |
-| APK applicationId or embedded EasyGo client differs | Block publication and fix every runtime identity reference |
-| APK is debuggable or signer verification fails | Block publication |
+| Only one of `CI_VERSION_NAME` / `CI_VERSION_CODE` is present | Gradle configuration fails |
+| CI versionName is not stable or `X.Y.Z-preview.N` | Gradle configuration fails |
+| CI versionCode is nonnumeric, outside Android's range, or not greater than the installed build | Fail before publication; correct the derivation/offset |
+| Main commit has no reachable stable `X.Y.Z` tag | Fail during preview identity derivation |
+| Trigger tag is not exactly `X.Y.Z` | Fail before build/publication |
+| Stable `RELEASE_TAG` differs from effective Gradle versionName | Tag verification fails before publication |
+| Existing preview tag resolves to another SHA | Fail without replacing the tag or Release |
+| Existing `preview-<sha12>` Release is not a prerelease | Fail without replacing its assets |
+| Release/tag lookup API fails | Fail visibly; do not treat the error as absence |
+| APK or sidecar is missing, checksum fails, or `dist/` has extra files | Reject before `gh release create` |
+| APK applicationId, versionName, versionCode, or signer differs | Block publication |
+| New preview build/publication fails | Keep the prior preview Release/tag available |
+| Cleanup sees a stable, non-prerelease, or non-`preview-*` Release | Leave it untouched |
+| A `.trellis`/Markdown-only main push occurs | Skip the workflow; mixed pushes remain eligible |
 | Keystore/private-key material is tracked or packaged | Remove it from the release path and rotate if exposed |
-| No ADB device is connected | Record the missing device gate; do not claim installation passed |
 
 ### 5. Good/Base/Bad Cases
 
-- **Good**: `main` builds one signed release APK, verifies its identity and
-  signer, and emits a checksum; the matching tag downloads that exact artifact
-  by main run ID and publishes it without Gradle or signing secrets.
-- **Base**: The tag arrives before the same-SHA main run succeeds and fails
-  closed. After main succeeds, rerunning the tag workflow publishes the exact
-  validated artifact.
-- **Bad**: Rebuilding on a tag, selecting the latest artifact without exact
-  SHA/event/branch filters, falling back to debug signing, layering competing
-  Gradle caches, or publishing before the checksum passes.
+- **Good**: Run 8 on `main` resolves reachable `4.5.0`, builds
+  `4.5.0-preview.8` with versionCode `4051`, publishes its commit-specific
+  prerelease, then removes only older project preview Releases/tags. A later
+  `4.6.0` tag run builds and publishes stable `4.6.0` directly with a higher
+  versionCode.
+- **Base**: Rerunning the same preview run validates its existing tag and
+  prerelease, retains the same version values, and replaces the same-named APK
+  and checksum. No additional preview Release is created.
+- **Bad**: Using a fixed mutable preview tag without SHA validation, deriving a
+  preview from an unreachable/future stable tag, rebuilding with an arbitrary
+  manual ref, deleting the old preview before the new one exists, reusing a
+  prior main artifact for stable publication, or downloading remote assets for
+  routine revalidation.
 
 ### 6. Tests Required
 
-- Assert that release packaging fails with the signing environment removed.
-- Build with the external keystore and run `apksigner verify --print-certs`.
-- Inspect applicationId, versionName, versionCode, `debuggable`, app label,
-  static shortcut targets, and `assets/easygo.json` in the built APK.
-- Validate the workflow YAML, run `git diff --check`, scan tracked files and APK
-  entries for key material, and test both matching and mismatched tags.
-- Assert the source-run query returns only a successful `main` push for the
-  exact tag SHA and returns empty for an unknown SHA. Verify that the tag job
-  has `actions: read`/`contents: write` but no SDK, Gradle, keystore, or signing
-  secret steps.
-- Download a known main artifact through its run ID, require exactly the APK
-  and `.sha256` sidecar, and run `sha256sum -c`. Exercise missing-run,
-  mismatched-filename, missing-sidecar, extra-file, and bad-checksum failures.
-- Run Gradle with build cache enabled and validate the workflow with
-  `actionlint`. Confirm `main` may write setup-gradle cache entries while other
-  manually dispatched refs are read-only.
-- After pushing `main` and the release tag, download each remote artifact and
-  repeat checksum, signer, identity, and version verification.
+- Parse the workflow YAML and all modified Bash blocks, then run
+  `git diff --check`.
+- Exercise identity derivation for a main commit with a reachable stable tag,
+  an exact stable tag, an invalid tag, and a main commit without a stable base.
+- Assert local Gradle defaults, valid preview/stable CI overrides, a partial
+  override pair, malformed versionName, out-of-range versionCode, matching
+  stable `RELEASE_TAG`, and mismatched/invalid tags.
+- Assert `4043 + run_number` gives a versionCode greater than the published
+  build, a stable run orders after its preceding preview, and a later preview
+  derives its versionName base from the newly reachable stable tag.
+- Assert missing signing values fail release packaging. With signing values,
+  run `apksigner verify --print-certs` and inspect APK applicationId,
+  versionName, versionCode, `debuggable`, app label, static shortcuts, and
+  `assets/easygo.json` as applicable to the task.
+- Exercise preview publication selection with no prior tag/Release, a matching
+  same-SHA prerelease, a tag pointing to another SHA, a non-prerelease Release,
+  and a failed API call. Assert reruns replace only current preview assets.
+- Exercise cleanup selection against current/older previews, a stable Release,
+  an unrelated prerelease, and a partial deletion failure. Cleanup starts only
+  after successful publication.
+- Run the focused local Android build, unit-test, and lint gate once. After
+  push, use the GitHub job result as automation evidence and leave installation
+  and functional acceptance to the maintainer; do not routinely download the
+  published APK.
 
 ### 7. Wrong vs Correct
 
 #### Wrong
 
-```groovy
-release {
-    storeFile file('release.p12')
-    storePassword 'committed-password'
-}
+```yaml
+publish-release:
+  steps:
+    - uses: actions/download-artifact@v4
+      with:
+        run-id: ${{ steps.main-build.outputs.run_id }}
+    - run: gh release create "$GITHUB_REF_NAME" dist/*
 ```
 
 #### Correct
 
-```groovy
-release {
-    storeFile file(System.getenv('ANDROID_SIGNING_STORE_FILE'))
-    storePassword System.getenv('ANDROID_SIGNING_STORE_PASSWORD')
-    keyAlias System.getenv('ANDROID_SIGNING_KEY_ALIAS')
-    keyPassword System.getenv('ANDROID_SIGNING_KEY_PASSWORD')
-}
+```yaml
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    steps:
+      - run: ./gradlew :nga_phone_base_3.0:assembleRelease --no-daemon
+      - run: |
+          (cd dist && sha256sum -c ./*.sha256)
+          gh release create "$RELEASE_TAG" dist/* --verify-tag
 ```
 
 #### Wrong
 
-```yaml
-publish-release:
-  needs: build-apk
-  steps:
-    - run: ./gradlew assembleRelease
+```bash
+gh release delete "$OLD_PREVIEW" --cleanup-tag --yes
+gh release create "$NEW_PREVIEW" dist/* --prerelease
 ```
 
 #### Correct
 
-```yaml
-publish-release:
-  permissions:
-    actions: read
-    contents: write
-  steps:
-    - uses: actions/download-artifact@v4
-      with:
-        github-token: ${{ github.token }}
-        repository: ${{ github.repository }}
-        run-id: ${{ steps.main-build.outputs.run_id }}
+```bash
+gh release create "$NEW_PREVIEW" dist/* --target "$GITHUB_SHA" --prerelease
+# Only after creation succeeds:
+gh release delete "$OLD_PREVIEW" --cleanup-tag --yes
 ```
