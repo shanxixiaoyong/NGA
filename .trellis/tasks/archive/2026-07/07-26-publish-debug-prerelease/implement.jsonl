@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "保持 Gradle variant、workflow 身份、Release 元数据和安装结果的跨层合同一致。"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "复核版本、产物和清理规则没有在 main/tag 分支间产生不一致的重复逻辑。"}
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "Android 构建、签名、发布验证和真机覆盖安装要求。"}
+{"file": ".trellis/tasks/07-26-publish-debug-prerelease/research/debuggable-preview-upgrade.md", "reason": "production identity、release signing、debuggable 和稳定版升级合同。"}
