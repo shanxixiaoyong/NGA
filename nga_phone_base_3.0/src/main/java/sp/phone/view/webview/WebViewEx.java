@@ -33,14 +33,9 @@ public class WebViewEx extends WebView implements DownloadListener {
     }
 
     private void downloadByBrowser(String url) {
-        Uri uri = Uri.parse(url);
-        String scheme = uri.getScheme();
-        if (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme)) {
-            return;
-        }
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addCategory(Intent.CATEGORY_BROWSABLE);
-        intent.setData(uri);
+        intent.setData(Uri.parse(url));
         getContext().startActivity(intent);
     }
 
@@ -49,10 +44,6 @@ public class WebViewEx extends WebView implements DownloadListener {
         setWebViewClient(mWebViewClientEx);
         WebSettings settings = getSettings();
         settings.setJavaScriptEnabled(true);
-        settings.setJavaScriptCanOpenWindowsAutomatically(false);
-        settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
         setFocusableInTouchMode(false);
         setFocusable(false);

@@ -177,6 +177,7 @@ public class StringUtils {
          * return ""; }
          */
         String ret = UriEncoderWithCharset.encode(s, null, charset);
+        // NLog.i("111111", s+"----->"+ret);
         return ret;
     }
 
@@ -733,8 +734,7 @@ public class StringUtils {
         try {
             ret = Integer.parseInt(value);
         } catch (Exception e) {
-            NLog.e("getUrlParameter", "invalid_url_parameter type="
-                    + e.getClass().getSimpleName());
+            NLog.e("getUrlParameter", "invalid url:" + url);
         }
 
         return ret;

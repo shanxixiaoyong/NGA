@@ -383,7 +383,6 @@ public class ProfileActivity extends BaseActivity implements OnHttpCallBack<Prof
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 321 && resultCode == Activity.RESULT_OK) {
             String signData = data.getStringExtra("sign");
             if (mProfileData != null) {

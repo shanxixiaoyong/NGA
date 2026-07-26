@@ -2,14 +2,7 @@ package gov.anzong.androidnga.activity.compose.board
 
 import android.content.Context
 import com.alibaba.fastjson.JSON
-import com.justwen.androidnga.base.network.request.FoundationAccessPolicy
-import com.justwen.androidnga.base.network.request.NgaRequestContext
 import com.justwen.androidnga.base.network.retrofit.RetrofitHelper
-import com.justwen.androidnga.base.network.retrofit.RetrofitServiceKt
-import com.justwen.androidnga.base.network.response.ClassifiedNgaResponse
-import com.justwen.androidnga.base.network.response.NgaResponseClassifier
-import com.justwen.androidnga.base.network.response.RawNgaResponse
-import com.justwent.androidnga.bu.UserManager
 import gov.anzong.androidnga.Utils
 import gov.anzong.androidnga.activity.compose.board.ForumBoardViewModel.BOARD_REMOTE_REQUEST_TIME_KEY
 import gov.anzong.androidnga.activity.compose.board.data.ForumsListBean
@@ -156,8 +149,10 @@ object ForumBoardRepository {
 
     internal fun decodeBookmarkBoards(boardJson: String): MutableList<BoardEntity> {
         require(boardJson.isNotBlank()) { "Bookmark data is blank" }
-        return JSON.parseArray(boardJson, BoardEntity::class.java)
-            ?: throw IllegalArgumentException("Bookmark data is not a JSON array")
+        return (JSON.parseArray(boardJson, BoardEntity::class.java)
+            ?: throw IllegalArgumentException("Bookmark data is not a JSON array"))
+            .distinctBy { bookmarkStableKey(it) }
+            .toMutableList()
     }
 
     @Synchronized
@@ -257,41 +252,17 @@ object ForumBoardRepository {
     }
 
     suspend fun requestRemoteBoardList(context: Context): ForumsListBean? {
-        return try {
-            val snapshot = UserManager.captureActiveSession()
-            val requestContext = if (snapshot.isAnonymous) {
-                NgaRequestContext.anonymousRead(FoundationAccessPolicy.READ_BOARD_LIST)
-            } else {
-                NgaRequestContext(
-                    FoundationAccessPolicy.READ_BOARD_LIST,
-                    NgaRequestContext.Intent.READ,
-                    snapshot.accountId,
-                    snapshot.sessionGeneration,
-                    snapshot.cookieHeader,
-                )
-            }
+        try {
             val url = Utils.getNGAHost() + FORUM_URL
-            val service = RetrofitHelper.getInstance().createRetrofit(
-                Utils.getNGAHost(),
-                null,
-                FoundationAccessPolicy.enabledForReviewedReads(),
-            ).create(RetrofitServiceKt::class.java)
-            val classified = NgaResponseClassifier().classify(
-                RawNgaResponse.from(service.getUrlRaw(requestContext, url)),
-            )
-            if (classified.type != ClassifiedNgaResponse.Type.PAYLOAD) {
-                return null
+            val result = RetrofitHelper.getInstance().serviceKt.getString(url)
+            val bean = JSON.parseObject(result, ForumsListBean::class.java)
+            if (bean != null) {
+                writeRemoteBoardList(context, result)
             }
-
-            val payload = classified.payload ?: return null
-            val bean = JSON.parseObject(payload, ForumsListBean::class.java) ?: return null
-            if (!UserManager.isSessionCurrent(snapshot)) {
-                return null
-            }
-            writeRemoteBoardList(context, payload)
-            bean.takeIf { UserManager.isSessionCurrent(snapshot) }
-        } catch (_: Exception) {
-            null
+            return bean
+        } catch (e: Exception) {
+            LogUtils.e("ForumBoardRepository", "requestRemoteBoardList: ${e.message}")
+            return null
         }
     }
 

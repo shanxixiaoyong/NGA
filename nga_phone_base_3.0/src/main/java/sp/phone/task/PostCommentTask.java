@@ -15,7 +15,6 @@ import java.net.HttpURLConnection;
 
 import gov.anzong.androidnga.Utils;
 import sp.phone.common.PhoneConfiguration;
-import sp.phone.common.network.FoundationMutationGate;
 import sp.phone.param.HttpPostClient;
 import gov.anzong.androidnga.common.util.NLog;
 import sp.phone.util.StringUtils;
@@ -54,9 +53,7 @@ public class PostCommentTask extends AsyncTask<String, Integer, String> {
         if (!StringUtils.isEmpty(prefix)) {
             comment = prefix + comment;
         }
-        HttpPostClient c = new HttpPostClient(
-                postCommentUri,
-                FoundationMutationGate.Operation.POST_COMMENT);
+        HttpPostClient c = new HttpPostClient(postCommentUri);
         String cookie = PhoneConfiguration.getInstance().getCookie();
         c.setCookie(cookie);
         final String body = this.buildBody(comment);

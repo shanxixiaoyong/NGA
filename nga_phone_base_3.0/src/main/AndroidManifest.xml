@@ -3,14 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="gov.anzong.androidnga"
     android:configChanges="orientation|screenSize"
-    android:installLocation="auto">
+    android:installLocation="auto"
+    android:largeHeap="true">
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>
@@ -20,13 +19,15 @@
     <application
         android:name=".NgaClientApp"
         android:anyDensity="false"
-        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/label_activity_main"
         android:hardwareAccelerated="true"
         android:networkSecurityConfig="@xml/network_security_config"
+        android:requestLegacyExternalStorage="true"
+        android:preserveLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/AppThemeDayNight"
+        tools:ignore="AllowBackup"
         tools:replace="android:label">
         <meta-data android:name="EasyGoClient" android:value="true" />
         <activity
@@ -69,11 +70,26 @@
             android:name=".activity.TopicListActivity"
             android:configChanges="orientation|screenSize|locale|screenLayout|smallestScreenSize"
             android:exported="true">
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="bbs.nga.cn"
+                    android:path="/thread.php"
+                    android:scheme="http" />
+
+                <data
+                    android:host="bbs.ngacn.cc"
+                    android:path="/thread.php"
+                    android:scheme="http" />
+
+                <data
+                    android:host="nga.178.com"
+                    android:path="/thread.php"
+                    android:scheme="http" />
 
                 <data
                     android:host="bbs.nga.cn"
@@ -95,6 +111,11 @@
                     android:path="/thread.php"
                     android:scheme="https" />
 
+                <data
+                    android:host="ngabbs.com"
+                    android:path="/thread.php"
+                    android:scheme="https" />
+
             </intent-filter>
         </activity>
 
@@ -102,12 +123,25 @@
             android:name=".activity.ArticleListActivity"
             android:configChanges="orientation|screenSize|locale|screenLayout|smallestScreenSize"
             android:exported="true">
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="nga.178.com"
+                    android:path="/read.php"
+                    android:scheme="http" />
+                <data
+                    android:host="bbs.ngacn.cc"
+                    android:path="/read.php"
+                    android:scheme="http" />
+                <data
+                    android:host="bbs.nga.cn"
+                    android:path="/read.php"
+                    android:scheme="http" />
 
                 <data
                     android:host="nga.178.com"
@@ -119,6 +153,11 @@
                     android:scheme="https" />
                 <data
                     android:host="bbs.nga.cn"
+                    android:path="/read.php"
+                    android:scheme="https" />
+
+                <data
+                    android:host="ngabbs.com"
                     android:path="/read.php"
                     android:scheme="https" />
 

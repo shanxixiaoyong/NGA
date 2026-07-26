@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import androidx.annotation.Nullable;
 
 import com.justwent.androidnga.bu.UserManager;
-import com.justwent.androidnga.bu.session.AccountSessionSnapshot;
 
 import java.util.List;
 
@@ -34,7 +33,6 @@ public class UserManagerImpl implements sp.phone.common.UserManager {
     @Override
     public void initialize(Context context) {
         mAvatarPreferences = context.getSharedPreferences(PreferenceKey.PREFERENCE_AVATAR, Context.MODE_PRIVATE);
-        UserManager.INSTANCE.initialize(context);
     }
 
 
@@ -62,7 +60,7 @@ public class UserManagerImpl implements sp.phone.common.UserManager {
     @Override
     public String getCid() {
         User user = UserManager.INSTANCE.getActiveUser();
-        return UserManager.INSTANCE.getCid(user);
+        return user != null ? user.getCid() : "";
     }
 
     @Override
@@ -80,27 +78,6 @@ public class UserManagerImpl implements sp.phone.common.UserManager {
     public String getUserId() {
         User user = UserManager.INSTANCE.getActiveUser();
         return user != null ? user.getUserId() : "";
-    }
-
-    @Override
-    public String getActiveAccountId() {
-        String accountId = UserManager.INSTANCE.getActiveAccountId();
-        return accountId != null ? accountId : "";
-    }
-
-    @Override
-    public AccountSessionSnapshot captureActiveSession() {
-        return UserManager.INSTANCE.captureActiveSession();
-    }
-
-    @Override
-    public boolean isSessionCurrent(AccountSessionSnapshot snapshot) {
-        return UserManager.INSTANCE.isSessionCurrent(snapshot);
-    }
-
-    @Override
-    public boolean revokeSession(AccountSessionSnapshot snapshot) {
-        return UserManager.INSTANCE.revokeSession(snapshot);
     }
 
     @Override
@@ -145,6 +122,11 @@ public class UserManagerImpl implements sp.phone.common.UserManager {
     @Override
     public String getCookie(User user) {
         return UserManager.INSTANCE.getCookie(user);
+    }
+
+    @Override
+    public String getNextCookie() {
+        return UserManager.INSTANCE.getNextCookie();
     }
 
     @Override

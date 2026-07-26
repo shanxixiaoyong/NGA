@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.util.AttributeSet;
 import android.webkit.DownloadListener;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 
 import androidx.annotation.Nullable;
@@ -20,6 +21,8 @@ import sp.phone.common.PhoneConfiguration;
 public class LocalWebView extends WebViewEx implements DownloadListener {
 
     private WebViewClientEx mWebViewClientEx;
+
+    private String mEmotionSize;
 
     private String mContentData;
 
@@ -40,17 +43,13 @@ public class LocalWebView extends WebViewEx implements DownloadListener {
         } catch (Exception e) {
             // 某些机型的WebView不支持以上方法的调用
         }
+        mEmotionSize = PhoneConfiguration.getInstance().getEmoticonSize() + "px";
     }
 
     private void downloadByBrowser(String url) {
-        Uri uri = Uri.parse(url);
-        String scheme = uri.getScheme();
-        if (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme)) {
-            return;
-        }
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.addCategory(Intent.CATEGORY_BROWSABLE);
-        intent.setData(uri);
+        intent.setData(Uri.parse(url));
         getContext().startActivity(intent);
     }
 
@@ -60,10 +59,7 @@ public class LocalWebView extends WebViewEx implements DownloadListener {
 
         WebSettings settings = getSettings();
         settings.setJavaScriptEnabled(true);
-        settings.setJavaScriptCanOpenWindowsAutomatically(false);
-        settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        addJavascriptInterface(this, "action");
         settings.setTextZoom(PhoneConfiguration.getInstance().getWebViewTextZoom());
         settings.setBlockNetworkImage(true);
 
@@ -90,5 +86,10 @@ public class LocalWebView extends WebViewEx implements DownloadListener {
         }
         mContentData = data;
         super.loadDataWithBaseURL(baseUrl, data, mimeType, encoding, historyUrl);
+    }
+
+    @JavascriptInterface
+    public String getEmotionSize() {
+        return mEmotionSize;
     }
 }

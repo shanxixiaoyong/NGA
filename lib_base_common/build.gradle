@@ -45,7 +45,15 @@ dependencies {
 
     api 'com.github.tbruyelle:rxpermissions:0.10.2'
     api "io.reactivex.rxjava2:rxjava:$rxjava_version"
+    implementation 'me.imid.swipebacklayout.lib:library:1.1.0'
+    implementation 'net.steamcrafted:load-toast:1.0.12'
     implementation 'com.github.GrenderG:Toasty:1.4.1'
+    api('com.zhouyou:signseekbar:1.0.6') {
+        exclude group: 'com.android.support'
+    }
+    api('com.nshmura:recyclertablayout:1.5.0') {
+        exclude group: 'com.android.support'
+    }
 
     api "com.alibaba:fastjson:$fastJson_version"
     api "io.reactivex.rxjava2:rxandroid:$project.rxAndroid"

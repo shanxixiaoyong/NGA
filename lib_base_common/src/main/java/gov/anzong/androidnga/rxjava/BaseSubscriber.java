@@ -19,7 +19,7 @@ public abstract class BaseSubscriber<T> implements Observer<T> {
 
     @Override
     public void onError(@NonNull Throwable throwable) {
-        LogUtils.e("request_failed type=" + throwable.getClass().getSimpleName());
+        LogUtils.e(throwable.getMessage());
     }
 
     @Override

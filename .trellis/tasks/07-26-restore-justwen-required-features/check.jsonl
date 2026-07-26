@@ -1,0 +1,5 @@
+{"file":".trellis/tasks/07-25-nga-android-foundation-access/root-migration-audit.md","reason":"复核恢复目标 commit/tree、产品路径范围及差异分类。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"验证原始读取和写入调用链确实恢复，而非只删除错误文案。"}
+{"file":".trellis/tasks/07-25-nga-android-reading-favorites/prd.md","reason":"检查收藏拖动、持久化、稳定键、Pager 和无障碍验收行为。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"执行适用于当前 Android 工程的构建、测试、设备和报告质量门。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查 UI 到账号/网络/parser 的恢复链路没有新旧实现混用。"}

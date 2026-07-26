@@ -66,11 +66,8 @@ android {
         }
     }
 
-    lint {
-        // AGP 8.7.3 + Kotlin 2.0.21 can crash while FIR analyzes Kotlin test
-        // sources. Production sources remain fully checked; tests are covered
-        // by their dedicated JVM/instrumentation tasks.
-        checkTestSources = false
+    lintOptions {
+        abortOnError false
         disable 'MissingTranslation'
     }
     kotlinOptions {
@@ -153,8 +150,7 @@ dependencies {
     implementation project(':lib_base_ui_compose')
     implementation project(':lib_base_ui')
 
-    // Diagnostics are debug-only; release must not package the log exporter or route.
-    debugImplementation project(':lib_module_debug')
+    implementation project(':lib_module_debug')
 
     // database
     implementation "androidx.room:room-runtime:$room_version"

@@ -1,0 +1,6 @@
+{"file":".trellis/tasks/07-25-nga-android-foundation-access/root-migration-audit.md","reason":"固定上游 commit/tree、产品路径范围、导入碰撞和可回滚基线证据。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"Justwen 原始登录、Cookie、读取、写入、收藏、消息和上传调用链证据。"}
+{"file":".trellis/tasks/07-25-nga-android-reading-favorites/prd.md","reason":"用户明确要求保留的收藏长按拖动、稳定键、持久化和 Pager 仲裁合同。"}
+{"file":".trellis/tasks/07-25-nga-android-foundation-access/prd.md","reason":"此前引入的 foundation 范围、单一 FAB 要求及本次需要撤销的边界清单。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"恢复网络、账号、parser、UI 调用链时避免保留半套新旧边界。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"确保最终只有上游调用链与两组白名单补丁，不残留重复 transport/helper。"}

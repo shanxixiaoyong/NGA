@@ -24,7 +24,6 @@ import gov.anzong.androidnga.base.util.ToastUtils;
 import sp.phone.util.ActivityUtils;
 import sp.phone.util.ImageUtils;
 import gov.anzong.androidnga.common.util.NLog;
-import sp.phone.common.network.FoundationMutationGate;
 import sp.phone.util.StringUtils;
 
 public class AvatarFileUploadTask extends AsyncTask<String, Integer, String> {
@@ -111,10 +110,6 @@ public class AvatarFileUploadTask extends AsyncTask<String, Integer, String> {
     @SuppressWarnings("unused")
     @Override
     protected String doInBackground(String... params) {
-        if (!FoundationMutationGate.isAllowed(
-                FoundationMutationGate.Operation.AVATAR_FILE_UPLOAD)) {
-            return null;
-        }
 
         ContentResolver cr = context.getContentResolver();
 
@@ -163,6 +158,7 @@ public class AvatarFileUploadTask extends AsyncTask<String, Integer, String> {
         URL url;
         try {
             url = new URL(ATTACHMENT_SERVER);
+            // NLog.d(LOG_TAG, "cookie:" + cookie);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type",
@@ -198,7 +194,7 @@ public class AvatarFileUploadTask extends AsyncTask<String, Integer, String> {
         } catch (Exception e) {
             errorStr = context.getResources().getString(
                     R.string.net_work_error);
-            NLog.e(LOG_TAG, "avatar_upload_failed type=" + e.getClass().getSimpleName());
+            NLog.e(LOG_TAG, NLog.getStackTraceString(e));
             return null;
         }
 

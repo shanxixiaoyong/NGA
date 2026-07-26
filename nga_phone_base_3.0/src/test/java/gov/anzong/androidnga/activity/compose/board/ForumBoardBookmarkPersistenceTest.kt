@@ -90,6 +90,22 @@ class ForumBoardBookmarkPersistenceTest {
     }
 
     @Test
+    fun duplicateStableKeysKeepTheirFirstPosition() {
+        val first = board("first")
+        val duplicate = board("duplicate").apply {
+            fid = first.fid
+            stid = first.stid
+        }
+        val last = board("last")
+
+        val restored = ForumBoardRepository.decodeBookmarkBoards(
+            ForumBoardRepository.encodeBookmarkBoards(listOf(first, duplicate, last))
+        )
+
+        assertEquals(listOf("first", "last"), restored.map { it.id })
+    }
+
+    @Test
     fun fileRoundTripRestoresOrderAfterReload() {
         val directory = temporaryFolder.newFolder("bookmarks")
         val source = listOf("first", "second", "third").map(::board)

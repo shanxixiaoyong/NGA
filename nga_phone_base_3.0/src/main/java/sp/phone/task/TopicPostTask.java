@@ -11,7 +11,6 @@ import java.net.HttpURLConnection;
 
 import gov.anzong.androidnga.Utils;
 import sp.phone.common.PhoneConfiguration;
-import sp.phone.common.network.FoundationMutationGate;
 import sp.phone.param.HttpPostClient;
 import gov.anzong.androidnga.common.util.NLog;
 
@@ -67,9 +66,7 @@ public class TopicPostTask extends AsyncTask<String, Integer, String> {
         String url = mReplyUrl;
         String body = params[0];
 
-        HttpPostClient c = new HttpPostClient(
-                url,
-                FoundationMutationGate.Operation.TOPIC_POST);
+        HttpPostClient c = new HttpPostClient(url);
         String cookie = PhoneConfiguration.getInstance().getCookie();
         c.setCookie(cookie);
         try {
@@ -97,7 +94,7 @@ public class TopicPostTask extends AsyncTask<String, Integer, String> {
                 mHasError = true;
         } catch (IOException e) {
             mHasError = true;
-            NLog.e(LOG_TAG, "topic_post_failed type=" + e.getClass().getSimpleName());
+            NLog.e(LOG_TAG, NLog.getStackTraceString(e));
         }
         return ret;
     }

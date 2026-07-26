@@ -4,9 +4,9 @@ buildscript {
         compose_ui_version = '1.7.0'
         compose_activity_version = '1.10.1'
         core_ktx_version = '1.7.0'
-        appcompat_version = '1.7.1'
+        appcompat_version = "1.7.1"
         androidx_material_version = '1.12.0'
-        lifecycle_version = '2.6.2'
+        lifecycle_version = "2.6.2"
         fastJson_version = '1.1.71.android'
         retrofit_version = '2.6.0'
         paging_version = '3.3.0'
@@ -14,55 +14,47 @@ buildscript {
         rxjava_version = '2.2.6'
     }
     repositories {
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         google()
         mavenCentral()
-        gradlePluginPortal()
     }
     dependencies {
         classpath libs.gradle
         classpath libs.kotlin
     }
+
 }
 
 allprojects {
     repositories {
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        //TODO Remove all dependencies in jcenter
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://www.jitpack.io' }
         google()
         mavenCentral()
-        maven { url 'https://www.jitpack.io' }
     }
 
-    // ButterKnife 10.2.1 predates JDK 17 module encapsulation. Keep javac
-    // isolated and export only the compiler packages its annotation processor
-    // needs until the remaining nine legacy binding sites are migrated.
-    tasks.withType(JavaCompile).configureEach {
-        options.fork = true
-        options.forkOptions.jvmArgs.addAll([
-                '--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED',
-                '--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED',
-                '--add-exports=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED',
-                '--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED',
-                '--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED',
-                '--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED',
-                '--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED',
-                '--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED',
-                '--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED',
-                '--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED'
-        ])
-    }
 }
 
-tasks.register('clean', Delete) {
-    delete rootProject.layout.buildDirectory
+task clean(type: Delete) {
+    delete rootProject.buildDir
 }
 
 project.ext {
     minSdkVersion = 30
     targetSdkVersion = 35
     compileSdkVersion = 35
-    appVersionName = '4.2.1-ngajw.1'
+    appVersionName = '4.2.1'
     appVersionCode = 4021
 
     rxAndroid = '2.1.1'
-    room_version = '2.4.1'
-    preference_version = '1.1.1'
+
+    room_version = "2.4.1"
+
+    preference_version = "1.1.1"
 }
+
+

@@ -2,93 +2,80 @@ package gov.anzong.androidnga.base.widget;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.ViewGroup;
 
-import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
-import com.google.android.material.tabs.TabLayout;
+import com.nshmura.recyclertablayout.RecyclerTabLayout;
 
-/**
- * Material TabLayout adapter for the legacy RecyclerTabLayout call surface.
- *
- * <p>It keeps ViewPager synchronization, equal-width tabs for the configured
- * on-screen limit, explicit refresh support, and the original non-animated
- * page change when a tab is tapped.</p>
- */
-public class TabLayoutEx extends TabLayout {
-
-    private ViewPager mViewPager;
-    private int mTabOnScreenLimit;
-
-    private final OnTabSelectedListener mNoSmoothScrollListener = new OnTabSelectedListener() {
-        @Override
-        public void onTabSelected(Tab tab) {
-            if (mViewPager != null && tab.getPosition() != mViewPager.getCurrentItem()) {
-                mViewPager.setCurrentItem(tab.getPosition(), false);
-            }
-        }
-
-        @Override
-        public void onTabUnselected(Tab tab) {
-            // No additional state beyond the Material selected-tab styling.
-        }
-
-        @Override
-        public void onTabReselected(Tab tab) {
-            // Reselecting the current page intentionally does nothing.
-        }
-    };
+public class TabLayoutEx extends RecyclerTabLayout {
 
     public TabLayoutEx(Context context) {
-        this(context, null);
+        super(context);
     }
 
     public TabLayoutEx(Context context, AttributeSet attrs) {
-        this(context, attrs, com.google.android.material.R.attr.tabStyle);
+        super(context, attrs);
     }
 
     public TabLayoutEx(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        applyTabPresentation();
     }
 
+    @Override
     public void setUpWithViewPager(ViewPager viewPager) {
-        mViewPager = viewPager;
-        super.setupWithViewPager(viewPager, true);
-        clearOnTabSelectedListeners();
-        addOnTabSelectedListener(mNoSmoothScrollListener);
-        applyTabPresentation();
+        DefaultAdapter adapter = new TabAdapter(viewPager);
+        adapter.setTabPadding(mTabPaddingStart, mTabPaddingTop, mTabPaddingEnd, mTabPaddingBottom);
+        adapter.setTabTextAppearance(mTabTextAppearance);
+        adapter.setTabSelectedTextColor(mTabSelectedTextColorSet, mTabSelectedTextColor);
+        adapter.setTabMaxWidth(mTabMaxWidth);
+        adapter.setTabMinWidth(mTabMinWidth);
+        adapter.setTabBackgroundResId(mTabBackgroundResId);
+        adapter.setTabOnScreenLimit(mTabOnScreenLimit);
+        setUpWithAdapter(adapter);
     }
 
     public void notifyDataSetChanged() {
-        if (mViewPager == null) {
-            return;
+        mAdapter.notifyDataSetChanged();
+    }
+
+    public void setTabOnScreenLimit(int tabLimit) {
+        mTabOnScreenLimit = tabLimit;
+    }
+
+    private class TabAdapter extends DefaultAdapter {
+
+        public TabAdapter(ViewPager viewPager) {
+            super(viewPager);
         }
-        PagerAdapter adapter = mViewPager.getAdapter();
-        int currentItem = mViewPager.getCurrentItem();
-        setTabsFromPagerAdapter(adapter);
-        applyTabPresentation();
-        if (adapter != null && adapter.getCount() > 0) {
-            int selectedPosition = Math.min(currentItem, adapter.getCount() - 1);
-            Tab selectedTab = getTabAt(selectedPosition);
-            if (selectedTab != null) {
-                selectTab(selectedTab, false);
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            ViewHolder holder = super.onCreateViewHolder(parent, viewType);
+            holder.itemView.setOnClickListener(v -> {
+                int pos = holder.getAdapterPosition();
+                if (pos != NO_POSITION) {
+                    getViewPager().setCurrentItem(pos, false);
+                }
+            });
+            return holder;
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            super.onBindViewHolder(holder, position);
+            TabTextView tabTextView = (TabTextView) holder.itemView;
+            if (mTabOnScreenLimit > 0) {
+                int width = getMeasuredWidth() / mTabOnScreenLimit;
+                tabTextView.setMaxWidth(width);
+                tabTextView.setMinWidth(width);
+            } else {
+                if (mTabMaxWidth > 0) {
+                    tabTextView.setMaxWidth(mTabMaxWidth);
+                }
+                tabTextView.setMinWidth(mTabMinWidth);
             }
         }
     }
 
-    public void setTabOnScreenLimit(int tabLimit) {
-        mTabOnScreenLimit = Math.max(0, tabLimit);
-        applyTabPresentation();
-    }
-
-    private void applyTabPresentation() {
-        if (mTabOnScreenLimit > 0) {
-            setTabMode(MODE_FIXED);
-            setTabGravity(GRAVITY_FILL);
-        } else {
-            setTabMode(MODE_SCROLLABLE);
-            setTabGravity(GRAVITY_START);
-        }
-    }
 }

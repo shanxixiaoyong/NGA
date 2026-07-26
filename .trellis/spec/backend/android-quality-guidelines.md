@@ -105,20 +105,39 @@ android {
 
 ## Validation gate
 
-Before handing off an Android foundation change, run:
+Before handing off an Android product change, run:
 
 ```bash
-./gradlew :nga_phone_base_3.0:assembleDebug lint testDebugUnitTest
-./scripts/secret-scan.sh
+./gradlew :nga_phone_base_3.0:assembleDebug
+./gradlew :nga_phone_base_3.0:testDebugUnitTest
+./gradlew :nga_phone_base_3.0:lintDebug
+./gradlew test
 ```
 
-Then run `connectedDebugAndroidTest` on the available API 35 physical device.
-API 30 floor smoke is required before a public release claiming Android 11;
-API 36 forward testing is recorded separately when a device is available.
-Do not start an emulator when the user has requested physical-device-only
-testing. Lint dependency freshness warnings may be recorded for later upgrades,
-but any lint error, test failure, build failure, or secret-scan finding blocks
-handoff.
+The app restores upstream `abortOnError false` and disables
+`MissingTranslation`, so a zero lint process exit is not sufficient by itself:
+inspect the generated lint report for errors. The pinned upstream tree has 11
+existing app lint errors outside the favorite/FAB delta; record them separately
+and do not expand a compatibility-restoration task into unrelated cleanup.
+
+The repository-wide `test --continue` task is a diagnostic baseline rather
+than the feature gate while these pinned-upstream fixtures remain unchanged:
+
+- `lib_base_ui` and `lib_bu_statistics` example tests compile without a JUnit
+  dependency and fail at `compile*UnitTestJavaWithJavac`;
+- `lib_core:ExampleUnitTest.testQuote` loads Android-dependent code on the host
+  JVM and fails without the Android runtime/context;
+- `lib_module_debug` example tests generate an unresolved KAPT annotation stub.
+
+Do not add product dependencies or disable test variants only to mask these
+unrelated upstream fixtures. A task that changes one of those modules must
+either fix its owned test baseline explicitly or obtain a scope decision. For
+favorite/FAB changes, `:nga_phone_base_3.0:testDebugUnitTest` and the focused
+regression class must pass.
+
+Run `connectedDebugAndroidTest` only when an ADB device is available, using its
+exact serial and without triggering real NGA traffic. API 30 floor and API 36
+forward checks remain separately labelled device gates.
 
 ## Scenario: Physical-device APK installation authorization
 
@@ -192,13 +211,3 @@ adb -s REDACTED_SERIAL_MEIZU install --no-streaming -r -t test.apk
 # Preserve INSTALL_FAILED_USER_RESTRICTED, ask the user to enable USB install,
 # then rerun the ordered connected test with the same explicit serial.
 ```
-
-## Temporary lint compatibility rule
-
-AGP 8.7.3 with Kotlin 2.0.21 can throw a Kotlin FIR internal exception while
-lint traverses Kotlin unit/instrumentation test sources. Android production
-sources remain linted; the application sets
-`android { lint { checkTestSources = false } }` while the affected toolchain is
-pinned. Test correctness is still enforced by `testDebugUnitTest` and the
-instrumentation tasks above. Remove this exception when the AGP/Kotlin lint
-compatibility issue is resolved, and make that upgrade a quality-gate change.

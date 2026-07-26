@@ -97,7 +97,7 @@ public class ForumNotificationTask {
                 .subscribe(new BaseSubscriber<String>() {
                     @Override
                     public void onNext(String s) {
-                        NLog.d("notification_clear_completed");
+                        NLog.d(s);
                     }
                 });
 

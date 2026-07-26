@@ -1,187 +1,138 @@
-# NGA Foundation Network Contract
+# Justwen Network Compatibility Contract
 
-This contract applies while the imported Justwen client is in the foundation
-stage. It defines the only NGA reads that may reach the network and keeps every
-mutation and legacy transport fail-closed.
-
-## Scenario: Account-scoped reviewed reads
+## Scenario: Pinned Upstream Transport With Fork Identity Hygiene
 
 ### 1. Scope / Trigger
 
-Use this contract whenever code reads NGA data, captures account credentials,
-adds a Retrofit endpoint, classifies an NGA response, or changes an existing
-network consumer. A new operation is denied until its operation ID, consumer,
-response handling, and tests are reviewed together.
+This contract applies when changing NGA reads, login/account selection,
+cookies, posts, replies, uploads, messages, notifications, sign-in, vote, or
+the Retrofit/`HttpURLConnection` transports. The compatibility baseline is
+`Justwen/NGA-CLIENT-VER-OPEN-SOURCE@5d807617`.
+
+The removed foundation access policy, request context, response classifier,
+session vault, reviewed-read transport, and default-deny mutation gate are not
+active contracts. Do not reintroduce a partial copy of those layers.
 
 ### 2. Signatures
 
-The account boundary captures one immutable value for the whole operation:
+Active Retrofit signatures return upstream scalar payloads:
 
 ```java
-AccountSessionSnapshot UserManager.captureActiveSession()
-boolean UserManager.isSessionCurrent(AccountSessionSnapshot snapshot)
-boolean UserManager.revokeSession(AccountSessionSnapshot snapshot)
-```
-
-The request boundary accepts only an explicit context:
-
-```java
-new NgaRequestContext(
-    String operationId,
-    NgaRequestContext.Intent intent,
-    String accountId,
-    long sessionGeneration,
-    String cookieHeader
-)
-NgaRequestContext.anonymousRead(String operationId)
-```
-
-The reviewed operation IDs are exactly:
-
-```text
-board.list
-topic.list
-article.list
-```
-
-Retrofit reviewed methods carry the context with `@Tag` and return the raw
-Retrofit response:
-
-```java
-Observable<Response<ResponseBody>> getUrlRaw(
-    @Tag NgaRequestContext context,
-    @Url String url
-)
+Observable<String> RetrofitService.get(@Url String url)
+Observable<String> RetrofitService.get(@Url String url, @HeaderMap Map<String, String> headers)
+Observable<String> RetrofitService.post(@QueryMap Map<String, String> query,
+                                        @FieldMap Map<String, String> fields)
 ```
 
 ```kotlin
-suspend fun getUrlRaw(
-    @Tag context: NgaRequestContext,
-    @Url url: String,
-    @HeaderMap headers: Map<String, String> = emptyMap(),
-): Response<ResponseBody>
+suspend fun RetrofitServiceKt.getString(@Url url: String): String
+suspend fun RetrofitServiceKt.postString(
+    @QueryMap queryMap: Map<String, String>,
+    @HeaderMap headerMap: Map<String, String>,
+    @FieldMap fieldMap: Map<String, String>,
+): String
 ```
 
-Every consumer then uses this sequence:
+The legacy write transport remains:
 
 ```java
-RawNgaResponse raw = RawNgaResponse.from(response);
-ClassifiedNgaResponse classified = new NgaResponseClassifier().classify(raw);
+HttpPostClient(String urlString)
+HttpPostClient(String urlString, String cookie)
+HttpURLConnection post_body(String body)
+```
+
+Vote pages expose exactly this bridge name:
+
+```java
+webView.addJavascriptInterface(new ProxyBridge(webView), "ProxyBridge")
 ```
 
 ### 3. Contracts
 
-- Capture the active session inside the deferred operation, not in a mutable
-  global interceptor and not once when a repository is constructed.
-- An authenticated snapshot contains opaque `accountId`, generation, uid, and
-  a captured Cookie header. Its string/equality representations never expose
-  the Cookie. An anonymous account must use `anonymousRead`; request-layer
-  anonymous generation is always zero and has no Cookie.
-- `FoundationAccessPolicy.enabledForReviewedReads()` allows only `READ` intent
-  with one of the three operation IDs above. All default `RetrofitHelper`
-  clients use `FoundationAccessPolicy.disabled()`.
-- The credential boundary removes caller-supplied `Cookie` and
-  `X-User-Agent`, installs the honest project User-Agent, and attaches the
-  captured Cookie only to an exact trusted HTTPS host on port 443 with no user
-  info. External exchanges and redirects cannot regain credentials.
-- Before caching or publishing a result, the consumer must call
-  `isSessionCurrent(snapshot)`. Account switch, credential replacement,
-  removal, logout, or revocation invalidates the old generation.
-- `RawNgaResponse` owns status, immutable headers, bounded bytes, final URL,
-  and redirect count. The default in-memory body limit is 1 MiB. Its
-  `toString()` redacts headers, URL, and bytes.
-- `NgaResponseClassifier` is the only owner of transport decoding and coarse
-  response classification. Domain parsers consume only `PAYLOAD`; HTML,
-  challenge, auth, rate-limit, empty, decode, HTTP, oversized, and network
-  outcomes must not become an empty successful payload.
-- Legacy Retrofit methods without `@Tag` remain migration-only and must fail
-  before dispatch. `HttpUtil` must not expose a Cookie-bearing direct read.
-- Foundation mutations use `FoundationMutationGate` and are denied before URL
-  parsing, file reads, connection opening, or request dispatch. There is no
-  runtime switch that enables them in this stage.
+- Board categories call `app_api.php?__lib=home&__act=category`; topic lists
+  call `thread.php`; article pages call `read.php` through the upstream
+  Retrofit service and existing parsers.
+- The selected upstream account supplies the Cookie through upstream
+  `UserManager`/`RetrofitHelper`; requests do not require an account snapshot,
+  request tag, or response classifier.
+- Posts, replies, uploads, messages, notifications, sign-in, and vote must not
+  be rejected by a local default-deny gate before the upstream call.
+- `assets/vote/vote.js` calls `window.ProxyBridge.postURL(...)`; Java must
+  register the same bridge name.
+- Do not send `X-User-Agent: Nga_Official` or use an equivalent official-client
+  identity. `HttpUtil` uses the neutral `nga-just-works` identifier.
+- Do not commit Cookies, account data, API keys, signing credentials, or
+  keystores. Release signing is injected outside version control.
+- Favorite persistence is local and transport-independent. Board code must not
+  import a network policy, response classifier, or account-scoped store.
+- Automated checks do not send real NGA traffic or bypass CAPTCHA, challenges,
+  rate limits, or access controls.
 
 ### 4. Validation & Error Matrix
 
 | Condition | Required result |
 | --- | --- |
-| Missing `NgaRequestContext` | `MISSING_CONTEXT`; zero network requests |
-| `Intent.MUTATION` | `MUTATION_DENIED`; zero network requests |
-| Unknown operation ID | `UNKNOWN_OPERATION`; zero network requests |
-| Reviewed ID on a default-disabled client | `READ_ACCESS_DISABLED`; zero network requests |
-| Anonymous snapshot with nonzero account generation | Build request with `anonymousRead`, never copy the account generation |
-| Cookie has CR/LF | Reject context construction |
-| HTTP, non-default port, user info, external/lookalike host | Do not attach Cookie or Authorization |
-| Redirect leaves the trusted origin boundary | Strip credentials on the redirected exchange |
-| Account changes before cache/publication | Reject the stale result |
-| Body exceeds configured maximum | `RESPONSE_TOO_LARGE`; never expose a partial payload |
-| HTTP 401 or 403 | `AUTH_REQUIRED` |
-| HTTP 429 | `RATE_LIMIT`, preserving bounded `Retry-After` metadata |
-| Challenge markers | `CHALLENGE`; never solve or retry automatically |
-| HTML/site response | `SITE_MESSAGE`; no domain parser call |
-| Empty body | `EMPTY`, not an empty success |
-| Invalid or unsupported declared charset | `DECODE_ERROR` |
-| Other non-success status | `HTTP_ERROR` |
-| Transport failure | `NETWORK_ERROR` |
+| Valid upstream read payload | Existing parser receives the scalar payload |
+| Parser returns an NGA error/site message | Existing UI error path handles it; no local `read rejected` wrapper |
+| Network exception | Existing subscriber/callback error path receives it |
+| Write endpoint invoked | Dispatch through existing Retrofit/`HttpPostClient`; no local deny gate |
+| Vote JS calls `ProxyBridge.postURL` | Registered Java bridge receives the call |
+| Official identity header or UA found | Remove it before handoff |
+| Foundation/classifier/session-vault symbol found in active product | Restore upstream path; scan must fail |
+| Real credential or signing material found | Block commit and remove the material |
+| CAPTCHA/challenge/rate-limit response | Surface/stop through existing behavior; never add bypass logic |
 
 ### 5. Good/Base/Bad Cases
 
-- **Good**: capture one snapshot in `Observable.defer` or at coroutine request
-  start, build a reviewed context, obtain a raw response, classify it, require
-  `PAYLOAD`, re-check the snapshot, then cache/publish.
-- **Base**: an anonymous board/topic/article read uses `anonymousRead` and
-  sends no Cookie. It still passes through the same policy and classifier.
-- **Bad**: call a legacy `service.get(...)`, read the current global Cookie in
-  an interceptor, return `""` after an I/O error, parse HTML as JSON, or add a
-  fourth operation string without updating the central policy and tests.
-- **Bad**: keep a public `HttpURLConnection` helper accepting `(url, cookie)`
-  because it currently has no caller. It is still an authenticated bypass.
+- **Good**: `TopicListModel` calls `RetrofitService.get(url)`, passes the
+  returned string to `TopicConvertFactory`, and reports parser/network errors
+  through its existing callback.
+- **Base**: an upstream endpoint is no longer accepted by NGA. Preserve the
+  original call and report the observed service failure; do not fabricate a
+  success or add an unreviewed workaround.
+- **Bad**: add `NgaRequestContext`, allow only three operation IDs, classify an
+  HTTP 200 before the upstream parser, or deny all mutations locally.
+- **Bad**: restore `Nga_Official`, commit a Cookie/keystore password, or add a
+  challenge bypass to make an old endpoint appear functional.
 
 ### 6. Tests Required
 
-- MockWebServer must assert zero recorded requests for missing context,
-  mutation intent, unknown operation, disabled read access, and at least one
-  real legacy Retrofit method without `@Tag`.
-- Lock `reviewedReadOperations()` to exactly `board.list`, `topic.list`, and
-  `article.list`.
-- Assert account A remains attached to its captured request after account B is
-  selected, and assert stale snapshots are rejected before cache/publication.
-- Assert exact trusted HTTPS host/port/user-info matching and credential
-  stripping across external redirects.
-- Cover UTF-8, GB18030/GBK, invalid charset, HTML, challenge, 401/403, 429 with
-  `Retry-After`, empty body, other HTTP errors, and the 1 MiB body bound.
-- Source/compile tests must keep all primary board/topic/article consumers on
-  the `@Tag -> RawNgaResponse -> NgaResponseClassifier` path.
-- Source scanning must reject restoration of Cookie-bearing `HttpUtil` reads
-  and mutation transports that do not consult `FoundationMutationGate` before
-  any connection or file access.
+- Build the App to compile all restored read/write/account/vote call paths.
+- Assert the active-product residue scan returns no foundation, classifier,
+  mutation-gate, or session-vault symbols.
+- Assert `ProxyBridge` appears in both Java registration and `vote.js` call
+  sites.
+- Assert official identity strings do not appear in active request builders.
+- Classify every remaining product path relative to the pinned upstream tree
+  as favorite, Pager, direct FAB, focused test, or publishing hygiene.
+- Do not use automated tests that contact real NGA endpoints.
 
 ### 7. Wrong vs Correct
 
 #### Wrong
 
 ```java
-String cookie = PhoneConfiguration.getInstance().getCookie();
-return RetrofitHelper.getInstance().getService().get(url);
+NgaRequestContext context = new NgaRequestContext("article.list", ...);
+RawNgaResponse raw = RawNgaResponse.from(service.getUrlRaw(context, url));
+return new NgaResponseClassifier().classify(raw);
 ```
 
-This reads mutable global identity at dispatch time, uses an untyped legacy
-endpoint, and bypasses raw response classification.
+This recreates the rejected reviewed-read layer and can block valid upstream
+payloads before their established parser runs.
 
 #### Correct
 
 ```java
-return Observable.defer(() -> {
-    AccountSessionSnapshot snapshot = userManager.captureActiveSession();
-    NgaRequestContext context = snapshot.isAnonymous()
-            ? NgaRequestContext.anonymousRead(FoundationAccessPolicy.READ_TOPIC_LIST)
-            : new NgaRequestContext(
-                    FoundationAccessPolicy.READ_TOPIC_LIST,
-                    NgaRequestContext.Intent.READ,
-                    snapshot.getAccountId(),
-                    snapshot.getSessionGeneration(),
-                    snapshot.getCookieHeader());
-    return service.getUrlRaw(context, url)
-            .map(response -> requireCurrentPayload(response, snapshot));
-});
+mService.get(url)
+        .map(ArticleConvertFactory::getArticleInfo)
+        .subscribe(/* existing success/error callbacks */);
 ```
 
+## Verification Commands
+
+```bash
+rg -n "NGA read rejected|ReviewedNgaRead|FoundationAccess|NgaResponseClassifier|FoundationMutationGate|NgaRequestContext|RawNgaResponse|SessionVault|AccountSessionSnapshot" \
+  lib_* nga_phone_base_3.0/src/main
+rg -n "ProxyBridge" nga_phone_base_3.0/src/main
+git diff --name-status upstream-justwen/master -- <product paths>
+```

@@ -19,8 +19,8 @@ This directory contains guidelines for backend development. Fill in each file wi
 | [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
-| [Android Quality and Instrumentation](./android-quality-guidelines.md) | Device-test runner and validation gate | Active |
-| [NGA Foundation Network Contract](./network-foundation-contract.md) | Account snapshots, reviewed reads, raw classification, and default-deny transports | Active |
+| [Android Quality and Instrumentation](./android-quality-guidelines.md) | Restored build, JVM-test, lint, and optional device gates | Active |
+| [Justwen Network Compatibility Contract](./network-foundation-contract.md) | Restored upstream read, account, mutation, and vote paths plus fork identity hygiene | Active |
 
 ---
 

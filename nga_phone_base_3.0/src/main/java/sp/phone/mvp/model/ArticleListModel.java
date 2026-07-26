@@ -20,8 +20,10 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
+import sp.phone.common.UserManagerImpl;
 import sp.phone.http.bean.ThreadData;
-import sp.phone.common.network.ReviewedNgaReadTransport;
+import com.justwen.androidnga.base.network.retrofit.RetrofitHelper;
+import com.justwen.androidnga.base.network.retrofit.RetrofitService;
 import sp.phone.mvp.contract.ArticleListContract;
 import sp.phone.mvp.model.convert.ArticleConvertFactory;
 import sp.phone.mvp.model.convert.ErrorConvertFactory;
@@ -38,10 +40,10 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
 
     private static final String TAG = ArticleListModel.class.getSimpleName();
 
-    private ReviewedNgaReadTransport mReadTransport;
+    private RetrofitService mService;
 
     public ArticleListModel() {
-        mReadTransport = new ReviewedNgaReadTransport();
+        mService = (RetrofitService) RetrofitHelper.getInstance().getService(RetrofitService.class);
     }
 
     public String getUrl(ArticleListParam param) {
@@ -73,7 +75,7 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
     @Override
     public void loadPage(ArticleListParam param, Map<String, String> header, OnHttpCallBack<ThreadData> callBack) {
         String url = getUrl(param);
-        mReadTransport.articleList(url, header)
+        mService.get(url, header)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.newThread())
                 .compose(getLifecycleProvider().<String>bindUntilEvent(FragmentEvent.DETACH))

@@ -10,12 +10,14 @@ import android.webkit.WebView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.zhouyou.view.seekbar.SignSeekBar;
+
 import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.base.widget.SeekBarEx;
 import sp.phone.common.Constants;
 import sp.phone.common.PhoneConfiguration;
 
-public class SettingsSizeFragment extends BaseFragment implements SeekBarEx.OnProgressChangedListener {
+public class SettingsSizeFragment extends BaseFragment implements  SignSeekBar.OnProgressChangedListener {
 
     private PhoneConfiguration mConfiguration = PhoneConfiguration.getInstance();
 
@@ -95,8 +97,8 @@ public class SettingsSizeFragment extends BaseFragment implements SeekBarEx.OnPr
     }
 
     @Override
-    public void onProgressChanged(SeekBarEx seekBar, int progress, float progressFloat, boolean fromUser) {
-        switch (seekBar.getId()) {
+    public void onProgressChanged(SignSeekBar signSeekBar, int progress, float progressFloat, boolean fromUser) {
+        switch (signSeekBar.getId()) {
             case R.id.seek_web_size:
                 mWebView.getSettings().setTextZoom(progress);
                 break;
@@ -106,8 +108,8 @@ public class SettingsSizeFragment extends BaseFragment implements SeekBarEx.OnPr
     }
 
     @Override
-    public void getProgressOnActionUp(SeekBarEx seekBar, int progress, float progressFloat) {
-        switch (seekBar.getId()) {
+    public void getProgressOnActionUp(SignSeekBar signSeekBar, int progress, float progressFloat) {
+        switch (signSeekBar.getId()) {
             case R.id.seek_topic_title:
                 mConfiguration.setTopicTitleSize(progress);
                 break;
@@ -126,7 +128,7 @@ public class SettingsSizeFragment extends BaseFragment implements SeekBarEx.OnPr
     }
 
     @Override
-    public void getProgressOnFinally(SeekBarEx seekBar, int progress, float progressFloat, boolean fromUser) {
+    public void getProgressOnFinally(SignSeekBar signSeekBar, int progress, float progressFloat, boolean fromUser) {
 
 
     }

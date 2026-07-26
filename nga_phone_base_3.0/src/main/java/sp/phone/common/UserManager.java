@@ -4,8 +4,6 @@ import android.content.Context;
 
 import java.util.List;
 
-import com.justwent.androidnga.bu.session.AccountSessionSnapshot;
-
 public interface UserManager {
 
     int getUserSize();
@@ -38,17 +36,9 @@ public interface UserManager {
 
     String getCookie(User user);
 
+    String getNextCookie();
+
     String getUserId();
-
-    /** Opaque local account id used for request and local-data ownership. */
-    String getActiveAccountId();
-
-    /** Atomically captures the active account and its current session material. */
-    AccountSessionSnapshot captureActiveSession();
-
-    boolean isSessionCurrent(AccountSessionSnapshot snapshot);
-
-    boolean revokeSession(AccountSessionSnapshot snapshot);
 
     String getCid();
 

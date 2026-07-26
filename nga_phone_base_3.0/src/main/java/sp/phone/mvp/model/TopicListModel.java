@@ -1,6 +1,7 @@
 package sp.phone.mvp.model;
 
 import com.alibaba.fastjson.JSON;
+import com.justwen.androidnga.cloud.CloudServerManager;
 
 import org.apache.commons.io.FileUtils;
 
@@ -24,7 +25,6 @@ import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import com.justwen.androidnga.base.network.retrofit.RetrofitHelper;
 import com.justwen.androidnga.base.network.retrofit.RetrofitService;
-import sp.phone.common.network.ReviewedNgaReadTransport;
 import sp.phone.mvp.contract.TopicListContract;
 import sp.phone.mvp.model.convert.ErrorConvertFactory;
 import sp.phone.mvp.model.convert.TopicConvertFactory;
@@ -43,15 +43,12 @@ public class TopicListModel extends BaseModel implements TopicListContract.Model
 
     private RetrofitService mService;
 
-    private ReviewedNgaReadTransport mReadTransport;
-
     private Map<String, String> mFieldMap;
 
     private TopicConvertFactory mConvertFactory;
 
     public TopicListModel() {
         mService = (RetrofitService) RetrofitHelper.getInstance().getService(RetrofitService.class);
-        mReadTransport = new ReviewedNgaReadTransport();
         mConvertFactory = new TopicConvertFactory();
     }
 
@@ -82,7 +79,9 @@ public class TopicListModel extends BaseModel implements TopicListContract.Model
                     }
                     String rawData = FileUtils.readFileToString(infoFile);
                     ThreadPageInfo pageInfo = JSON.parseObject(rawData, ThreadPageInfo.class);
-                    if (pageInfo != null) {
+                    if (pageInfo == null) {
+                        CloudServerManager.putCrashData(ContextUtils.getContext(),"rawData", rawData);
+                    } else {
                         listInfo.addThreadPage(JSON.parseObject(rawData, ThreadPageInfo.class));
                     }
                 }
@@ -130,12 +129,13 @@ public class TopicListModel extends BaseModel implements TopicListContract.Model
     @Override
     public void loadTopicList(final int page, TopicListParam param, final OnHttpCallBack<TopicListInfo> callBack) {
         String url = getUrl(page, param);
-        mReadTransport.topicList(url)
+        mService.get(url)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .map(new Function<String, TopicListInfo>() {
                     @Override
                     public TopicListInfo apply(@NonNull String js) throws Exception {
+                        //NLog.d(js);
                         TopicListInfo result = mConvertFactory.getTopicListInfo(js, page);
                         if (result != null) {
                             return result;
@@ -162,13 +162,14 @@ public class TopicListModel extends BaseModel implements TopicListContract.Model
     public void loadTwentyFourList(TopicListParam param, final OnHttpCallBack<TopicListInfo> callBack, int totalPage) {
         List<Observable<String>> obsList = new ArrayList<Observable<String>>();
         for (int i = 1; i <= totalPage; i++) {
-            obsList.add(mReadTransport.topicList(getUrl(i, param)));
+            obsList.add(mService.get(getUrl(i, param)));
         }
         Observable.concat(obsList).subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .map(new Function<String, TopicListInfo>() {
                     @Override
                     public TopicListInfo apply(@NonNull String js) throws Exception {
+                        NLog.d(js);
                         TopicListInfo result = mConvertFactory.getTopicListInfo(js, 0);
                         if (result != null) {
                             return result;

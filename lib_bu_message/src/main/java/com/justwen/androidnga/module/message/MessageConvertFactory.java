@@ -42,13 +42,13 @@ public class MessageConvertFactory {
         try {
             o = (JSONObject) JSON.parseObject(js).get("data");
         } catch (Exception e) {
-            logParseFailure("message_list_data", e);
+            NLog.e(TAG, "can not parse :\n" + js);
         }
         if (o == null) {
             try {
                 o = (JSONObject) JSON.parseObject(js).get("error");
             } catch (Exception e) {
-                logParseFailure("message_list_error", e);
+                NLog.e(TAG, "can not parse :\n" + js);
             }
             if (o == null) {
                 mErrorMsg = "请重新登录";
@@ -126,14 +126,14 @@ public class MessageConvertFactory {
         try {
             o = (JSONObject) JSON.parseObject(js).get("data");
         } catch (Exception e) {
-            logParseFailure("message_detail_data", e);
+            NLog.e(TAG, "can not parse :\n" + js);
         }
         if (o == null) {
 
             try {
                 o = (JSONObject) JSON.parseObject(js).get("error");
             } catch (Exception e) {
-                logParseFailure("message_detail_error", e);
+                NLog.e(TAG, "can not parse :\n" + js);
             }
             if (o == null) {
                 mErrorMsg = "请重新登录";
@@ -179,7 +179,7 @@ public class MessageConvertFactory {
         try {
             o = (JSONObject) JSON.parseObject(js).get("data");
         } catch (Exception e) {
-            logParseFailure("message_detail_page", e);
+            NLog.e(TAG, "can not parse :\n" + js);
         }
         if (o == null)
             return null;
@@ -245,11 +245,6 @@ public class MessageConvertFactory {
             rowObj = (JSONObject) rowMap.get(String.valueOf(i));
         }
         return __R;
-    }
-
-    private static void logParseFailure(String stage, Exception exception) {
-        NLog.e(TAG, "parse_failed stage=" + stage + " type="
-                + exception.getClass().getSimpleName());
     }
 
     private static void formatContent(MessageArticlePageInfo row) {

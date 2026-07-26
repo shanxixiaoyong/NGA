@@ -20,20 +20,9 @@ import okio.Buffer;
  */
 public class StringUtils {
 
-    private static Map<String, Pattern> sPatternMap = new HashMap<>();
+    private static final String[] SAYING = ContextUtils.getResources().getStringArray(R.array.saying);
 
-    /**
-     * Resource access is intentionally lazy.  Several parser/unit-test paths
-     * run before an Application context exists; eager initialization used to
-     * crash those callers with an ExceptionInInitializerError.
-     */
-    private static String[] getSayingValues() {
-        try {
-            return ContextUtils.getResources().getStringArray(R.array.saying);
-        } catch (RuntimeException ignored) {
-            return new String[0];
-        }
-    }
+    private static Map<String, Pattern> sPatternMap = new HashMap<>();
 
     public static String replaceAll(String content, String regex, String replacement) {
         return getPattern(regex).matcher(content).replaceAll(replacement);
@@ -79,13 +68,9 @@ public class StringUtils {
     }
 
     public static String getSaying() {
-        String[] sayingValues = getSayingValues();
-        if (sayingValues.length == 0) {
-            return "";
-        }
         Random random = new Random();
-        int num = random.nextInt(sayingValues.length);
-        String str =  sayingValues[num];
+        int num = random.nextInt(SAYING.length);
+        String str =  SAYING[num];
         if (str.contains(";")) {
             str = str.replace(";", "-----");
         }

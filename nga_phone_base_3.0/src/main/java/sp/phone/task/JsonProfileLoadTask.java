@@ -106,8 +106,7 @@ public class JsonProfileLoadTask {
                 buildAdminForums(ret, dataObj.getJSONObject("adminForums"));
                 return ret;
             } catch (Exception e) {
-                NLog.e(TAG, "parse_failed stage=profile type="
-                        + e.getClass().getSimpleName());
+                NLog.e(TAG, "can not parse :\n" + js);
             }
         }
         obj = obj.getJSONObject("error");
