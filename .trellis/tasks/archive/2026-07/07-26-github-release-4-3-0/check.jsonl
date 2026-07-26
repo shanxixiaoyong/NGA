@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"复核 release build、lint 已知基线、APK 签名/安装声明和设备证据。"}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"核对 README 声明的收藏排序和直接 FAB 差异没有夸大或遗漏。"}
+{"file":".trellis/tasks/07-25-nga-android-release-integration/design.md","reason":"审查 signing secret、artifact、hash、tag、许可证和不可覆盖发布约束。"}
+{"file":".trellis/tasks/archive/2026-07/07-26-restore-justwen-required-features/check-results.md","reason":"确保新发布基于已验证的恢复版本，并正确继承其已知 lint/test/device 限制。"}

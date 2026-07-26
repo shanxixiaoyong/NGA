@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Android release 构建、测试、lint、APK 安装和设备证据门。"}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"README 当前差异和直接 FAB/收藏交互必须与已实现契约一致。"}
+{"file":".trellis/tasks/07-25-nga-android-release-integration/design.md","reason":"外置正式签名、Release artifact、SHA-256、来源与回滚边界。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"README 未来 AI 计划的准确范围与仅作行为参考边界。"}
