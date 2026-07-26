@@ -1,0 +1,10 @@
+{"file":".trellis/spec/backend/index.md","reason":"Discover the active Android/network contracts and the stale native-login scenario that this task must supersede."}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Apply the project Android build, unit-test, lint, and device-smoke gates without masking known upstream baselines."}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Preserve the pinned Justwen active-account Cookie transport; the task research explicitly marks its native-password scenario as stale and scheduled for replacement."}
+{"file":".trellis/spec/frontend/index.md","reason":"Use the restored Justwen UI conventions as the login-entry baseline."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Avoid a parallel UI architecture and keep the implementation consistent with existing Compose components."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Trace Web Cookie acquisition through validation, multi-account persistence, result delivery, and request injection."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Reuse the existing account-row language, browser icon, session handoff, and URL policy instead of duplicating them."}
+{"file":".trellis/tasks/07-26-restore-justwen-multi-account-web-login/research/login-mechanism-comparison.md","reason":"Carry the evidence-backed NgaLite versus Justwen comparison, 403 diagnosis limits, and corrected architecture into implementation."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Apply the original-versus-migration evidence policy, exact Web origin/Cookie boundary, redaction, and offline validation."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Use AUTH.WEB_LOGIN and SESSION.SELECT_ACCOUNT as the pinned original Justwen facts; treat fork code only as delta."}

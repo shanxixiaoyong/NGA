@@ -1,0 +1,7 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Verify the focused Android gates, lint report, known baseline classification, and optional authorized device smoke."}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Check that the pinned Justwen request Cookie provider remains intact and that the obsolete native-password scenario is updated rather than followed."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Check the login entry against the existing Justwen Compose and navigation baseline."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Audit the complete Web result to account persistence to authenticated-request data flow."}
+{"file":".trellis/tasks/07-26-restore-justwen-multi-account-web-login/research/login-mechanism-comparison.md","reason":"Verify implementation conclusions against the recorded multi-account and 403 evidence."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Check exact HTTPS origins, Cookie validation, account binding, secret redaction, and no live access."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Verify login/account behavior against pinned AUTH.WEB_LOGIN and SESSION.SELECT_ACCOUNT rather than current-fork invention."}
