@@ -123,3 +123,24 @@ Added native account/password and CAPTCHA login, retained a controlled Web fallb
 ### Status
 
 [OK] **Completed**
+
+
+## Session 6: Simplify Android release and add main previews
+
+**Date**: 2026-07-26
+**Task**: Simplify Android release and add main previews
+**Branch**: `main`
+
+### Summary
+
+Changed Android publishing to create a signed prerelease on eligible main pushes and a direct stable Release on exact X.Y.Z tags; added CI-derived versions, safe preview replacement/cleanup, operator docs, and the release code-spec.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0927cdbd` | (see git log) |
+
+### Status
+
+[OK] **Completed**
