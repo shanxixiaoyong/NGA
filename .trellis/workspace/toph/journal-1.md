@@ -48,3 +48,25 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 3: Optimize Android CI release
+
+**Date**: 2026-07-26
+**Task**: Optimize Android CI release
+**Branch**: `main`
+
+### Summary
+
+Tag releases now reuse the exact successful same-SHA main APK, documentation-only pushes are filtered, Gradle task output caching is enabled, and the optimized main artifact was verified remotely.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2d2652fd` | (see git log) |
+| `4c1d8fd7` | (see git log) |
+
+### Status
+
+[OK] **Completed**
