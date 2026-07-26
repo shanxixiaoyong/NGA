@@ -10,19 +10,17 @@ class ConfirmDialog(private var mMessage: CharSequence, private var mActionRunna
 
     companion object {
         fun showConfirmDialog(activity: FragmentActivity, message: CharSequence, action: Runnable) {
-            try {
-                ConfirmDialog(message, action).show(activity.supportFragmentManager, null);
-            } catch (e: Exception) {
-                e.printStackTrace()
+            if (!activity.supportFragmentManager.isStateSaved) {
+                ConfirmDialog(message, action).show(activity.supportFragmentManager, null)
             }
         }
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val builder = AlertDialog.Builder(context!!);
+        val builder = AlertDialog.Builder(requireContext())
         builder.setMessage(mMessage)
-                .setPositiveButton(android.R.string.ok) { dialog, which -> mActionRunnable.run() }
-                .setNegativeButton(android.R.string.cancel, null);
-        return builder.create();
+                .setPositiveButton(android.R.string.ok) { _, _ -> mActionRunnable.run() }
+                .setNegativeButton(android.R.string.cancel, null)
+        return builder.create()
     }
 }

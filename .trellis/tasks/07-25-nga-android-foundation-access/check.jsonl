@@ -1,0 +1,8 @@
+{"file":".trellis/tasks/07-25-nga-android-foundation-access/root-migration-audit.md","reason":"复核 9 个精确碰撞、语义碰撞、归档哈希、保留目录、排除项和 rollback。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"检查官方 UA、全局 Cookie、明文 cid、WebView、日志、统计和 mutation 缺陷未被照搬。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"确认真实访问低频、授权且遇到挑战/限流即停止。"}
+{"file":"references/README.md","reason":"核对完整 commit、GPL/source ledger、未知 AAR/PSD/品牌资源隔离。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"验证 UI 到 Repository/transport/session/classifier 的数据流只有一个 owner。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查旧 app/core 未在活动 build graph 中形成第二套契约。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"验证 API 35 首门、API 26 回归、AndroidX runner、secret scan 和设备报告。"}
+{"file":"docs/source-provenance.md","reason":"导入完成后必须从 clean-room 说明更新为 Justwen GPL 根分叉和逐文件来源账本。"}

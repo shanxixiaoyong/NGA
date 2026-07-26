@@ -40,30 +40,15 @@
     </FrameLayout>
 
 
-    <com.getbase.floatingactionbutton.FloatingActionsMenu
-        android:id="@+id/fab_menu"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_post"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end|bottom"
-        app:layout_behavior="sp.phone.view.behavior.ScrollAwareFamBehavior">
-
-
-        <com.getbase.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_post"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:fab_title="@string/reply_thread"
-            app:srcCompat="@drawable/btn_ic_create"
-            tools:ignore="VectorDrawableCompat" />
-
-        <com.getbase.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_refresh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:fab_title="刷新"
-            app:srcCompat="@drawable/btn_ic_refresh"
-            tools:ignore="VectorDrawableCompat" />
-
-    </com.getbase.floatingactionbutton.FloatingActionsMenu>
+        android:layout_margin="@dimen/fab_margin"
+        android:contentDescription="@string/reply_thread"
+        app:layout_behavior="sp.phone.view.behavior.ScrollAwareFabBehavior"
+        app:srcCompat="@drawable/btn_ic_create"
+        tools:ignore="VectorDrawableCompat" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

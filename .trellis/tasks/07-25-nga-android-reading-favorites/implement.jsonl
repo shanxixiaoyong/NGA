@@ -1,0 +1,10 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"保证 payload、AST、Room、Paging 和 Compose 状态契约一致。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"parser、renderer、过滤和排序合并必须是共享实现。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/android-architecture-options.md","reason":"读取、缓存、自适应 UI、排序和性能设计依据。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"浏览、内容、历史、搜索和收藏的产品范围。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-source-audit.md","reason":"解析、分页、HTML fallback 和收藏刷新缺陷依据。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"open-nga 拖动行为与 Compose/ReadYou UI 参考。"}
+{"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/nga_phone_base_3.0/src/main/java/gov/anzong/androidnga/activity/compose/board/ForumBoardView.kt","reason":"Justwen 当前我的收藏网格、短按打开行为和 HorizontalPager 页面证据；新增拖动必须沿用其 UI。"}
+{"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/lib_base_ui_compose/src/main/java/com/justwen/androidnga/ui/compose/widget/TabLayoutWithPager.kt","reason":"Justwen HorizontalPager/TabLayout 手势边界；收藏拖动期间需要可选地暂停用户横滑。"}
+{"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/nga_phone_base_3.0/src/main/java/gov/anzong/androidnga/activity/compose/board/ForumBoardModel.kt","reason":"已有 swapBookmark 与本地收藏持久化，可在其模型边界内加入 App-wide 全局顺序、事务与回滚；不得按账号分区。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-favorites-gesture-audit.md","reason":"直接长按拖动、HorizontalPager 手势仲裁、边缘自动滚动和 TalkBack 验收证据。"}

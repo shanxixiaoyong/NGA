@@ -68,7 +68,7 @@ public abstract class BaseDialogFragment extends AppCompatDialogFragment impleme
         try {
             super.onStart();
         } catch (IllegalStateException e) {
-            NLog.d(e.getMessage());
+            NLog.d("dialog_start_failed type=" + e.getClass().getSimpleName());
         }
     }
 }

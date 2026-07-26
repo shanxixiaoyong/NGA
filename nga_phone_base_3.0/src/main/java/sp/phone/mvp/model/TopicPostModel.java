@@ -94,7 +94,7 @@ public class TopicPostModel extends BaseModel implements TopicPostContract.Model
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .map((String s) -> {
-                    NLog.d(s);
+                    NLog.d("post_auth_response_received");
                     s = s.replace("window.script_muti_get_var_store=", "");
                     TopicPostBean bean = JSON.parseObject(s, TopicPostBean.class);
                     postParam.setAuthCode(bean.getData().getAuth());
@@ -234,7 +234,8 @@ public class TopicPostModel extends BaseModel implements TopicPostContract.Model
                             postParam.appendAttachment(object.getString("attachments"), object.getString("attachments_check"));
                             callBack.onSuccess(object.getString("url"));
                         } catch (Exception e) {
-                            Logger.d("exception occur while uploading file " + s);
+                            Logger.d("attachment_upload_parse_failed type="
+                                    + e.getClass().getSimpleName());
                             callBack.onError("上传图片失败，请尝试更换域名后重试");
                         }
                     }

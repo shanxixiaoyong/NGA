@@ -24,6 +24,7 @@ fun TabLayoutWithPager(
     tabs: List<String> = arrayListOf("1", "2"),
     initialPage: Int = 0,
     fixed: Boolean = false,
+    userScrollEnabled: Boolean = true,
     content: @Composable ((index: Int) -> Unit)? = null,
 ) {
     val pagerState = rememberPagerState(pageCount = { tabs.size }, initialPage = initialPage)
@@ -47,7 +48,10 @@ fun TabLayoutWithPager(
                 TabRowItems(tabs, pagerState, coroutineScope)
             }
         }
-        HorizontalPager(state = pagerState) { pageIndex -> content?.invoke(pageIndex) }
+        HorizontalPager(
+            state = pagerState,
+            userScrollEnabled = userScrollEnabled,
+        ) { pageIndex -> content?.invoke(pageIndex) }
     }
 
 }

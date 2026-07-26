@@ -1,0 +1,10 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"最终检查 root fork→模块契约→数据迁移→APK/release evidence 全链路。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查共享 codec/parser/filter/provider/error owner 未在 feature 或 release 中分叉。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"API 35 主设备 runner、API 30/36 可选实体设备报告和质量 gate。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"完整首发功能矩阵和每项接口/验收门槛 source of truth。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-source-audit.md","reason":"安全、解析、状态、上传、WebView 和日志回归清单。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"根 fork Justwen 代码/UI/模块、兼容性、遗留风险和 minSdk 30 平台基线审计依据。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/android-architecture-options.md","reason":"Android 15/API 35 主门、API 30/36 可选层、迁移、账号、安全和测试总基线。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"Justwen GPL source/UI baseline、第三方 license/NOTICE 和资产边界。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-ecosystem-and-risks.md","reason":"访问/授权、未知结果、隐私、root-fork、平台和发布风险。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"发布前确认历史接口、挑战和匿名响应没有被当成官方稳定能力。"}

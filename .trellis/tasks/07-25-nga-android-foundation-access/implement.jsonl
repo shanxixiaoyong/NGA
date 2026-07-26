@@ -1,0 +1,8 @@
+{"file":".trellis/tasks/07-25-nga-android-foundation-access/root-migration-audit.md","reason":"根碰撞哈希、保留路径、归档/回滚、安全排除、GPL 账本和 Android 版本门的实施合同。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"固定 Justwen 快照的模块、登录/Cookie、GBK、读写路径和不可复制缺陷证据。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"Justwen 作为根/UI 分叉基线及其他参考只能用于行为/架构观察的来源边界。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"授权、低频、挑战/限流和禁止绕过的访问实验边界。"}
+{"file":"references/README.md","reason":"固定提交、上游 URL、许可证和品牌/签名/资源风险账本。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"把上游 UI、network、session、parser、Room 与错误分类收敛到单一边界。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"避免同时保留绿地 core 和上游 lib 两套 Cookie/codec/parser 状态所有者。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"API 35-first/API 26、library runner、物理设备和全量质量门。"}

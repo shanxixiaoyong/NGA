@@ -23,7 +23,7 @@ public abstract class BaseSubscriber<T> implements Observer<T>, FlowableSubscrib
 
     @Override
     public void onError(@NonNull Throwable throwable) {
-        NLog.e(throwable.getMessage());
+        NLog.e("request_failed type=" + throwable.getClass().getSimpleName());
 
     }
 

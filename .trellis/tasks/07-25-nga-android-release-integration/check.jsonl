@@ -1,0 +1,10 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查 feature matrix、root fork、Room migration、account scope、APK 和发布证据无断层。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查没有重复 contract/parser/codec/filter/provider，且保留原有 Justwen owner。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"检查 API 35 主门、API 30/36 可选实体设备、runner、序列号、安装/零测试/ANR gate。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"逐项关闭完整功能、owner、测试、证据和外部阻塞；不得静默删项。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-source-audit.md","reason":"确保已知安全、隐私、解析、上传和状态缺陷未回归。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"核对 root fork 保留 UI/导航但已隔离全局会话、明文秘密、WebView、日志、遥测和 minSdk 风险。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/android-architecture-options.md","reason":"核对性能、兼容、migration、缓存、账号、安全、签名和测试目标。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"核对 GPL-2.0-only/第三方来源、对应源码、无许可证项目和品牌/资产边界。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-ecosystem-and-risks.md","reason":"核对授权、限流、Cookie、unknown outcome、平台和发布撤回风险。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"最终检查无访问控制绕过、官方身份伪装或把探针响应当作发布契约。"}

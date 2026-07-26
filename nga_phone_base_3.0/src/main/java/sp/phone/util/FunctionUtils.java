@@ -46,7 +46,6 @@ import gov.anzong.androidnga.core.decode.ForumDecoder;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.common.UserManagerImpl;
 import sp.phone.http.bean.ThreadRowInfo;
-import sp.phone.proxy.ProxyBridge;
 import sp.phone.theme.ThemeManager;
 import sp.phone.ui.fragment.dialog.ReportDialogFragment;
 import sp.phone.view.webview.WebViewClientEx;
@@ -181,8 +180,7 @@ public class FunctionUtils {
         setting.setDefaultFontSize(PhoneConfiguration.getInstance()
                 .getWebSize());
         setting.setJavaScriptEnabled(true);
-        setting.setJavaScriptCanOpenWindowsAutomatically(true);
-        contentTV.addJavascriptInterface(new ProxyBridge(context, toast), "ProxyBridge");
+        setting.setJavaScriptCanOpenWindowsAutomatically(false);
         contentTV.setFocusableInTouchMode(true);
         contentTV.setFocusable(true);
         contentTV.setHapticFeedbackEnabled(true);
@@ -379,7 +377,8 @@ public class FunctionUtils {
         try {
             ret = js_escap_avatar.substring(start, end);
         } catch (Exception e) {
-            NLog.e("FunctionUtils", "cann't handle avatar url " + js_escap_avatar);
+            NLog.e("FunctionUtils", "avatar_url_parse_failed type="
+                    + e.getClass().getSimpleName());
         }
         return ret;
     }

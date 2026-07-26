@@ -1,0 +1,10 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查 mutation、草稿、上传 token、消息分页和 UI 状态没有跨层断裂。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查没有重复 codec/parser/account/error/upload owner 或复制旧实现缺陷。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"检查 API 35 主 runner、API 30/36 可选设备序列号、零测试和 instrumentation 失败分类。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"逐项核对写作、上传、主题收藏、投票、私信、通知和分享范围。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-source-audit.md","reason":"专项检查未知结果、草稿保留、附件内存/EXIF、auth、日志和隐私回归。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"核对迁移后的 Justwen 请求字段和私信/上传兼容行为，同时确认不复用全局会话、明文秘密和假成功。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/android-architecture-options.md","reason":"检查模块 ownership、streaming、Room/account scope、测试和回滚。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-ecosystem-and-risks.md","reason":"检查授权、限流、unknown outcome、外部媒体 Cookie、根 fork 和许可证风险。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"检查 Justwen GPL 来源台账、无许可证项目观察边界和资产清单。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"确认没有将挑战/403/短消息或匿名探针当成写入成功。"}

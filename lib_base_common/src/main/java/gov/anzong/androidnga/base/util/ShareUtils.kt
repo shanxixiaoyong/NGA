@@ -3,6 +3,7 @@ package gov.anzong.androidnga.base.util
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
 import gov.anzong.androidnga.common.R
 import java.io.File
@@ -16,7 +17,10 @@ object ShareUtils {
             )
             val intent = Intent(Intent.ACTION_SEND)
             intent.putExtra(Intent.EXTRA_STREAM, contentUri)
-            intent.setType("*/*")
+            val extension = file.extension.lowercase()
+            val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+                ?: "application/octet-stream"
+            intent.setType(mimeType)
             val text: String = context.resources.getString(R.string.share_to)
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             context.startActivity(Intent.createChooser(intent, text))
@@ -33,7 +37,10 @@ object ShareUtils {
             )
             val intent = Intent(Intent.ACTION_SEND)
             intent.putExtra(Intent.EXTRA_STREAM, contentUri)
-            intent.setType("image/jpeg")
+            val extension = file.extension.lowercase()
+            val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+                ?: "image/*"
+            intent.setType(mimeType)
             val text: String = context.resources.getString(R.string.share_to)
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             context.startActivity(Intent.createChooser(intent, text))

@@ -1,0 +1,33 @@
+INFO: Constructing runner from config.
+INFO: Configuring Android Instrumentation driver: android_instrumentation_runtime {
+  instrumentation_info {
+    app_package: "works.ngajust.core.ui.test"
+    test_package: "works.ngajust.core.ui.test"
+    test_runner_class: "androidx.test.runner.AndroidJUnitRunner"
+  }
+  instrumentation_args {
+    args_map {
+      key: "additionalTestOutputDir"
+      value: "/sdcard/Android/media/works.ngajust.core.ui.test/additional_test_output"
+    }
+  }
+}
+am_instrument_timeout: 31536000
+
+INFO: Configuring AndroidTestApkInstallerPlugin: apks_to_install {
+  apk_paths: "/home/toph/nga-just-works/core/ui/build/outputs/apk/androidTest/debug/ui-debug-androidTest.apk"
+  install_options {
+  }
+  uninstall_after_test: true
+}
+
+INFO: No installables found in test fixture. Nothing to install.
+INFO: Installing [/home/toph/nga-just-works/core/ui/build/outputs/apk/androidTest/debug/ui-debug-androidTest.apk] on device REDACTED_SERIAL_MEIZU.
+SEVERE: Test execution failed with fatal error!
+INFO: Copying files from device to host: /sdcard/Android/media/works.ngajust.core.ui.test/additional_test_output to /home/toph/nga-just-works/core/ui/build/outputs/connected_android_test_additional_output/debugAndroidTest/connected/MEIZU 18s - 13
+WARNING: Failed to retrieve additional test outputs from device.
+WARNING: Failed to retrieve test storage service outputs from device.
+INFO: Stop logcat streaming.
+INFO: Uninstalling works.ngajust.core.ui.test for device REDACTED_SERIAL_MEIZU.
+WARNING: Device REDACTED_SERIAL_MEIZU failed to uninstall test APK works.ngajust.core.ui.test.
+[Failure [DELETE_FAILED_INTERNAL_ERROR]]

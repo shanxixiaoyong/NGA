@@ -10,6 +10,7 @@ import gov.anzong.androidnga.core.board.data.BoardEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sp.phone.param.ParamKey
 import sp.phone.util.ARouterUtils
 import java.util.concurrent.TimeUnit
@@ -20,6 +21,8 @@ object ForumBoardViewModel : ViewModel() {
 
     val bookmarkSizeLiveData: MutableLiveData<Int> = MutableLiveData(0)
 
+    val bookmarkBoardsLiveData: MutableLiveData<List<BoardEntity>> = MutableLiveData(emptyList())
+
     private val forumBoardModel = ForumBoardModel()
 
     const val BOARD_REMOTE_REQUEST_TIME_KEY = "board_remote_request_time"
@@ -27,6 +30,7 @@ object ForumBoardViewModel : ViewModel() {
     init {
         boardLiveData.postValue(forumBoardModel.loadBoardData())
         bookmarkSizeLiveData.postValue(forumBoardModel.bookmarkBoard.children?.size)
+        bookmarkBoardsLiveData.postValue(forumBoardModel.bookmarkSnapshot())
     }
 
     fun getBoardData(index: Int = 0): BoardEntity {
@@ -35,6 +39,7 @@ object ForumBoardViewModel : ViewModel() {
 
     fun addBookmarkBoard(name: String, fid: Int, stid: Int, head: String? = null) {
         bookmarkSizeLiveData.value = forumBoardModel.addBookmarkBoard(name, fid, stid,head)
+        publishBookmarkBoards()
     }
 
     fun isBookmarkBoard(fid: Int, stid: Int): Boolean {
@@ -61,12 +66,73 @@ object ForumBoardViewModel : ViewModel() {
 
     fun removeBookmarkBoard(fid: Int, stid: Int) {
         bookmarkSizeLiveData.value = forumBoardModel.removeBookmarkBoard(fid, stid)
+        publishBookmarkBoards()
     }
 
     fun removeAllBookmarkBoard() {
         forumBoardModel.removeAllBookmarkBoard()?.let {
             bookmarkSizeLiveData.value = it
+            publishBookmarkBoards()
         }
+    }
+
+    fun beginBookmarkReorder(): List<BoardEntity> {
+        return forumBoardModel.bookmarkSnapshot()
+    }
+
+    fun moveBookmark(from: Int, to: Int): Boolean {
+        val moved = forumBoardModel.moveBookmark(from, to)
+        if (moved) {
+            publishBookmarkBoards()
+        }
+        return moved
+    }
+
+    fun cancelBookmarkReorder(snapshot: List<BoardEntity>) {
+        forumBoardModel.restoreBookmarkOrder(snapshot)
+        publishBookmarkBoards()
+    }
+
+    fun commitBookmarkReorder(snapshot: List<BoardEntity>) {
+        // Capture the candidate before switching threads.  The model will
+        // reject this write if another mutation has already changed the list.
+        val candidate = forumBoardModel.bookmarkSnapshot()
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = forumBoardModel.persistBookmarkOrderIfCurrent(candidate)
+            withContext(Dispatchers.Main) {
+                if (result == BookmarkPersistResult.FAILED) {
+                    // Do not roll back a newer user action that happened while
+                    // the disk write was in flight.
+                    val restored = forumBoardModel.restoreBookmarkOrderIfCurrent(candidate, snapshot)
+                    if (restored) {
+                        publishBookmarkBoards()
+                    }
+                    ToastUtils.error(
+                        if (restored) {
+                            "收藏排序保存失败，已恢复原顺序"
+                        } else {
+                            "收藏排序保存失败，较新的操作未被覆盖"
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    /** Reload the shared global bookmark list after an external data change. */
+    fun refreshBookmarkBoards() {
+        forumBoardModel.reloadBookmarkBoard()
+        bookmarkSizeLiveData.value = forumBoardModel.bookmarkSnapshot().size
+        publishBookmarkBoards()
+    }
+
+    /** Alias kept concise for callers that only need to refresh the bookmarks. */
+    fun refreshBookmarks() {
+        refreshBookmarkBoards()
+    }
+
+    private fun publishBookmarkBoards() {
+        bookmarkBoardsLiveData.value = forumBoardModel.bookmarkSnapshot()
     }
 
     fun showTopicList(board: BoardEntity) {

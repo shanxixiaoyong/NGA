@@ -1,0 +1,9 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查 transport→parser→store→UI 契约、错误和往返数据没有断层。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查 codec、parser、过滤、账号和错误逻辑没有重复来源。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"逐项核对完整复刻范围和收藏排序新增行为。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-source-audit.md","reason":"检查实现没有复制已知安全、状态、解析和上传缺陷。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/android-architecture-options.md","reason":"检查模块边界、账号隔离、缓存、性能、安全和测试策略。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"检查许可证边界和参考层级，避免使用无许可证实现或资源。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"检查未把历史接口当成官方稳定合同，也没有访问控制绕过。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"核对用户确认的当前安卓兼容首要参考，提取端点/编码/读写契约并排除其安全与会话缺陷。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-favorites-gesture-audit.md","reason":"检查直接长按卡片、先横滑切页、长按后暂停 Pager、恢复与无障碍排序契约。"}

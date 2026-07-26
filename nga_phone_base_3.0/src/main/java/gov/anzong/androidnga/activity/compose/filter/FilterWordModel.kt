@@ -5,7 +5,6 @@ import com.justwen.androidnga.base.network.retrofit.RetrofitHelper
 import com.justwen.androidnga.base.network.retrofit.RetrofitServiceKt
 import com.justwent.androidnga.bu.UserManager
 import gov.anzong.androidnga.Utils
-import gov.anzong.androidnga.base.logger.Logger
 import gov.anzong.androidnga.common.base.JavaBean
 import java.net.URLEncoder
 
@@ -21,7 +20,6 @@ class FilterWordModel {
     companion object {
 
         fun convertEntity(jsonString: String): Result<Pair<List<String>, List<String>>> {
-            Logger.d(jsonString)
             try {
                 val bean = JSON.parseObject(jsonString, FilterWordBean::class.java)
                 bean.data?.let {
@@ -62,7 +60,6 @@ class FilterWordModel {
             params["__act"] = "set_block_word"
             params["__output"] = "8"
             params["data"] = URLEncoder.encode(buildPostData(filterUserList, filterWordList), "gbk")
-            Logger.d("data: ${params["data"]}")
             val refererStr = Utils.getNGAHost()
             val headerMap = mapOf(
                 "Referer" to refererStr,

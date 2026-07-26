@@ -1,4 +1,3 @@
--keep class com.umeng.** {*;}
 -keep class org.repackage.** {*;}
 -keep class com.uyumao.** { *; }
 
@@ -14,6 +13,3 @@
 -keep public class gov.anzong.androidnga.R$*{
 public static final int *;
 }
-
--dontwarn com.tencent.bugly.**
--keep public class com.tencent.bugly.**{*;}

@@ -1,0 +1,32 @@
+{
+  "id": "nga-android-app-research",
+  "name": "nga-android-app-research",
+  "title": "NGA 安卓 App 前期调研与 MVP 规划",
+  "description": "以 Justwen GPL-2.0 Android 工程为根目录代码/UI 基线，在其现有模块内补齐 nga_harmony 功能，并实现我的收藏版面直接长按拖动排序及与 HorizontalPager 横滑的手势仲裁；先完成可回滚迁移规划，再进入实现。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "toph",
+  "assignee": "toph",
+  "createdAt": "2026-07-25",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "07-25-nga-android-foundation-access",
+    "07-25-nga-android-reading-favorites",
+    "07-25-nga-android-interactions",
+    "07-25-nga-android-advanced",
+    "07-25-nga-android-release-integration"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

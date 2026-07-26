@@ -1,0 +1,8 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查 parser→Room→UiState 往返、错误和账号隔离。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"核对浏览、UI、搜索、历史和收藏排序验收。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-source-audit.md","reason":"检查未复制空成功、分页停滞、无界解析等缺陷。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/android-architecture-options.md","reason":"检查 Paging、ThreadPageStore、adaptive、Room 和性能要求。"}
+{"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/nga_phone_base_3.0/src/main/java/gov/anzong/androidnga/activity/compose/board/ForumBoardView.kt","reason":"验证短按打开、收藏网格拖动和不改变 Justwen UI 的手势入口。"}
+{"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/lib_base_ui_compose/src/main/java/com/justwen/androidnga/ui/compose/widget/TabLayoutWithPager.kt","reason":"验证先横滑切页、长按后暂停 Pager、结束后恢复的手势仲裁。"}
+{"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/nga_phone_base_3.0/src/main/java/gov/anzong/androidnga/activity/compose/board/ForumBoardModel.kt","reason":"验证稳定 board key、顺序交换、持久化和失败回滚边界。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-favorites-gesture-audit.md","reason":"验证短按/长按/横滑的事件仲裁、恢复状态、自动滚动和无障碍动作。"}

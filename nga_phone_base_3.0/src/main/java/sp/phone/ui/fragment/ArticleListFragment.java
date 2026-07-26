@@ -115,7 +115,7 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
                     }
                     break;
                 case R.id.menu_vote:
-                    FunctionUtils.createVoteDialog(row, getActivity(), mListView, mToast);
+                    ActivityUtils.showToast("投票功能正在进行安全适配，暂不可用");
                     break;
                 case R.id.menu_ban_this_one:
                     mPresenter.banThisSB(row);

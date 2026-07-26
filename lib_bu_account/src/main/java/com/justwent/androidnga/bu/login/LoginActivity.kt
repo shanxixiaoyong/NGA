@@ -1,11 +1,11 @@
 package com.justwent.androidnga.bu.login
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.ViewGroup
-import android.webkit.JsResult
-import android.webkit.ValueCallback
-import android.webkit.WebChromeClient
+import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.alibaba.android.arouter.facade.annotation.Route
 import com.justwen.androidnga.base.activity.ARouterConstants
 import com.justwen.androidnga.ui.compose.BaseComposeActivity
+import gov.anzong.androidnga.common.util.NgaRequestPolicy
 import gov.anzong.androidnga.base.util.ToastUtils
 
 @Route(path = ARouterConstants.ACTIVITY_LOGIN)
@@ -34,61 +35,76 @@ class LoginActivity : BaseComposeActivity() {
         LoginWebView(url = LoginViewModel.URL_LOGIN, onLoginCallback = {
             if (viewModel.checkLoginResult(it)) {
                 setResult(RESULT_OK)
+                clearWebViewCookies()
+                finish()
             }
         })
     }
 
+    private fun clearWebViewCookies() {
+        CookieManager.getInstance().removeAllCookies(null)
+        CookieManager.getInstance().flush()
+    }
+
     override fun finish() {
-        super.finish()
         if (viewModel.checkLoginResult()) {
             setResult(RESULT_OK)
         }
+        super.finish()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     @Composable
-    fun LoginWebView(url: String, onLoginCallback: ValueCallback<Pair<String, String>>) {
+    fun LoginWebView(url: String, onLoginCallback: (String) -> Unit) {
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
-                    webChromeClient = object : WebChromeClient() {
-
-                        override fun onJsConfirm(
-                            view: WebView?,
-                            url: String?,
-                            message: String?,
-                            result: JsResult?
-                        ): Boolean {
-                            onLoginCallback.onReceiveValue(Pair(url!!, message!!))
-                            return super.onJsConfirm(view, url, message, result)
-                        }
-
-                    }
                     webViewClient = object : WebViewClient() {
 
                         override fun shouldOverrideUrlLoading(
                             view: WebView?,
                             request: WebResourceRequest?
                         ): Boolean {
-                            request?.url?.let {
-                                viewModel.currentUrl = it.toString()
-                                view?.loadUrl(it.toString())
+                            val uri = request?.url ?: return true
+                            if (NgaRequestPolicy.isTrustedHttps(uri.scheme, uri.host)) {
+                                viewModel.currentUrl = uri.toString()
+                                return false
+                            }
+                            // Do not let an untrusted redirect run inside the login WebView.
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                             }
                             return true
+                        }
+
+                        override fun onPageFinished(view: WebView, loadedUrl: String) {
+                            if (NgaRequestPolicy.isTrustedHttps(
+                                    Uri.parse(loadedUrl).scheme,
+                                    Uri.parse(loadedUrl).host
+                                )
+                            ) {
+                                viewModel.currentUrl = loadedUrl
+                                onLoginCallback(loadedUrl)
+                            }
+                            super.onPageFinished(view, loadedUrl)
                         }
                     }
                     getSettings().apply {
                         javaScriptEnabled = true
-                        javaScriptCanOpenWindowsAutomatically = true
+                        javaScriptCanOpenWindowsAutomatically = false
+                        setSupportMultipleWindows(false)
+                        allowFileAccess = false
+                        allowContentAccess = false
+                        mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
                     }
+                    CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
+                    loadUrl(url)
                 }
-            }, update = {
-                it.loadUrl(url)
-            })
+            }, update = { })
     }
 
 }

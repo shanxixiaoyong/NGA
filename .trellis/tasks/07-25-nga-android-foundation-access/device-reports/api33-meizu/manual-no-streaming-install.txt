@@ -1,0 +1,18 @@
+Command:
+adb -s REDACTED_SERIAL_MEIZU install --no-streaming -r -t core/ui/build/outputs/apk/androidTest/debug/ui-debug-androidTest.apk
+
+Result:
+Performing Push Install
+core/ui/build/outputs/apk/androidTest/debug/ui-debug-androidTest.apk: 1 file pushed, 0 skipped. 46.8 MB/s (11863236 bytes in 0.242s)
+Failure [INSTALL_FAILED_USER_RESTRICTED]
+
+Follow-up observations:
+- `adb devices -l` still reported serial REDACTED_SERIAL_MEIZU as `device` after the command.
+- `dumpsys package works.ngajust.core.ui.test` reported that the package was not installed.
+- The phone was awake and unlocked, and Android developer settings/ADB were enabled.
+- Read-only device settings showed `verifier_verify_adb_installs=1`,
+  `usb_install_item_switch=switch:1`, and an app-specific entry
+  `usb_install_item_works.ngajust.core.ui.test=works.ngajust.core.ui.test:0`;
+  the latter is consistent with a Flyme USB-install denial, not a transport
+  failure.
+- The remaining action is user-side approval/enabling of Flyme's USB installation control; no security setting was bypassed programmatically.

@@ -15,8 +15,16 @@ import gov.anzong.androidnga.common.base.JavaBean;
 @Entity(tableName = "users")
 public class User implements JavaBean {
 
+    /**
+     * Legacy schema column. New writes always set this field to null; session
+     * credentials live in SessionVault instead.
+     */
     @ColumnInfo(name = "cid")
     public String mCid;
+
+    /** Opaque local id used to scope sessions and account-owned app data. */
+    @ColumnInfo(name = "account_id")
+    public String mAccountId;
 
     @NonNull
     @PrimaryKey
@@ -69,6 +77,14 @@ public class User implements JavaBean {
         mCid = cid;
     }
 
+    public String getAccountId() {
+        return mAccountId;
+    }
+
+    public void setAccountId(String accountId) {
+        mAccountId = accountId;
+    }
+
     public String getNickName() {
         return mNickName;
     }
@@ -86,8 +102,7 @@ public class User implements JavaBean {
     @Override
     public String toString() {
         return "User{" +
-                "mCid='" + mCid + '\'' +
-                ", mUserId='" + mUserId + '\'' +
+                "mUserId='" + mUserId + '\'' +
                 ", mNickName='" + mNickName + '\'' +
                 ", mAvatarUrl='" + mAvatarUrl + '\'' +
                 '}';

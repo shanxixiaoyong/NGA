@@ -1,0 +1,30 @@
+{
+  "id": "nga-android-foundation-access",
+  "name": "nga-android-foundation-access",
+  "title": "NGA Android 工程基础与访问验证",
+  "description": "把 Justwen GPL-2.0 Android tracked tree 可恢复地迁入根目录，保留其 UI/导航/主题，归档旧 greenfield 工程，并在其模块内完成会话、网络、WebView、日志、上传、错误和上游 minSdk 30/Android 15 访问基线。",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "justwen-root-import-and-foundation-hardening",
+  "package": "android-root",
+  "priority": "P0",
+  "creator": "toph",
+  "assignee": "toph",
+  "createdAt": "2026-07-25",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "07-25-nga-android-app-research",
+  "relatedFiles": [
+    ".trellis/tasks/07-25-nga-android-foundation-access/root-migration-audit.md",
+    "references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen",
+    "references/README.md"
+  ],
+  "notes": "Planning was reopened after the product baseline changed to a Justwen root fork. Historical pre-migration build/lint/secret/device reports remain under check-results.md and device-reports/; they do not certify the future Justwen root. No emulator is to be started. MEIZU 18s/API 33 serial REDACTED_SERIAL_MEIZU still requires Flyme USB-install approval after INSTALL_FAILED_USER_RESTRICTED. Authorized live board/topic/thread/RSA/Web validation remains pending until a permitted account is available.",
+  "meta": {}
+}

@@ -150,7 +150,8 @@ public class ActivityUtils {
                 df.show(fm, dialogTag);
                 this.df = df;
             } catch (Exception e) {
-                NLog.e(this.getClass().getSimpleName(), NLog.getStackTraceString(e));
+                NLog.e(this.getClass().getSimpleName(), "dialog_failed type="
+                        + e.getClass().getSimpleName());
 
             }
 
@@ -185,7 +186,8 @@ public class ActivityUtils {
                 df.show(fm, dialogTag);
                 this.df = df;
             } catch (Exception e) {
-                NLog.e(this.getClass().getSimpleName(), NLog.getStackTraceString(e));
+                NLog.e(this.getClass().getSimpleName(), "dialog_failed type="
+                        + e.getClass().getSimpleName());
 
             }
 
@@ -230,7 +232,8 @@ public class ActivityUtils {
 
                     ft.commit();
                 } catch (Exception e) {
-                    NLog.e(this.getClass().getSimpleName(), NLog.getStackTraceString(e));
+                    NLog.e(this.getClass().getSimpleName(), "dialog_failed type="
+                            + e.getClass().getSimpleName());
                 }
 
                 df = null;

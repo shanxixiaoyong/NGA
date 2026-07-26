@@ -1,0 +1,9 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"网络字节、解析模型、Room、Repository 与 Compose 之间需要显式数据契约。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"共享 codec、parser、账号和错误逻辑必须有单一 owner，避免各功能重复实现。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/android-architecture-options.md","reason":"Android 模块、网络、存储、安全、自适应 UI、排序和测试的主架构依据。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"完整产品范围、默认基线和内部实施顺序的功能依据。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-source-audit.md","reason":"避免移植 nga_harmony 已发现的认证、日志、解析、分页、收藏和上传缺陷。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/reference-project-comparison.md","reason":"选择正确的产品、Android 架构、拖动排序和许可证参考来源。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/official-access-probe.md","reason":"实现必须遵守当前访问、挑战、Cookie、编码和低频验证边界。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"安卓协议兼容优先参考：登录/Cookie、GBK、非标准 JSON、读写、上传和私信字段；实现仍受 foundation 安全契约约束。"}
+{"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-favorites-gesture-audit.md","reason":"Justwen 收藏网格、HorizontalPager 冲突、open-nga 拖动行为和可测试手势仲裁证据。"}

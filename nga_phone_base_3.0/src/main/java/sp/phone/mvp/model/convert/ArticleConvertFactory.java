@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import gov.anzong.androidnga.Utils;
-import gov.anzong.androidnga.base.logger.Logger;
 import gov.anzong.androidnga.core.HtmlConvertFactory;
 import gov.anzong.androidnga.common.util.NLog;
 import gov.anzong.androidnga.core.data.AttachmentData;
@@ -56,9 +55,7 @@ public class ArticleConvertFactory {
                     .replaceAll("\"subject\":(0\\d+),", "\"subject\":\"$1\",")
                     .replaceAll("\"author\":(0\\d+),", "\"author\":\"$1\",")
                     .replaceAll("\"alterinfo\":\"\\[(\\w|\\s)+\\]\\s+\",", ""); //部分页面打不开的问题
-//            NLog.e(js);
             JSONObject obj = (JSONObject) JSON.parseObject(js).get("data");
-            NLog.d(TAG, "js = :\n" + js);
             if (obj == null) {
                 return null;
             }
@@ -70,8 +67,7 @@ public class ArticleConvertFactory {
             data.set__ROWS(allRows);
             data.setRowNum(data.getRowList().size());
         } catch (Exception e) {
-            NLog.e(TAG, "can not parse :\n" + js);
-            Logger.d(e);
+            NLog.e(TAG, "parse_failed stage=article_page type=" + e.getClass().getSimpleName());
         }
         return data;
     }
@@ -84,7 +80,7 @@ public class ArticleConvertFactory {
         try {
             return JSONObject.toJavaObject(subObj, ThreadPageInfo.class);
         } catch (RuntimeException e) {
-            NLog.e(TAG, subObj.toJSONString());
+            NLog.e(TAG, "parse_failed stage=article_metadata type=" + e.getClass().getSimpleName());
         }
         return null;
     }
@@ -299,4 +295,3 @@ public class ArticleConvertFactory {
     }
 
 }
-

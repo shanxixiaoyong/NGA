@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="works.ngajust.core.data.AccountRepositoryTest" tests="3" failures="0" errors="0" skipped="0" time="0.835" timestamp="2026-07-25T09:06:08" hostname="localhost">
+  <properties>
+    <property name="device" value="nga_api26(AVD) - 8.0.0" />
+    <property name="flavor" value="" />
+    <property name="project" value=":core:data" />
+  </properties>
+  <testcase name="accountsAreStoredWithoutSessionSecrets" classname="works.ngajust.core.data.AccountRepositoryTest" time="0.023" />
+  <testcase name="accountBoundAadRejectsReadingAnotherAccountFile" classname="works.ngajust.core.data.AndroidKeystoreSessionVaultTest" time="0.057" />
+  <testcase name="sessionIsEncryptedRoundTrippedAndDeletedPerAccount" classname="works.ngajust.core.data.AndroidKeystoreSessionVaultTest" time="0.08" />
+</testsuite>

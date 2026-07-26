@@ -43,13 +43,13 @@ public class MessageConvertFactory {
         try {
             o = (JSONObject) JSON.parseObject(js).get("data");
         } catch (Exception e) {
-            NLog.e(TAG, "can not parse :\n" + js);
+            logParseFailure("message_list_data", e);
         }
         if (o == null) {
             try {
                 o = (JSONObject) JSON.parseObject(js).get("error");
             } catch (Exception e) {
-                NLog.e(TAG, "can not parse :\n" + js);
+                logParseFailure("message_list_error", e);
             }
             if (o == null) {
                 mErrorMsg = "请重新登录";
@@ -127,14 +127,14 @@ public class MessageConvertFactory {
         try {
             o = (JSONObject) JSON.parseObject(js).get("data");
         } catch (Exception e) {
-            NLog.e(TAG, "can not parse :\n" + js);
+            logParseFailure("message_detail_data", e);
         }
         if (o == null) {
 
             try {
                 o = (JSONObject) JSON.parseObject(js).get("error");
             } catch (Exception e) {
-                NLog.e(TAG, "can not parse :\n" + js);
+                logParseFailure("message_detail_error", e);
             }
             if (o == null) {
                 mErrorMsg = "请重新登录";
@@ -197,7 +197,7 @@ public class MessageConvertFactory {
         try {
             o = (JSONObject) JSON.parseObject(js).get("data");
         } catch (Exception e) {
-            NLog.e(TAG, "can not parse :\n" + js);
+            logParseFailure("message_detail_page", e);
         }
         if (o == null)
             return null;
@@ -263,6 +263,11 @@ public class MessageConvertFactory {
             rowObj = (JSONObject) rowMap.get(String.valueOf(i));
         }
         return __R;
+    }
+
+    private static void logParseFailure(String stage, Exception exception) {
+        NLog.e(TAG, "parse_failed stage=" + stage + " type="
+                + exception.getClass().getSimpleName());
     }
 
     private void fillUserInfo(MessageArticlePageInfo row, JSONObject userInfoMap) {

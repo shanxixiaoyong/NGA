@@ -1,0 +1,2 @@
+Synthetic short-message fixture. No live NGA content or identifier is present.
+

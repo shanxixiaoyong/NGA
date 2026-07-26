@@ -109,6 +109,4 @@ public class PreferenceKey {
     @Deprecated
     public static final String DOWNLOAD_IMG_NO_WIFI = "down_load_without_wifi";
 
-    public static final String USER_AGENT = "preference_key_ua";
-
 }

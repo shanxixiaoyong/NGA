@@ -50,16 +50,11 @@ public class ChangeAvatarLoadTask extends AsyncTask<String, Integer, Bitmap> {
         HttpUtil.downImage(avatarUrl, avatarLocalPath);
         try {
             is = new FileInputStream(avatarLocalPath);
-            //NLog.d(TAG,
-            //		"download avatar from " + avatarUrl);
-
         } catch (FileNotFoundException e) {
-            NLog.d(TAG,
-                    "avatar " + avatarUrl + " is failed to download");
+            NLog.d(TAG, "avatar_download_failed type=" + e.getClass().getSimpleName());
         }
 
         if (is != null) {
-            //NLog.d(TAG,"load avatar from file: " + avatarLocalPath);
             bitmap = ImageUtils.loadAvatarFromSdcard(avatarLocalPath);
         }
 

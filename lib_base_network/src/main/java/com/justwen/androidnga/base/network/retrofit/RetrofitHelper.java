@@ -2,23 +2,21 @@ package com.justwen.androidnga.base.network.retrofit;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.text.TextUtils;
-import android.webkit.WebSettings;
 
+import com.justwen.androidnga.base.network.request.FoundationAccessPolicy;
+import com.justwen.androidnga.base.network.request.NgaRequestInterceptors;
 import com.justwen.androidnga.base.network.retrofit.converter.JsonStringConvertFactory;
 
 import java.net.URLDecoder;
 
-import gov.anzong.androidnga.base.logger.Logger;
 import gov.anzong.androidnga.base.util.ContextUtils;
-import gov.anzong.androidnga.base.util.PreferenceUtils;
 import gov.anzong.androidnga.base.util.StringUtils;
 import gov.anzong.androidnga.common.PreferenceKey;
 import gov.anzong.androidnga.common.util.ForumUtils;
 import gov.anzong.androidnga.common.util.NLog;
+import gov.anzong.androidnga.common.util.NgaRequestPolicy;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import okhttp3.RequestBody;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
@@ -35,13 +33,7 @@ public class RetrofitHelper {
 
     private String mBaseUrl;
 
-    private String mUserAgent = "";
-
-    private static CookieProvider mCookieProvider;
-
-    public interface CookieProvider {
-        String getCookie();
-    }
+    private final String mUserAgent = NgaRequestPolicy.DEFAULT_USER_AGENT;
 
     private RetrofitHelper() {
         Context context = ContextUtils.getContext();
@@ -56,20 +48,6 @@ public class RetrofitHelper {
             }
         });
 
-        mUserAgent = sp.getString(PreferenceKey.USER_AGENT, null);
-
-        if (TextUtils.isEmpty(mUserAgent)) {
-            mUserAgent = WebSettings.getDefaultUserAgent(context);
-            PreferenceUtils.putData(PreferenceKey.USER_AGENT, mUserAgent);
-        }
-
-    }
-
-    public static void setCookieProvider(CookieProvider cookieProvider) {
-        mCookieProvider = cookieProvider;
-    }
-    public void setUserAgent(String userAgent) {
-        mUserAgent = userAgent;
     }
 
     public String getUserAgent() {
@@ -89,8 +67,16 @@ public class RetrofitHelper {
     }
 
     public Retrofit createRetrofit(String baseUrl, OkHttpClient.Builder builder) {
+        return createRetrofit(baseUrl, builder, FoundationAccessPolicy.disabled());
+    }
+
+    public Retrofit createRetrofit(
+            String baseUrl,
+            OkHttpClient.Builder builder,
+            FoundationAccessPolicy accessPolicy
+    ) {
         if (builder == null) {
-            builder = createOkHttpClientBuilder();
+            builder = createOkHttpClientBuilder(accessPolicy);
         }
         return new Retrofit.Builder()
                 .baseUrl(baseUrl)
@@ -101,24 +87,14 @@ public class RetrofitHelper {
     }
 
     public OkHttpClient.Builder createOkHttpClientBuilder() {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        builder.addInterceptor(chain -> {
-            Request original = chain.request();
+        return createOkHttpClientBuilder(FoundationAccessPolicy.disabled());
+    }
 
-            String cookie = original.header("Cookie");
-            if (cookie == null && mCookieProvider != null) {
-                cookie = mCookieProvider.getCookie();
-            }
-            Request request = original.newBuilder()
-                    .header("Cookie", cookie)
-                    .header("User-Agent", mUserAgent)
-                    .header("X-User-Agent", "Nga_Official")
-                    .method(original.method(), original.body())
-                    .build();
-            return chain.proceed(request);
-        });
+    public OkHttpClient.Builder createOkHttpClientBuilder(FoundationAccessPolicy accessPolicy) {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.addInterceptor(NgaRequestInterceptors.foundationGate(accessPolicy));
         builder.addInterceptor(chain -> {
-            Request request = chain.request();
+            okhttp3.Request request = chain.request();
             try {
                 if (request.method().equalsIgnoreCase("post")) {
                     String body = StringUtils.requestBody2String(request.body());
@@ -128,15 +104,11 @@ public class RetrofitHelper {
                     }
                 }
             } catch (Exception e) {
-                NLog.e(e.getMessage());
+                NLog.e("request_encoding_failed type=" + e.getClass().getSimpleName());
             }
             return chain.proceed(request);
         });
-        builder.addInterceptor(chain -> {
-            Request request = chain.request();
-            Logger.d(request.toString());
-            return chain.proceed(request);
-        });
+        builder.addNetworkInterceptor(NgaRequestInterceptors.credentialBoundary(mUserAgent));
         return builder;
     }
 
@@ -160,6 +132,12 @@ public class RetrofitHelper {
         return new Retrofit.Builder()
                 .baseUrl(URL_NGA_BASE_CC)
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .client(new OkHttpClient.Builder()
+                        .addInterceptor(NgaRequestInterceptors.foundationGate(
+                                FoundationAccessPolicy.disabled()))
+                        .addNetworkInterceptor(NgaRequestInterceptors.credentialBoundary(
+                                NgaRequestPolicy.DEFAULT_USER_AGENT))
+                        .build())
                 .build()
                 .create(RetrofitService.class);
     }
@@ -169,6 +147,12 @@ public class RetrofitHelper {
                 .baseUrl(URL_NGA_BASE_CC)
                 .addConverterFactory(JsonStringConvertFactory.create())
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .client(new OkHttpClient.Builder()
+                        .addInterceptor(NgaRequestInterceptors.foundationGate(
+                                FoundationAccessPolicy.disabled()))
+                        .addNetworkInterceptor(NgaRequestInterceptors.credentialBoundary(
+                                NgaRequestPolicy.DEFAULT_USER_AGENT))
+                        .build())
                 .build()
                 .create(RetrofitService.class);
     }

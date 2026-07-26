@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        These names were historically supplied by SignSeekBar.  Keeping the
+        small, local styleable lets existing settings layouts retain their
+        visual contract while SeekBarEx is backed by AndroidX instead.
+    -->
+    <declare-styleable name="SeekBarEx">
+        <attr name="ssb_second_track_color" format="color|reference" />
+        <attr name="ssb_second_track_size" format="dimension" />
+        <attr name="ssb_show_sign" format="boolean" />
+        <attr name="ssb_sign_color" format="color|reference" />
+        <attr name="ssb_thumb_radius" format="dimension" />
+        <attr name="ssb_thumb_radius_on_dragging" format="dimension" />
+        <attr name="ssb_track_color" format="color|reference" />
+        <attr name="ssb_track_size" format="dimension" />
+    </declare-styleable>
+</resources>

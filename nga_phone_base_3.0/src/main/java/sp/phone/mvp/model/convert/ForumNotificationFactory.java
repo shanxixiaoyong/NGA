@@ -34,7 +34,8 @@ public class ForumNotificationFactory {
                 }
             }
         } catch (Exception e) {
-            NLog.e("buildRecentReplyList error" + e.getMessage());
+            NLog.e("notification_parse_failed stage=recent_reply type="
+                    + e.getClass().getSimpleName());
         }
         return infoList;
     }
@@ -94,7 +95,8 @@ public class ForumNotificationFactory {
             }
 
         } catch (Exception e) {
-            NLog.e("buildNotificationList error " + e.getMessage());
+            NLog.e("notification_parse_failed stage=list type="
+                    + e.getClass().getSimpleName());
         }
         return infoList;
     }

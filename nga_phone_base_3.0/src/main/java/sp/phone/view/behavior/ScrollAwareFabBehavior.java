@@ -30,13 +30,13 @@ public class ScrollAwareFabBehavior extends FloatingActionButton.Behavior {
     private static final int SCROLL_AXIS_VERTICAL = 10;
 
     public ScrollAwareFabBehavior(Context context, AttributeSet attrs) {
-        super();
+        super(context, attrs);
     }
 
     @Override
     public boolean onStartNestedScroll(CoordinatorLayout coordinatorLayout, FloatingActionButton child,
                                        View directTargetChild, View target, int nestedScrollAxes) {
-        return nestedScrollAxes == ViewCompat.SCROLL_AXIS_VERTICAL;
+        return (nestedScrollAxes & ViewCompat.SCROLL_AXIS_VERTICAL) != 0;
     }
 
 

@@ -55,7 +55,7 @@ public class ArticleCacheActivity extends BaseActivity {
         mPagerAdapter = new ArticlePagerAdapter(getSupportFragmentManager(), mRequestParam);
         mPagerAdapter.setPageIndexList(mCachePageList);
 
-        findViewById(R.id.fab_menu).setVisibility(View.GONE);
+        findViewById(R.id.fab_post).setVisibility(View.GONE);
         ViewPager viewPager = findViewById(R.id.pager);
         viewPager.setAdapter(mPagerAdapter);
 

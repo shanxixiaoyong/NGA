@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
+import android.webkit.WebSettings
 
 open class WebViewFragment : BaseFragment() {
 
@@ -35,7 +36,14 @@ open class WebViewFragment : BaseFragment() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        webView?.settings?.javaScriptEnabled = true
+        webView?.settings?.apply {
+            javaScriptEnabled = false
+            javaScriptCanOpenWindowsAutomatically = false
+            setSupportMultipleWindows(false)
+            allowFileAccess = false
+            allowContentAccess = false
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        }
         url?.let {
             webView?.loadUrl(it)
         }

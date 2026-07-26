@@ -5,7 +5,6 @@ import android.os.Process;
 import android.webkit.WebView;
 
 import com.alibaba.android.arouter.launcher.ARouter;
-import com.justwen.androidnga.base.network.retrofit.RetrofitHelper;
 import com.justwen.androidnga.cloud.CloudServerManager;
 import com.justwent.androidnga.bu.UserManager;
 
@@ -25,7 +24,6 @@ import gov.anzong.androidnga.common.util.ReflectUtils;
 import gov.anzong.androidnga.db.AppDatabase;
 import sp.phone.common.UserManagerImpl;
 import sp.phone.common.VersionUpgradeHelper;
-import sp.phone.task.CheckInTask;
 
 public class NgaClientApp extends Application {
 
@@ -43,7 +41,6 @@ public class NgaClientApp extends Application {
         AppDatabase.init(this);
         initCoreModule();
         initRouter();
-        checkIn();
         super.onCreate();
 
         // fixWebViewMultiProcessException();
@@ -101,7 +98,6 @@ public class NgaClientApp extends Application {
     private void initCoreModule() {
         UserManagerImpl.getInstance().initialize(this);
         UserManager.INSTANCE.getActiveUser();
-        RetrofitHelper.setCookieProvider(() -> UserManagerImpl.getInstance().getCookie());
 //        // 注册crashHandler
 //        CrashHandler.getInstance().init(this);
         initCoreModuleAsync();
@@ -125,10 +121,6 @@ public class NgaClientApp extends Application {
             sNewVersion = true;
             PreferenceUtils.putData(PreferenceKey.KEY_WEBVIEW_DATA_INDEX, 0);
         }
-    }
-
-    private void checkIn() {
-        CheckInTask.autoCheckIn(this);
     }
 
     public static boolean isNewVersion() {

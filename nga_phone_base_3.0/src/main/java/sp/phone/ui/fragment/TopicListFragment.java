@@ -16,8 +16,8 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
 import com.alibaba.android.arouter.launcher.ARouter;
-import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -37,8 +37,8 @@ public class TopicListFragment extends TopicSearchFragment {
 
     private Menu mOptionMenu;
 
-    @BindView(R.id.fab_menu)
-    public FloatingActionsMenu mFam;
+    @BindView(R.id.fab_post)
+    public FloatingActionButton mFab;
 
     @BindView(R.id.appbar)
     public AppBarLayout mAppBarLayout;
@@ -71,15 +71,14 @@ public class TopicListFragment extends TopicSearchFragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        updateFloatingMenu();
+        updateFloatingActionButton();
     }
 
-    private void updateFloatingMenu() {
+    private void updateFloatingActionButton() {
         if (mConfig.isLeftHandMode()) {
-            CoordinatorLayout.LayoutParams lp = (CoordinatorLayout.LayoutParams) mFam.getLayoutParams();
+            CoordinatorLayout.LayoutParams lp = (CoordinatorLayout.LayoutParams) mFab.getLayoutParams();
             lp.gravity = Gravity.START | Gravity.BOTTOM;
-            mFam.setExpandDirection(FloatingActionsMenu.EXPAND_UP, FloatingActionsMenu.LABELS_ON_RIGHT_SIDE);
-            mFam.setLayoutParams(lp);
+            mFab.setLayoutParams(lp);
         }
     }
 
@@ -100,14 +99,7 @@ public class TopicListFragment extends TopicSearchFragment {
 
     @Override
     public void onResume() {
-        mFam.collapse();
         super.onResume();
-    }
-
-    @OnClick(R.id.fab_refresh)
-    public void refresh() {
-        mFam.collapse();
-        mPresenter.loadPage(1, mRequestParam);
     }
 
     @OnClick(R.id.fab_post)

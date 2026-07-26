@@ -98,7 +98,9 @@ public class AboutActivity extends MaterialAboutActivity {
                 .setOnLongClickAction(new MaterialAboutItemOnClickAction() {
                     @Override
                     public void onClick() {
-                        ARouterUtils.navigation(ARouterConstants.ACTIVITY_DEBUG);
+                        if (BuildConfig.DEBUG) {
+                            ARouterUtils.navigation(ARouterConstants.ACTIVITY_DEBUG);
+                        }
                     }
                 })
                 .icon(R.drawable.ic_code)

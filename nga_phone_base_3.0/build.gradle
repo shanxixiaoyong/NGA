@@ -11,26 +11,9 @@ def static getDate() {
     return formattedDate
 }
 
-def isJenkins() {
-    return project.hasProperty('IS_JENKINS') && IS_JENKINS == 'true'
-}
-
 android {
     namespace "gov.anzong.androidnga"
     compileSdk project.compileSdkVersion
-
-    signingConfigs {
-        signingConfig {
-            if (isJenkins()) {
-                storeFile file('../../android19910914.keystore')
-            } else {
-                storeFile file('..\\keystore\\android19910914.keystore')
-            }
-            storePassword '19910914'
-            keyAlias 'android.keystore'
-            keyPassword '19910914'
-        }
-    }
 
     defaultConfig {
         applicationId "gov.anzong.androidnga"
@@ -74,7 +57,7 @@ android {
             minifyEnabled true
             proguardFiles 'proguard.cfg'
             zipAlignEnabled true
-            signingConfig signingConfigs.signingConfig
+            // Signing is injected only by a local/CI secret outside source control.
         }
         debug {
             applicationIdSuffix '.debug'
@@ -83,8 +66,11 @@ android {
         }
     }
 
-    lintOptions {
-        abortOnError false
+    lint {
+        // AGP 8.7.3 + Kotlin 2.0.21 can crash while FIR analyzes Kotlin test
+        // sources. Production sources remain fully checked; tests are covered
+        // by their dedicated JVM/instrumentation tasks.
+        checkTestSources = false
         disable 'MissingTranslation'
     }
     kotlinOptions {
@@ -108,13 +94,7 @@ android {
     }
 }
 
-repositories {
-    flatDir { dirs 'libs' }
-}
-
 dependencies {
-    implementation(name: 'floatingactionmenu', ext: 'aar')
-
     implementation "com.google.android.material:material:$androidx_material_version"
     implementation "androidx.cardview:cardview:1.0.0"
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
@@ -173,7 +153,8 @@ dependencies {
     implementation project(':lib_base_ui_compose')
     implementation project(':lib_base_ui')
 
-    implementation project(':lib_module_debug')
+    // Diagnostics are debug-only; release must not package the log exporter or route.
+    debugImplementation project(':lib_module_debug')
 
     // database
     implementation "androidx.room:room-runtime:$room_version"

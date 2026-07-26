@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="works.ngajust.app.BackupRulesTest" tests="2" failures="0" errors="0" skipped="0" time="5.051" timestamp="2026-07-25T09:05:57" hostname="localhost">
+  <properties>
+    <property name="device" value="nga_api26(AVD) - 8.0.0" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="modernAndLegacyRulesExcludeSessionAndDiagnosticStorage" classname="works.ngajust.app.BackupRulesTest" time="0.073" />
+  <testcase name="activityLaunches" classname="works.ngajust.app.MainActivitySmokeTest" time="3.897" />
+</testsuite>

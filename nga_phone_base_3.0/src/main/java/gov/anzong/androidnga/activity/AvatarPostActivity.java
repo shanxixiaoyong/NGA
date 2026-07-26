@@ -30,6 +30,7 @@ import java.util.HashSet;
 import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.util.ToastUtils;
 import sp.phone.common.PhoneConfiguration;
+import sp.phone.common.network.FoundationMutationGate;
 import sp.phone.common.UserManagerImpl;
 import sp.phone.param.AvatarPostAction;
 import sp.phone.param.HttpPostClient;
@@ -202,7 +203,7 @@ public class AvatarPostActivity extends BaseActivity implements
             return;
         switch (requestCode) {
             case REQUEST_CODE_SELECT_PIC:
-                NLog.i(LOG_TAG, " select file :" + data.getDataString());
+                NLog.i(LOG_TAG, "avatar_file_selected");
                 uploadTask = new AvatarFileUploadTask(this, this, data.getData());
                 break;
             default:
@@ -352,7 +353,9 @@ public class AvatarPostActivity extends BaseActivity implements
             String url = params[0];
             String body = params[1];
 
-            HttpPostClient c = new HttpPostClient(url);
+            HttpPostClient c = new HttpPostClient(
+                    url,
+                    FoundationMutationGate.Operation.AVATAR_PROFILE_UPDATE);
             String cookie = PhoneConfiguration.getInstance().getCookie();
             c.setCookie(cookie);
             try {
@@ -380,7 +383,7 @@ public class AvatarPostActivity extends BaseActivity implements
                     keepActivity = true;
             } catch (IOException e) {
                 keepActivity = true;
-                NLog.e(LOG_TAG, NLog.getStackTraceString(e));
+                NLog.e(LOG_TAG, "avatar_update_failed type=" + e.getClass().getSimpleName());
 
             }
             return ret;
@@ -401,13 +404,15 @@ public class AvatarPostActivity extends BaseActivity implements
             try {
                 o = (JSONObject) JSON.parseObject(js).get("data");
             } catch (Exception e) {
-                NLog.e("TAG", "can not parse :\n" + js);
+                NLog.e(LOG_TAG, "parse_failed stage=avatar_update_data type="
+                        + e.getClass().getSimpleName());
             }
             if (o == null) {
                 try {
                     o = (JSONObject) JSON.parseObject(js).get("error");
                 } catch (Exception e) {
-                    NLog.e("TAG", "can not parse :\n" + js);
+                    NLog.e(LOG_TAG, "parse_failed stage=avatar_update_error type="
+                            + e.getClass().getSimpleName());
                 }
                 if (o == null) {
                     return "发送失败";

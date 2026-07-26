@@ -50,7 +50,7 @@ public class TopicConvertFactory {
             filter(listInfo);
             return listInfo;
         } catch (NullPointerException e) {
-            NLog.e(TAG, "can not parse :\n" + js);
+            NLog.e(TAG, "parse_failed stage=topic_list type=" + e.getClass().getSimpleName());
             return null;
         }
 
@@ -242,7 +242,7 @@ public class TopicConvertFactory {
 //                board.setCancelable(true);
 //                listInfo.addSubBoard(board);
 //            }
-            NLog.d("屏蔽固定的渣帖子 " + tBean.toString());
+            NLog.d(TAG, "topic_filtered reason=reserved_forum");
             return true;
         } else {
             return false;
@@ -295,7 +295,6 @@ public class TopicConvertFactory {
 //        if (StringUtils.isEmpty(page)) {
 //            page = "1";
 //        }
-//        NLog.d(js);
 //        if (js.indexOf("/*error fill content") > 0)
 //            js = js.substring(0, js.indexOf("/*error fill content"));
 //        js = js.replaceAll("\"content\":\\+(\\d+),", "\"content\":\"+$1\",");
@@ -305,7 +304,6 @@ public class TopicConvertFactory {
 //        try {
 //            o = (JSONObject) JSON.parseObject(js).get("data");
 //        } catch (Exception e) {
-//            NLog.e(TAG, "can not parse :\n" + js);
 //        }
 //        if (o == null) {
 //            mErrorMsg = "请重新登录";
