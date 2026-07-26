@@ -26,3 +26,25 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 2: 发布 NGA Just Works 4.3.0
+
+**Date**: 2026-07-26
+**Task**: 发布 NGA Just Works 4.3.0
+**Branch**: `main`
+
+### Summary
+
+配置独立正式签名与 GitHub Actions 发布链路，更新应用身份和 README，验证并公开发布 4.3.0 APK。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c37d1111` | (see git log) |
+| `fe9b6cdd` | (see git log) |
+
+### Status
+
+[OK] **Completed**
