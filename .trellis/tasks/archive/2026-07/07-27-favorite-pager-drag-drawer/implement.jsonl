@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Replace the release-only drawer boundary contract with the approved continuous shared-anchor home drawer while preserving Menu and modal accessibility."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Preserve favorite reorder ownership and Pager scroll gating while introducing home drawer arbitration."}

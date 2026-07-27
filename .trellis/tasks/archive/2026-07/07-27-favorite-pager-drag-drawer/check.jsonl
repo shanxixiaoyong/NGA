@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Verify continuous progress, Pager-only opening region, modal close/accessibility behavior, forbidden APIs, and cross-module quality gates."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Verify favorite reorder remains exclusive and Pager state resets on all terminal paths."}
