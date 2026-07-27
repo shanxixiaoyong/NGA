@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Restore the current-fork login contract to the pinned Justwen full WebView and Passport Cookie mechanism."}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Apply Android build/lint gates and record the Windows-ADB-only workspace convention."}
+{"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/lib_bu_account/src/main/java/com/justwent/androidnga/bu/login/LoginActivity.kt","reason":"Authoritative original Justwen login Activity source."}
+{"file":"references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/lib_bu_account/src/main/java/com/justwent/androidnga/bu/login/LoginViewModel.kt","reason":"Authoritative original Justwen Passport Cookie handoff source."}

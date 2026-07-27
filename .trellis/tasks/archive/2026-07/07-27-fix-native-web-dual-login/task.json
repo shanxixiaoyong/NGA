@@ -1,0 +1,29 @@
+{
+  "id": "fix-native-web-dual-login",
+  "name": "fix-native-web-dual-login",
+  "title": "恢复 Justwen 原项目登录方式",
+  "description": "Remove the abandoned native-shell and intermediary login implementations, then restore the pinned Justwen full WebView and Passport Cookie login flow exactly.",
+  "status": "completed",
+  "dev_type": "bugfix",
+  "scope": "cross-layer",
+  "package": null,
+  "priority": "P0",
+  "creator": "toph",
+  "assignee": "toph",
+  "createdAt": "2026-07-27",
+  "completedAt": "2026-07-27",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "lib_bu_account/src/main/java/com/justwent/androidnga/bu/login/",
+    ".trellis/spec/backend/network-foundation-contract.md"
+  ],
+  "notes": "",
+  "meta": {}
+}
