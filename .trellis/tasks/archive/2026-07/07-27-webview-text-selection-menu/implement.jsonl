@@ -1,0 +1,2 @@
+{"file": ".trellis/tasks/07-27-webview-text-selection-menu/research/text-selection-menu.md", "reason": "Repository evidence, scope boundary, API constraints, and implementation placement"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Preserve the existing Justwen UI baseline and keep the compatibility change local"}
