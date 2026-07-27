@@ -1,5 +1,6 @@
 package gov.anzong.androidnga
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -80,6 +81,35 @@ class ReleaseWorkflowContractTest {
         assertTrue(workflow.contains("startswith(\"debug-\")"))
         assertTrue(workflow.contains("--cleanup-tag"))
         assertTrue(workflow.contains("old_tag\" != \"\$CURRENT_DEBUG_TAG"))
+    }
+
+    @Test
+    fun stableReleaseUsesValidatedVersionedNotesWhileDebugKeepsGeneratedNotes() {
+        val workflow = File(repositoryRoot, ".github/workflows/build.yml").readText()
+        val publication = workflow.substringAfter("      - name: Create GitHub Release")
+            .substringBefore("      - name: Remove older debug prereleases")
+        val stableBranchMarker =
+            "\n          else\n            release_notes=\"release-notes/\${GITHUB_REF_NAME}.md\""
+        val stableBranchStart = publication.indexOf(stableBranchMarker)
+        assertTrue("Missing stable publication branch", stableBranchStart >= 0)
+        val debugPublication = publication.substring(0, stableBranchStart)
+        val stablePublication = publication.substring(stableBranchStart)
+
+        assertTrue(File(repositoryRoot, "release-notes/4.9.0.md").isFile)
+        assertTrue(File(repositoryRoot, "release-notes/4.10.0.md").isFile)
+        assertTrue(File(repositoryRoot, "scripts/validate_release_notes.py").isFile)
+        assertTrue(debugPublication.contains("--generate-notes"))
+        assertFalse(debugPublication.contains("--notes-file"))
+        assertTrue(stablePublication.contains("release_notes=\"release-notes/\${GITHUB_REF_NAME}.md\""))
+        assertTrue(stablePublication.contains("python3 scripts/validate_release_notes.py \"\$release_notes\""))
+        assertTrue(stablePublication.contains("--notes-file \"\$release_notes\""))
+        assertFalse(stablePublication.contains("--generate-notes"))
+        val validation = stablePublication.indexOf("python3 scripts/validate_release_notes.py")
+        val releaseCreation = stablePublication.indexOf("gh release create")
+        assertTrue("Stable notes must be validated before release creation", validation >= 0)
+        assertTrue("Stable notes must be validated before release creation", releaseCreation > validation)
+        assertEquals(1, "--generate-notes".toRegex().findAll(publication).count())
+        assertEquals(1, "--notes-file".toRegex().findAll(publication).count())
     }
 
     private fun buildTypeBlock(gradle: String, name: String): String {

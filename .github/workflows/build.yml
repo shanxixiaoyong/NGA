@@ -177,11 +177,13 @@ jobs:
                 --prerelease
             fi
           else
+            release_notes="release-notes/${GITHUB_REF_NAME}.md"
+            python3 scripts/validate_release_notes.py "$release_notes"
             RELEASE_TAG="${{ steps.release.outputs.tag }}" ./gradlew -q verifyReleaseTag --no-daemon
             gh release create "${{ steps.release.outputs.tag }}" dist/* \
               --repo "$GITHUB_REPOSITORY" \
               --title "${{ steps.release.outputs.title }}" \
-              --generate-notes \
+              --notes-file "$release_notes" \
               --verify-tag
           fi
 

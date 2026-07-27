@@ -415,6 +415,13 @@ package migration is approved.
   tag, uses it as `CI_VERSION_NAME`, builds and signs once, verifies the APK,
   and creates a normal GitHub Release directly from the current job's `dist/`.
   It must not query or download an earlier Actions artifact.
+- Every stable tag must have a matching `release-notes/<X.Y.Z>.md` in the tagged
+  source. The complete body contains exactly one `## 新增`, `## 删除`, and
+  `## 修复` heading in that order, and every section contains a non-empty
+  Markdown list item. Indented code and list-looking text inside fenced code
+  blocks do not count as list items. Use `- 无` when a section has no changes.
+  Validate the file before `gh release create` and publish it with
+  `--notes-file`; only Debug prereleases may use `--generate-notes`.
 - The published `preview` build type uses the production applicationId and
   release signing configuration, sets `debuggable=true`, and disables
   minification without adding an applicationId suffix. The ordinary local
@@ -465,6 +472,7 @@ package migration is approved.
 | Main commit has no reachable stable `X.Y.Z` tag | Fail during preview identity derivation |
 | Trigger tag is not exactly `X.Y.Z` | Fail before build/publication |
 | Stable `RELEASE_TAG` differs from effective Gradle versionName | Tag verification fails before publication |
+| Matching stable notes are missing, duplicated, out of order, malformed, or contain an empty required section | Fail before `gh release create`; do not fall back to generated notes |
 | Existing Debug tag resolves to another SHA | Fail without replacing the tag or Release |
 | Existing `debug-<sha12>` Release is not a prerelease | Fail without replacing its assets |
 | Release/tag lookup API fails | Fail visibly; do not treat the error as absence |
@@ -488,17 +496,25 @@ package migration is approved.
 - **Base**: Rerunning the same Debug run validates its existing tag and
   prerelease, retains the same version values, and replaces the same-named APK
   and checksum. No additional Debug Release is created.
+- **Good**: A stable tag validates `release-notes/<tag>.md` and publishes that
+  exact file, including explicit `- 无` items for empty change categories.
 - **Bad**: Publishing the ordinary `.debug` variant, signing the preview with a
   debug key, using a fixed mutable tag without SHA validation, deriving a
   Debug version from an unreachable/future stable tag, deleting the old
   prerelease before the new one exists, or reusing a prior main artifact for
-  stable publication. Treating permission to push and wait for CI as implicit
-  permission to run a local release package is also out of scope.
+  stable publication. Falling back to generated stable notes when the matching
+  file is absent or invalid is also forbidden. Treating permission to push and
+  wait for CI as implicit permission to run a local release package is also
+  out of scope.
 
 ### 6. Tests Required
 
 - Parse the workflow YAML and all modified Bash blocks, then run
   `git diff --check`.
+- Run the release-notes validator against committed valid notes and missing,
+  duplicate, out-of-order, blank-section, and malformed-heading cases. Assert
+  stable publication uses the validated tag-addressed file with `--notes-file`
+  while Debug publication alone retains `--generate-notes`.
 - Exercise identity derivation for a main commit with a reachable stable tag,
   an exact stable tag, an invalid tag, and a main commit without a stable base.
 - Assert local Gradle defaults, valid Debug/stable CI overrides, a partial
@@ -550,7 +566,11 @@ jobs:
       - run: ./gradlew :nga_phone_base_3.0:${{ steps.release.outputs.gradle_task }} --no-daemon
       - run: |
           (cd dist && sha256sum -c ./*.sha256)
-          gh release create "$RELEASE_TAG" dist/* --verify-tag
+          release_notes="release-notes/${GITHUB_REF_NAME}.md"
+          python3 scripts/validate_release_notes.py "$release_notes"
+          gh release create "$RELEASE_TAG" dist/* \
+            --notes-file "$release_notes" \
+            --verify-tag
 ```
 
 #### Wrong
