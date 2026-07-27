@@ -335,3 +335,24 @@ Added a home-only menu icon and reliable left-edge drawer dragging without break
 ### Status
 
 [OK] **Completed**
+
+
+## Session 16: Fix About screen status-bar overlap
+
+**Date**: 2026-07-27
+**Task**: Fix About screen status-bar overlap
+**Branch**: `main`
+
+### Summary
+
+Applied idempotent Android status-bar insets to the legacy MaterialAboutActivity app bar, added focused regression coverage, recorded the reusable legacy-Activity inset contract, and verified app build, unit tests, and lint. API 35 device visual verification remained unavailable because Windows ADB listed no connected target.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3e895af6` | (see git log) |
+
+### Status
+
+[OK] **Completed**
