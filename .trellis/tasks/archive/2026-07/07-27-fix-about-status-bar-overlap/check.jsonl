@@ -1,0 +1,3 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Routes review to the applicable Android UI conventions."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Checks that the fix remains a narrow compatibility change without UI redesign."}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Defines required Android build, test, lint, and API-level checks."}
