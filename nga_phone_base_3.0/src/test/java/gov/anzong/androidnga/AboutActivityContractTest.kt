@@ -27,4 +27,23 @@ class AboutActivityContractTest {
         assertFalse(source.contains("1065310118"))
         assertFalse(source.contains("1077054628"))
     }
+
+    @Test
+    fun aboutPageAppliesStatusBarInsetsAfterTheLibraryLayoutIsInflated() {
+        val superOnCreate = source.indexOf("super.onCreate(savedInstanceState);")
+        val applyInsets = source.indexOf("applyStatusBarInsets();")
+
+        assertTrue(superOnCreate >= 0)
+        assertTrue(applyInsets > superOnCreate)
+        assertTrue(source.contains("com.danielstone.materialaboutlibrary.R.id.mal_appbarlayout"))
+        assertTrue(source.contains("WindowInsetsCompat.Type.statusBars()"))
+        assertTrue(source.contains("ViewCompat.requestApplyInsets(appBar)"))
+    }
+
+    @Test
+    fun aboutPageReappliesInsetsFromTheOriginalPadding() {
+        assertTrue(source.contains("initialPaddingTop = appBar.getPaddingTop()"))
+        assertTrue(source.contains("initialPaddingTop + statusBarInsets.top"))
+        assertFalse(source.contains("view.getPaddingTop() + statusBarInsets.top"))
+    }
 }

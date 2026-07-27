@@ -4,6 +4,41 @@ The pinned Justwen layouts, navigation, themes, and screen structure are the UI
 baseline. Do not introduce a parallel UI architecture or broad visual redesign
 while making compatibility fixes.
 
+## Legacy Activity edge-to-edge insets
+
+Activities that inherit a third-party screen base (for example,
+`MaterialAboutActivity`) do not receive the inset handling implemented by the
+project `BaseActivity` classes. After the library calls `setContentView`, attach
+the status-bar listener to the library's top app-bar container and request
+insets explicitly:
+
+```java
+final int initialPaddingTop = appBar.getPaddingTop();
+ViewCompat.setOnApplyWindowInsetsListener(appBar, (view, insets) -> {
+    Insets statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars());
+    view.setPadding(
+            view.getPaddingLeft(),
+            initialPaddingTop + statusBars.top,
+            view.getPaddingRight(),
+            view.getPaddingBottom());
+    return insets;
+});
+ViewCompat.requestApplyInsets(appBar);
+```
+
+Always retain the original padding and recompute from it on every dispatch.
+Adding the inset to the current padding accumulates space when the system
+redispatches insets. If a resource belongs to a non-transitive library, use the
+library's fully-qualified `R` class.
+
+### Common Mistake: Assuming the shared BaseActivity handles every screen
+
+**Symptom**: A legacy Activity's toolbar is drawn under Android 15 status-bar
+icons while Compose and project-base screens look correct.
+
+**Fix**: Apply the local app-bar inset after the third-party layout is inflated,
+and add a source contract test for ordering and idempotent padding.
+
 ## Home navigation drawer
 
 - `TopAppBarData` defaults to `TopAppBarNavigationIcon.Back`. Screens that open

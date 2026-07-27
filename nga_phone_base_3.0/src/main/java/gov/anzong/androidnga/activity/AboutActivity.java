@@ -2,9 +2,13 @@ package gov.anzong.androidnga.activity;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.danielstone.materialaboutlibrary.MaterialAboutActivity;
 import com.danielstone.materialaboutlibrary.items.MaterialAboutActionItem;
@@ -31,6 +35,26 @@ public class AboutActivity extends MaterialAboutActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         ThemeManager.getInstance().applyAboutTheme(this);
         super.onCreate(savedInstanceState);
+        applyStatusBarInsets();
+    }
+
+    private void applyStatusBarInsets() {
+        View appBar = findViewById(com.danielstone.materialaboutlibrary.R.id.mal_appbarlayout);
+        final int initialPaddingLeft = appBar.getPaddingLeft();
+        final int initialPaddingTop = appBar.getPaddingTop();
+        final int initialPaddingRight = appBar.getPaddingRight();
+        final int initialPaddingBottom = appBar.getPaddingBottom();
+
+        ViewCompat.setOnApplyWindowInsetsListener(appBar, (view, windowInsets) -> {
+            Insets statusBarInsets = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
+            view.setPadding(
+                    initialPaddingLeft,
+                    initialPaddingTop + statusBarInsets.top,
+                    initialPaddingRight,
+                    initialPaddingBottom);
+            return windowInsets;
+        });
+        ViewCompat.requestApplyInsets(appBar);
     }
 
     @NonNull
