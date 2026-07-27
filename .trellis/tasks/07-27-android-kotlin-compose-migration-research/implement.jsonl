@@ -1,0 +1,4 @@
+{"file":".trellis/tasks/07-27-android-kotlin-compose-migration-research/research/current-architecture-audit.md","reason":"Independent source-backed audit of the current hybrid Android architecture and migration risk ranking."}
+{"file":".trellis/tasks/07-27-android-kotlin-compose-migration-research/research/current-architecture-and-migration-strategy.md","reason":"Recommended target architecture, sequencing, first slice, rejected alternatives, and migration controls."}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Mandatory transport, account/session, response, and Java/Kotlin compatibility boundaries for migration planning."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Existing app-wide state and persistence contract that migrated Compose/MVVM screens must preserve."}

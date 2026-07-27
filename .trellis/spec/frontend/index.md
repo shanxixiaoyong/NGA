@@ -18,6 +18,7 @@ This directory contains guidelines for frontend development. Fill in each file w
 | [Component Guidelines](./component-guidelines.md) | Restored Justwen UI plus favorite drag and direct FAB exceptions | Active |
 | [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
 | [State Management](./state-management.md) | App-wide favorite membership/order and drag transactions | Active |
+| [Android Migration Architecture](./android-migration-architecture.md) | Kotlin + Compose + MVVM target, preservation matrix, migration gates, and branch model | Active |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
 | [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
 

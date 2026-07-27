@@ -1,0 +1,5 @@
+{"file":".trellis/tasks/07-27-android-kotlin-compose-migration-research/research/current-architecture-audit.md","reason":"Verify that final recommendations remain grounded in the current source tree and stated caveats."}
+{"file":".trellis/tasks/07-27-android-kotlin-compose-migration-research/research/current-architecture-and-migration-strategy.md","reason":"Check consistency among recommendation, phase gates, risk matrix, and first implementation slice."}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Validate proposed build, test, lint, CI, and device gates against project requirements."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Verify account, Cookie, WebView, encoding, retry, mutation, privacy, and offline-test migration controls."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Verify that migration preserves current UI interaction contracts while replacing implementation architecture."}
