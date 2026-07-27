@@ -1,0 +1,1 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Review against the stable-tag workflow, signing, APK verification, checksum, lint baseline, and no-ADB requirements."}
