@@ -512,9 +512,10 @@ package migration is approved.
 - Parse the workflow YAML and all modified Bash blocks, then run
   `git diff --check`.
 - Run the release-notes validator against committed valid notes and missing,
-  duplicate, out-of-order, blank-section, and malformed-heading cases. Assert
-  stable publication uses the validated tag-addressed file with `--notes-file`
-  while Debug publication alone retains `--generate-notes`.
+  duplicate, out-of-order, blank-section, malformed-heading, indented-code,
+  and fenced-code pseudo-list cases. Assert stable publication uses the
+  validated tag-addressed file with `--notes-file` while Debug publication
+  alone retains `--generate-notes`.
 - Exercise identity derivation for a main commit with a reachable stable tag,
   an exact stable tag, an invalid tag, and a main commit without a stable base.
 - Assert local Gradle defaults, valid Debug/stable CI overrides, a partial
