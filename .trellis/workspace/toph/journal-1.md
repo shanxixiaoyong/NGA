@@ -208,3 +208,25 @@ Derived the NGA platform operation contracts exclusively from untouched Justwen 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 10: Restore original Justwen login
+
+**Date**: 2026-07-27
+**Task**: Restore original Justwen login
+**Branch**: `main`
+
+### Summary
+
+Restored the pinned Justwen full WebView/Passport Cookie login, removed the abandoned shell and controlled fallback, documented Windows-ADB-only device operations, verified build/test/lint, and cleaned prior test packages.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4b54ddeb` | (see git log) |
+| `30dfcdec` | (see git log) |
+
+### Status
+
+[OK] **Completed**
