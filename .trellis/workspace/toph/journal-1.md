@@ -377,3 +377,24 @@ Replaced the 24dp home drawer edge gesture with a non-consuming favorite-pager l
 ### Status
 
 [OK] **Completed**
+
+
+## Session 18: 重建 Git 历史并保留上游贡献
+
+**Date**: 2026-07-27
+**Task**: 重建 Git 历史并保留上游贡献
+**Branch**: `main`
+
+### Summary
+
+将独立仓库的 53 个项目提交重建到 Justwen 上游基准 5d807617 之后，保留完整上游贡献历史、标签、Releases、Actions 设置与本地未提交修改，并记录备份和回滚证据。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f280e378` | (see git log) |
+
+### Status
+
+[OK] **Completed**
