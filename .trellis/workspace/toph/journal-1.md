@@ -356,3 +356,24 @@ Applied idempotent Android status-bar insets to the legacy MaterialAboutActivity
 ### Status
 
 [OK] **Completed**
+
+
+## Session 17: Favorite pager boundary drawer
+
+**Date**: 2026-07-27
+**Task**: Favorite pager boundary drawer
+**Branch**: `main`
+
+### Summary
+
+Replaced the 24dp home drawer edge gesture with a non-consuming favorite-pager leading-boundary completion action, preserved normal paging and reorder ownership, documented the Compose cancellation contract, and prepared stable release 4.7.2.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1f850f7e` | (see git log) |
+
+### Status
+
+[OK] **Completed**

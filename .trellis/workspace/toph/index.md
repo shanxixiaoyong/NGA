@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
+- **Total Sessions**: 17
 - **Last Active**: 2026-07-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~358 | Active |
+| `journal-1.md` | ~379 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 17 | 2026-07-27 | Favorite pager boundary drawer | `1f850f7e` | `main` |
 | 16 | 2026-07-27 | Fix About screen status-bar overlap | `3e895af6` | `main` |
 | 15 | 2026-07-27 | Home drawer edge navigation | `7edb805c` | `main` |
 | 14 | 2026-07-27 | Refine settings categories | `c240bc8c` | `main` |
