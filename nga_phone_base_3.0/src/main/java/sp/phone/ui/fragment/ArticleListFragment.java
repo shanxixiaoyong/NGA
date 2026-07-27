@@ -278,6 +278,12 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         mPresenter.loadPage(mRequestParam);
     }
 
+    public void scrollToTop() {
+        if (mListView != null && mListView.getLayoutManager() instanceof LinearLayoutManager) {
+            ((LinearLayoutManager) mListView.getLayoutManager()).scrollToPositionWithOffset(0, 0);
+        }
+    }
+
     @Override
     public void setData(ThreadData data) {
         ArticleShareViewModel viewModel = getActivityViewModelProvider().get(ArticleShareViewModel.class);

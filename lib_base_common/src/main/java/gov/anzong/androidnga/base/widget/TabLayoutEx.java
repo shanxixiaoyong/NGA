@@ -10,6 +10,8 @@ import com.nshmura.recyclertablayout.RecyclerTabLayout;
 
 public class TabLayoutEx extends RecyclerTabLayout {
 
+    private OnTabReselectedListener mOnTabReselectedListener;
+
     public TabLayoutEx(Context context) {
         super(context);
     }
@@ -43,6 +45,14 @@ public class TabLayoutEx extends RecyclerTabLayout {
         mTabOnScreenLimit = tabLimit;
     }
 
+    public void setOnTabReselectedListener(OnTabReselectedListener listener) {
+        mOnTabReselectedListener = listener;
+    }
+
+    public interface OnTabReselectedListener {
+        void onTabReselected(int position);
+    }
+
     private class TabAdapter extends DefaultAdapter {
 
         public TabAdapter(ViewPager viewPager) {
@@ -55,7 +65,13 @@ public class TabLayoutEx extends RecyclerTabLayout {
             holder.itemView.setOnClickListener(v -> {
                 int pos = holder.getAdapterPosition();
                 if (pos != NO_POSITION) {
-                    getViewPager().setCurrentItem(pos, false);
+                    if (pos == getViewPager().getCurrentItem()) {
+                        if (mOnTabReselectedListener != null) {
+                            mOnTabReselectedListener.onTabReselected(pos);
+                        }
+                    } else {
+                        getViewPager().setCurrentItem(pos, false);
+                    }
                 }
             });
             return holder;

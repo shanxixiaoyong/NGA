@@ -1,6 +1,7 @@
 package sp.phone.ui.adapter;
 
 import android.os.Bundle;
+import android.view.ViewGroup;
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -24,6 +25,8 @@ public class ArticlePagerAdapter extends FragmentStatePagerAdapter {
     private ArticleListParam mRequestParam;
 
     private List<String> mPageIndexList;
+
+    private ArticleListFragment mCurrentFragment;
 
     public ArticlePagerAdapter(FragmentManager fm, ArticleListParam param) {
         super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
@@ -64,6 +67,18 @@ public class ArticlePagerAdapter extends FragmentStatePagerAdapter {
     public void setPageIndexList(List<String> pageIndexList) {
         mPageIndexList = pageIndexList;
         setCount(pageIndexList.size());
+    }
+
+    @Override
+    public void setPrimaryItem(ViewGroup container, int position, Object object) {
+        super.setPrimaryItem(container, position, object);
+        if (object instanceof ArticleListFragment) {
+            mCurrentFragment = (ArticleListFragment) object;
+        }
+    }
+
+    public ArticleListFragment getCurrentFragment() {
+        return mCurrentFragment;
     }
 
     @Override

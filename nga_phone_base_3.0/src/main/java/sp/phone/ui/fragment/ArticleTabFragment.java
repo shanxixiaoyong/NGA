@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.viewpager.widget.ViewPager;
 
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.justwen.androidnga.base.activity.ARouterConstants;
 import com.trello.rxlifecycle2.android.FragmentEvent;
@@ -64,6 +65,9 @@ public class ArticleTabFragment extends BaseRxFragment {
     @BindView(R.id.tabs)
     public TabLayoutEx mTabLayout;
 
+    @BindView(R.id.appbar)
+    public AppBarLayout mAppBarLayout;
+
     private static final String GOTO_TAG = "goto";
 
     @BindView(R.id.fab_post)
@@ -106,7 +110,16 @@ public class ArticleTabFragment extends BaseRxFragment {
 
         mTabLayout.setTabOnScreenLimit(1);
         mTabLayout.setUpWithViewPager(mViewPager);
+        mTabLayout.setOnTabReselectedListener(position -> scrollCurrentPageToTop());
         super.onViewCreated(view, savedInstanceState);
+    }
+
+    private void scrollCurrentPageToTop() {
+        mAppBarLayout.setExpanded(true, true);
+        ArticleListFragment fragment = mPagerAdapter.getCurrentFragment();
+        if (fragment != null) {
+            fragment.scrollToTop();
+        }
     }
 
     @Override
