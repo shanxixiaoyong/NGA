@@ -60,6 +60,8 @@ import kotlin.math.abs
 fun ForumBoardView(
     forumBoardViewModel: ForumBoardViewModel,
     pagerUserScrollEnabled: Boolean = true,
+    leadingBoundaryGestureEnabled: Boolean = true,
+    onLeadingBoundaryGesture: (() -> Unit)? = null,
 ) {
     val boardData by forumBoardViewModel.boardLiveData.observeAsState()
     var reorderActive by remember { mutableStateOf(false) }
@@ -76,6 +78,8 @@ fun ForumBoardView(
             tabs = tabs,
             initialPage = initialPage,
             userScrollEnabled = pagerUserScrollEnabled && !reorderActive,
+            leadingBoundaryGestureEnabled = leadingBoundaryGestureEnabled && !reorderActive,
+            onLeadingBoundaryGesture = onLeadingBoundaryGesture,
         ) {
             ForumBoardContent(it, forumBoardViewModel) { active ->
                 reorderActive = active

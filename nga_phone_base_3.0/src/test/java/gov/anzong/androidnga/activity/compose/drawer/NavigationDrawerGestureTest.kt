@@ -23,12 +23,8 @@ class NavigationDrawerGestureTest {
     }
 
     @Test
-    fun drawerEdgeIncludesOnlyTheLeadingEdgeBand() {
-        val edgeWidthPx = 24f
-
-        assertTrue(isWithinDrawerEdge(0f, edgeWidthPx))
-        assertTrue(isWithinDrawerEdge(edgeWidthPx, edgeWidthPx))
-        assertFalse(isWithinDrawerEdge(-1f, edgeWidthPx))
-        assertFalse(isWithinDrawerEdge(edgeWidthPx + 1f, edgeWidthPx))
+    fun materialDrawerGesturesAreDisabledWhileClosedAndEnabledWhileOpen() {
+        assertFalse(shouldEnableDrawerGestures(drawerOpen = false))
+        assertTrue(shouldEnableDrawerGestures(drawerOpen = true))
     }
 }

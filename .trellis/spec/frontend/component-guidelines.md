@@ -41,31 +41,105 @@ and add a source contract test for ordering and idempotent padding.
 
 ## Home navigation drawer
 
-- `TopAppBarData` defaults to `TopAppBarNavigationIcon.Back`. Screens that open
-  a drawer must explicitly select `TopAppBarNavigationIcon.Menu` and retain an
-  accessibility description that names the drawer action.
-- The home drawer reserves a narrow leading-edge band for opening gestures and
-  applies `systemGestureExclusion` to that same band. Do not exclude the whole
-  screen or a wider region from Android's system back gesture.
-- Observe the edge pointer stream without consuming it. While that gesture is
-  active, disable the nested home `HorizontalPager` so
-  `ModalNavigationDrawer` owns the original continuous drag and its velocity /
-  threshold settling.
-- Combine the external drawer gate with favorite reorder state:
+### 1. Scope / Trigger
+
+Use this contract when changing the home board Pager, the favorite page's
+leading boundary, drawer gestures, or favorite reorder arbitration. The drawer
+is logically adjacent to the favorite page, but it is not a Pager page and does
+not track the pointer while opening.
+
+### 2. Signatures
 
 ```kotlin
 TabLayoutWithPager(
-    userScrollEnabled = pagerUserScrollEnabled && !reorderActive,
+    leadingBoundaryGestureEnabled: Boolean = true,
+    onLeadingBoundaryGesture: (() -> Unit)? = null,
+)
+
+ForumBoardView(
+    leadingBoundaryGestureEnabled: Boolean = true,
+    onLeadingBoundaryGesture: (() -> Unit)? = null,
 )
 ```
 
-Reset the edge gate when the pointer stream ends or is cancelled and when the
-composition is disposed. Non-edge horizontal gestures must continue to page,
-and active favorite long-press drag must continue to own reorder behavior.
+`TopAppBarData` still defaults to `TopAppBarNavigationIcon.Back`. The home
+screen explicitly selects `TopAppBarNavigationIcon.Menu` with the accessible
+label `打开侧边栏`.
 
-Tests must assert the shared top-app-bar back default, the drawer menu's
-accessibility label, and the inclusive/exclusive bounds of the leading-edge
-band. Compile and lint both `lib_base_ui_compose` and `nga_phone_base_3.0`.
+### 3. Contracts
+
+- Attach the observer to the `HorizontalPager` modifier, not the enclosing
+  home surface, toolbar, or tab row. Observe at the Initial pass without
+  consuming pointer changes.
+- Snapshot a settled page `0` at pointer down. On the final release, call the
+  boundary callback when movement is horizontal-dominant and leading distance
+  reaches 50% of Pager width, or leading velocity reaches 400dp/s. Normalize
+  leading direction for LTR/RTL.
+- A valid final release is unconsumed and leaves no pointer pressed. Compose
+  1.7 represents `ACTION_CANCEL` as a consumed `Release`; it must not complete
+  the gesture.
+- Combine `leadingBoundaryGestureEnabled` and `userScrollEnabled` with local
+  favorite reorder state. Active long-press reorder owns the stream.
+- A closed `ModalNavigationDrawer` has `gesturesEnabled = false`; the callback
+  calls `DrawerState.open()`. Once open, enable Material gestures so drag close
+  and scrim dismissal remain available.
+- Do not add an edge band or `systemGestureExclusion`. The existing opposite
+  direction remains completely owned by `HorizontalPager` and continues from
+  favorites to the next board page.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required result |
+| --- | --- |
+| Settled favorite page, leading distance >= 50% | Open after release |
+| Settled favorite page, leading velocity >= 400dp/s | Open after release |
+| Opposite direction or later page | Pager behavior only |
+| Vertical-dominant, below both thresholds, or unsettled start | Do not open |
+| Consumed release / cancellation / another pointer still pressed | Do not open |
+| Favorite reorder active | Reorder only; no drawer or Pager transition |
+| Drawer already open | Retain Material drag-close and scrim close |
+
+### 5. Good/Base/Bad Cases
+
+- **Good**: a completed leading-boundary swipe inside favorite Pager content
+  opens the drawer with its normal animation.
+- **Base**: the opposite swipe still moves from favorites to `魔兽世界` through
+  the existing Pager behavior.
+- **Bad**: observing the whole home surface, consuming Pager events, restoring
+  a 24dp edge trigger, or treating a consumed `Release` as completion.
+
+### 6. Tests Required
+
+- Unit-test LTR/RTL direction, settled page zero, later pages, horizontal
+  dominance, inclusive 50% distance and 400dp/s velocity thresholds, disabled
+  reorder state, cancellation, consumed release, and remaining pointers.
+- Assert the shared Back default, the home Menu label, and closed/open drawer
+  gesture gating.
+- Compile, unit-test, and lint both `lib_base_ui_compose` and
+  `nga_phone_base_3.0`; scan for `DrawerEdgeWidth`, `isWithinDrawerEdge`,
+  `systemGestureExclusion`, and obsolete full-surface arbitration symbols.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```kotlin
+Modifier.systemGestureExclusion { /* 24dp edge */ }
+ModalNavigationDrawer(gesturesEnabled = true)
+```
+
+This conflicts with system back and lets Material open a closed drawer outside
+the Pager-local completion contract.
+
+#### Correct
+
+```kotlin
+HorizontalPager(modifier = pagerBoundaryObserver)
+ModalNavigationDrawer(gesturesEnabled = drawerState.isOpen)
+```
+
+The observer reports only a completed boundary gesture; Pager keeps its own
+pointer stream and the existing drawer performs the opening animation.
 
 ## Favorite board grid
 
