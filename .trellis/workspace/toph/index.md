@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 12
+- **Total Sessions**: 13
 - **Last Active**: 2026-07-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~274 | Active |
+| `journal-1.md` | ~295 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 13 | 2026-07-27 | Article page tab reselect scroll-to-top | `c594869b` | `main` |
 | 12 | 2026-07-27 | Absorb Android Device Gate Evidence | `fa70d258` | `main` |
 | 11 | 2026-07-27 | Update About Page Project Information | `cee13888` | `main` |
 | 10 | 2026-07-27 | Restore original Justwen login | `4b54ddeb`, `30dfcdec` | `main` |

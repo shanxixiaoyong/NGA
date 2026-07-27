@@ -272,3 +272,24 @@ Reviewed the pending foundation check-results update, corrected an inaccurate cl
 ### Status
 
 [OK] **Completed**
+
+
+## Session 13: Article page tab reselect scroll-to-top
+
+**Date**: 2026-07-27
+**Task**: Article page tab reselect scroll-to-top
+**Branch**: `main`
+
+### Summary
+
+Added current-page tab reselect handling so article content scrolls to the first item and expands the app bar; verified debug unit tests and lint.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c594869b` | (see git log) |
+
+### Status
+
+[OK] **Completed**
