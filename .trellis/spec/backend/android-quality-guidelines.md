@@ -4,6 +4,39 @@ This project is an Android multi-module application. The rules below are
 implementation contracts for device tests and the validation gate; they are
 not optional CI hints.
 
+## Global device-operation authorization policy
+
+This policy takes priority over every device-testing, release, diagnostic, and
+validation instruction below:
+
+- ADB and device operations are opt-in. Run them only when the maintainer makes
+  a fresh, explicit request for the specific device test or operation in the
+  current task or conversation. That authorization is limited to the requested
+  scope and does not change the default for later tasks or operations.
+- Without that authorization, do not invoke `adb`, `adb.exe`, `adb devices`,
+  `connected*AndroidTest`, device installation or uninstallation, device
+  shell, logcat, port forwarding, instrumentation, or physical-device/emulator
+  E2E flows. Do not probe for a device, start or switch an ADB server, wait for
+  a connection, or ask the maintainer to connect a device.
+- A device being online or otherwise available is not authorization. A device
+  gate merely inherited from an existing task, PRD, design or implementation
+  plan, checklist, or report is not fresh maintainer authorization, even when
+  that artifact or task is still active or its gate is copied into a current
+  task. Require a current maintainer request before running it. A genuinely
+  explicit maintainer request recorded in the current conversation or in a
+  current/new task remains valid.
+- Device-independent Gradle work remains part of the default gate. It is
+  permitted to compile `androidTest` sources or build test APKs without
+  installing or executing them. Continue to run applicable builds, JVM unit
+  tests, lint, static checks, and offline tests.
+- Report an unauthorized device test as "not run per project policy." This is
+  neither a failure nor a delivery blocker, and it must not become a follow-up
+  task that the maintainer must complete before handoff.
+- After explicit authorization, the exact-serial, Windows ADB transport,
+  traffic-safety, security, and per-device reporting rules below apply. Never
+  trigger real NGA traffic. These rules constrain an authorized run; they do
+  not authorize one.
+
 ## Scenario: Library instrumentation tests
 
 ### 1. Scope / Trigger
@@ -30,14 +63,18 @@ The application uses the identical fully-qualified runner name.
   actual count; a zero-test result caused by a runner startup failure is not a
   pass.
 - The release declarations are `minSdk 30`, `compileSdk 35`, and
-  `targetSdk 35`. API 35 is the primary runtime gate. API 30 is the declared
-  installation-floor smoke target; API 36 may run the target-35 APK as a
-  separately labelled forward-compatibility check.
-- A developer-provided physical device is preferred for local verification.
-  Always pass its exact `ANDROID_SERIAL`; do not silently substitute an
-  emulator when the physical device disconnects.
+  `targetSdk 35`. For explicitly authorized device validation, API 35 is the
+  primary runtime gate. API 30 is the declared installation-floor smoke
+  target; API 36 may run the target-35 APK as a separately labelled
+  forward-compatibility check.
+- For explicitly authorized local device verification, prefer the physical
+  device named by the maintainer. Always pass its exact `ANDROID_SERIAL`; do
+  not silently substitute an emulator when the physical device disconnects.
 
 ### 4. Validation & Error Matrix
+
+The device-runtime rows in this matrix apply only after the maintainer has
+explicitly authorized the corresponding operation.
 
 | Condition | Required result |
 | --- | --- |
@@ -48,13 +85,14 @@ The application uses the identical fully-qualified runner name.
 | API 30 floor smoke fails | Fix before claiming Android 11 support, or explicitly narrow the published installation floor |
 | Target-35 APK fails on API 36 | Record a forward-compatibility finding; do not claim target-36 certification |
 | Test report has zero tests unexpectedly | Investigate runner/package wiring |
-| A physical device disappears during install or test | Classify the run as an ADB/environment blocker, preserve the partial report, and wait for reconnection; do not relabel it as a product pass |
+| A physical device disappears during install or test | Classify the run as an ADB/environment blocker, preserve the partial report, and stop without waiting for or requesting reconnection; do not relabel it as a product pass |
 
 ### 5. Good/Base/Bad Cases
 
-- **Good**: every test APK uses `AndroidJUnitRunner`, API 35 reports the full
-  expected suite, and an available API 30 environment completes the minimum
-  install/core-flow smoke. An API 36 run is labelled `target35-on-api36`.
+- **Good**: every test APK uses `AndroidJUnitRunner`. In an explicitly
+  authorized device matrix, API 35 reports the full expected suite, API 30
+  completes the minimum install/core-flow smoke, and an API 36 run is labelled
+  `target35-on-api36`.
 - **Base**: A module without `src/androidTest` may omit the runner until it
   gains device tests.
 - **Bad**: Relying on the default `android.test.InstrumentationTestRunner`.
@@ -65,12 +103,17 @@ The application uses the identical fully-qualified runner name.
 
 ### 6. Tests Required
 
-- Run `ANDROID_SERIAL=<api35> ./gradlew connectedDebugAndroidTest` and assert
-  every module reports a finished test count with zero failures.
-- Before a public release claiming Android 11 support, run a focused install
-  and core-flow smoke on API 30. This replaces the abandoned API 26 matrix.
-- When an API 36 device is available, run the target-35 APK there and label the
-  report `target35-on-api36`; this does not replace a future target-36 gate.
+- When the maintainer explicitly authorizes the API 35 instrumentation matrix,
+  run it against the exact authorized serial and assert every module reports a
+  finished test count with zero failures. Follow the Windows ADB rules below;
+  do not assume a Gradle `connected*AndroidTest` task is an allowed transport.
+- When the maintainer explicitly includes API 30 release-device validation,
+  run a focused install and core-flow smoke there. This replaces the abandoned
+  API 26 matrix; a release event by itself does not authorize the run.
+- When the maintainer explicitly includes API 36 forward-compatibility
+  validation, run the target-35 APK there and label the report
+  `target35-on-api36`; device availability alone does not authorize this, and
+  it does not replace a future target-36 gate.
 - For every library test APK, inspect the UTP configuration or manifest when
   diagnosing a startup failure; the runner must be AndroidX.
 - Keep a focused regression test for each security-sensitive UI policy (for
@@ -135,18 +178,22 @@ either fix its owned test baseline explicitly or obtain a scope decision. For
 favorite/FAB changes, `:nga_phone_base_3.0:testDebugUnitTest` and the focused
 regression class must pass.
 
-Run `connectedDebugAndroidTest` only when an ADB device is available, using its
-exact serial and without triggering real NGA traffic. API 30 floor and API 36
-forward checks remain separately labelled device gates.
+By default, do not query ADB or run `connectedDebugAndroidTest`, installation,
+instrumentation, or another device gate. Record these checks as not run per
+project policy; they do not block handoff and are not a maintainer follow-up.
+If the maintainer explicitly authorizes a device operation for the current
+task, use the exact serial and Windows ADB transport, avoid real NGA traffic,
+and keep API 30 floor and API 36 forward checks separately labelled.
 
 ## Scenario: Windows ADB From WSL
 
 ### 1. Scope / Trigger
 
-Apply this rule to every physical-device or emulator operation started from
-this repository's WSL workspace. The maintainer has selected the Windows
-Android SDK ADB as the single device transport. The WSL SDK may remain installed
-for build tooling, but its `platform-tools/adb` must not be used.
+After explicit authorization under the global policy, apply this rule to every
+physical-device or emulator operation started from this repository's WSL
+workspace. The maintainer has selected the Windows Android SDK ADB as the
+single device transport. The WSL SDK may remain installed for build tooling,
+but its `platform-tools/adb` must not be used.
 
 ### 2. Signatures
 
@@ -167,8 +214,8 @@ WINDOWS_ANDROID_ADB=/mnt/c/Users/inter/AppData/Local/Android/Sdk/platform-tools/
 ### 3. Contracts
 
 - All package listing, install, uninstall, shell, logcat, port-forward, and
-  instrumentation commands use the executable above with the exact serial when
-  a device is connected.
+  instrumentation commands use the executable above with the exact serial for
+  the explicitly authorized device.
 - Do not invoke `.android-sdk/platform-tools/adb`, `adb` resolved from the WSL
   `PATH`, or any other Linux ADB binary for device operations.
 - Do not uninstall the WSL ADB merely because Gradle downloaded it; it is an SDK
@@ -178,7 +225,8 @@ WINDOWS_ANDROID_ADB=/mnt/c/Users/inter/AppData/Local/Android/Sdk/platform-tools/
   install and invoke instrumentation explicitly through Windows `adb.exe`,
   unless the build is later configured and verified to use the Windows binary.
 - Device unavailability does not authorize starting another ADB server or
-  switching transports. Preserve the result and wait for reconnection.
+  switching transports. Preserve the result and stop without waiting for or
+  requesting reconnection.
 
 ### 4. Validation & Error Matrix
 
@@ -202,8 +250,8 @@ WINDOWS_ANDROID_ADB=/mnt/c/Users/inter/AppData/Local/Android/Sdk/platform-tools/
 
 ### 6. Tests Required
 
-- Before a device operation, run the Windows executable with `devices -l` and
-  record the exact serial.
+- Within an explicitly authorized device operation, run the Windows executable
+  with `devices -l` and record the exact serial before acting on the device.
 - After install or uninstall, query the package with Windows ADB and verify the
   expected presence or absence.
 - After removing DevTools forwards, run Windows ADB `forward --list` and verify
@@ -229,9 +277,10 @@ WINDOWS_ANDROID_ADB=/mnt/c/Users/inter/AppData/Local/Android/Sdk/platform-tools/
 
 ### 1. Scope / Trigger
 
-Use this diagnostic when a real Android device is visible to ADB but a
-connected test fails while installing its instrumentation APK, especially on
-Flyme/Meizu devices or through USB/IP.
+Use this diagnostic only when the maintainer explicitly authorizes it for the
+current task and a real Android device is visible to ADB but a connected test
+fails while installing its instrumentation APK, especially on Flyme/Meizu
+devices or through USB/IP.
 
 ### 2. Signatures
 
@@ -258,7 +307,7 @@ adb -s <serial> install --no-streaming -r -t <instrumentation-apk>
 | Observation | Classification / action |
 | --- | --- |
 | APK transfer succeeds, install returns `INSTALL_FAILED_USER_RESTRICTED` | Physical-device authorization blocker; request Flyme/Android USB-install approval |
-| UTP reports `device '<serial>' not found` during install | ADB/USB/IP environment blocker; preserve XML/UTP logs and wait for reconnection |
+| UTP reports `device '<serial>' not found` during install | ADB/USB/IP environment blocker; preserve XML/UTP logs and stop without waiting for or requesting reconnection |
 | Device remains `device` after a manual rejected install | Confirms the install gate is distinct from transport loss; do not claim a test ran |
 | APK installs and instrumentation reports a non-zero test count | Continue the ordered module gate and evaluate assertions normally |
 
@@ -273,8 +322,9 @@ adb -s <serial> install --no-streaming -r -t <instrumentation-apk>
 
 ### 6. Tests Required
 
-- Before retrying, record `adb devices -l`, the exact serial, device API/model,
-  and the install error/output.
+- During the explicitly authorized diagnostic, before retrying, record
+  `adb devices -l`, the exact serial, device API/model, and the install
+  error/output.
 - If UTP fails at installation, run the non-streaming diagnostic only as a
   transport/authorization probe; it is not a substitute for instrumentation.
 - After user approval, assert that each ordered module emits a report with a
@@ -400,8 +450,9 @@ package migration is approved.
   packaging and signing verification run in GitHub Actions unless explicitly
   authorized for a local build. A successful GitHub job is sufficient
   automation evidence; remote asset download and repeated APK validation are
-  reserved for failure diagnosis. Installation and functional acceptance are
-  manual maintainer gates.
+  reserved for failure diagnosis. Installation and device-based functional
+  acceptance occur only when the maintainer explicitly requests them under the
+  global policy; they are not default automation or handoff gates.
 
 ### 4. Validation & Error Matrix
 
@@ -469,9 +520,10 @@ package migration is approved.
   deletion failure. Cleanup starts only after successful publication.
 - Run focused local unit/static checks and lint before push. Do not run local
   APK packaging unless the maintainer explicitly requests it. After push, use
-  the GitHub job result as the APK build/signing evidence and leave
-  installation and functional acceptance to the maintainer; do not routinely
-  download the published APK unless installation or diagnosis is in scope.
+  the GitHub job result as the APK build/signing evidence. Do not routinely
+  download or install the published APK; installation, device-based functional
+  acceptance, or diagnosis requires an explicit maintainer request under the
+  global policy and is not required for handoff.
 
 ### 7. Wrong vs Correct
 
