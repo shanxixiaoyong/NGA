@@ -293,3 +293,24 @@ Added current-page tab reselect handling so article content scrolls to the first
 ### Status
 
 [OK] **Completed**
+
+
+## Session 14: Refine settings categories
+
+**Date**: 2026-07-27
+**Task**: Refine settings categories
+**Branch**: `main`
+
+### Summary
+
+Regrouped settings into domain and account, appearance, notifications, and other sections; added structural and behavioral XML contract coverage; verified resources, Java/Kotlin compilation, unit tests, and lint.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c240bc8c` | (see git log) |
+
+### Status
+
+[OK] **Completed**
