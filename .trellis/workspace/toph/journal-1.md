@@ -230,3 +230,24 @@ Restored the pinned Justwen full WebView/Passport Cookie login, removed the aban
 ### Status
 
 [OK] **Completed**
+
+
+## Session 11: Update About Page Project Information
+
+**Date**: 2026-07-27
+**Task**: Update About Page Project Information
+**Branch**: `main`
+
+### Summary
+
+Removed the two legacy QQ groups from the About page, added the upstream-derived project declaration, and routed source, release, update, and issue actions to tophtab/nga-just-works. Added a regression contract test; app unit tests, debug assembly, and lint passed.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cee13888` | (see git log) |
+
+### Status
+
+[OK] **Completed**
