@@ -451,3 +451,24 @@ Separated local board-bookmark terminology from server-side topic favorites and 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 21: 收藏页跟手拖拽侧栏
+
+**Date**: 2026-07-27
+**Task**: 收藏页跟手拖拽侧栏
+**Branch**: `main`
+
+### Summary
+
+实现收藏页内容区向 leading 方向拖动时侧栏连续跟手显露，保留 Pager、收藏排序、菜单、遮罩、返回、RTL 与辅助功能契约；完成双模块编译、JVM 单测、lint 和静态禁用 API 校验，并准备发布 4.9.0。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `62e18f9a` | (see git log) |
+
+### Status
+
+[OK] **Completed**
