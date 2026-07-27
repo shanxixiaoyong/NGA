@@ -398,3 +398,35 @@ Replaced the 24dp home drawer edge gesture with a non-consuming favorite-pager l
 ### Status
 
 [OK] **Completed**
+
+
+## Session 19: Clarify favorite board navigation
+
+**Date**: 2026-07-27
+**Task**: Clarify favorite board navigation
+**Branch**: `main`
+
+### Summary
+
+Separated local board-bookmark terminology from server-side topic favorites and anchored About at the drawer bottom.
+
+### Main Changes
+
+- Renamed the home bookmark page and drawer cleanup copy to 收藏板块 terminology.
+- Kept the topic-favorite screen unchanged and documented the UI ownership boundary.
+- Added a source contract test for labels and drawer ordering.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `723df1f3` | (see git log) |
+
+### Testing
+
+- [OK] ./gradlew :nga_phone_base_3.0:testDebugUnitTest
+- [OK] ./gradlew :nga_phone_base_3.0:lintDebug
+
+### Status
+
+[OK] **Completed**

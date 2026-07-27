@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 18
+- **Total Sessions**: 19
 - **Last Active**: 2026-07-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~400 | Active |
+| `journal-1.md` | ~432 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 19 | 2026-07-27 | Clarify favorite board navigation | `723df1f3` | `main` |
 | 18 | 2026-07-27 | 重建 Git 历史并保留上游贡献 | `f280e378` | `main` |
 | 17 | 2026-07-27 | Favorite pager boundary drawer | `1f850f7e` | `main` |
 | 16 | 2026-07-27 | Fix About screen status-bar overlap | `3e895af6` | `main` |
