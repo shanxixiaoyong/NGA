@@ -1,0 +1,1 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"检查默认验证流程不再主动查询或运行 ADB，同时保留显式授权后的安全约束。"}
