@@ -23,6 +23,10 @@ import sp.phone.util.FunctionUtils;
 
 public class AboutActivity extends MaterialAboutActivity {
 
+    private static final String PROJECT_URL = "https://github.com/tophtab/nga-just-works";
+    private static final String RELEASES_URL = PROJECT_URL + "/releases";
+    private static final String ISSUES_URL = PROJECT_URL + "/issues";
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         ThemeManager.getInstance().applyAboutTheme(this);
@@ -32,7 +36,7 @@ public class AboutActivity extends MaterialAboutActivity {
     @NonNull
     @Override
     protected MaterialAboutList getMaterialAboutList(@NonNull Context context) {
-        return new MaterialAboutList(buildAppCard(), buildDevelopCard(), buildExtraCard());
+        return new MaterialAboutList(buildAppCard(), buildDevelopCard());
     }
 
     private MaterialAboutCard buildAppCard() {
@@ -49,7 +53,13 @@ public class AboutActivity extends MaterialAboutActivity {
                 .icon(R.drawable.ic_about)
                 .setOnClickAction(() -> FunctionUtils.openUrlByDefaultBrowser(
                         AboutActivity.this,
-                        "https://github.com/tophtab/nga-just-works/releases"))
+                        RELEASES_URL))
+                .build());
+
+        builder.addItem(new MaterialAboutActionItem.Builder()
+                .text("项目声明")
+                .subText("本项目基于 Justwen/NGA-CLIENT-VER-OPEN-SOURCE 二次开发，非 NGA 官方客户端")
+                .icon(R.drawable.ic_about)
                 .build());
 
         builder.addItem(new MaterialAboutActionItem.Builder()
@@ -68,7 +78,7 @@ public class AboutActivity extends MaterialAboutActivity {
                 .text("检测更新")
                 .setOnClickAction(() -> {
                     ARouterUtils.build(ARouterConstants.ACTIVITY_FRAGMENT_TEMPLATE)
-                            .withString("url", "https://github.com/tophtab/nga-just-works/releases")
+                            .withString("url", RELEASES_URL)
                             .withString("fragment", WebViewFragment.class.getName())
                             .navigation(this);
 
@@ -81,9 +91,16 @@ public class AboutActivity extends MaterialAboutActivity {
 
     private MaterialAboutCard buildDevelopCard() {
         MaterialAboutCard.Builder builder = new MaterialAboutCard.Builder();
-        builder.title("开发团队");
+        builder.title("项目与开发");
         builder.addItem(new MaterialAboutActionItem.Builder()
-                .text("代码")
+                .text("源代码")
+                .subText(PROJECT_URL)
+                .setOnClickAction(() -> FunctionUtils.openUrlByDefaultBrowser(AboutActivity.this, PROJECT_URL))
+                .icon(R.drawable.ic_github)
+                .build());
+
+        builder.addItem(new MaterialAboutActionItem.Builder()
+                .text("原项目代码")
                 .subText("[@竹井詩織里]/[@cfan8]/[@jjimmys]\n[@Moandor]/[@Elrond]/[@Justwen]")
                 .setOnLongClickAction(new MaterialAboutItemOnClickAction() {
                     @Override
@@ -95,36 +112,16 @@ public class AboutActivity extends MaterialAboutActivity {
                 .build());
 
         builder.addItem(new MaterialAboutActionItem.Builder()
-                .text("美工")
+                .text("原项目美工")
                 .subText("[@那个惩戒骑]/[@从来不卖萌]")
                 .icon(R.drawable.ic_color_lens)
                 .build());
 
         builder.addItem(new MaterialAboutActionItem.Builder()
-                .text("Github")
-                .subText("bug & 建议")
-                .setOnClickAction(() -> FunctionUtils.openUrlByDefaultBrowser(AboutActivity.this, "https://github.com/tophtab/nga-just-works/issues"))
+                .text("问题反馈")
+                .subText("GitHub Issues")
+                .setOnClickAction(() -> FunctionUtils.openUrlByDefaultBrowser(AboutActivity.this, ISSUES_URL))
                 .icon(R.drawable.ic_github)
-                .build());
-
-        return builder.build();
-    }
-
-
-    private MaterialAboutCard buildExtraCard() {
-        MaterialAboutCard.Builder builder = new MaterialAboutCard.Builder();
-        builder.title("赞美片总!感谢[@force0119]");
-        builder.addItem(new MaterialAboutActionItem.Builder()
-                .text("客户端吐槽QQ群,欢迎加入捡肥皂")
-                .subText("1065310118")
-                .setOnClickAction(() -> FunctionUtils.copyToClipboard(AboutActivity.this, "1065310118"))
-                .icon(R.drawable.ic_qq)
-                .build());
-        builder.addItem(new MaterialAboutActionItem.Builder()
-                .text("客户端问题反馈群，请勿开车！")
-                .subText("1077054628")
-                .setOnClickAction(() -> FunctionUtils.copyToClipboard(AboutActivity.this, "1077054628"))
-                .icon(R.drawable.ic_qq)
                 .build());
 
         return builder.build();
