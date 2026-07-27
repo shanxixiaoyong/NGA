@@ -1,0 +1,31 @@
+INFO: Constructing runner from config.
+INFO: Configuring Android Instrumentation driver: android_instrumentation_runtime {
+  instrumentation_info {
+    app_package: "gov.anzong.androidnga.base.logger.test"
+    test_package: "gov.anzong.androidnga.base.logger.test"
+    test_runner_class: "androidx.test.runner.AndroidJUnitRunner"
+  }
+  instrumentation_args {
+    args_map {
+      key: "additionalTestOutputDir"
+      value: "/sdcard/Android/media/gov.anzong.androidnga.base.logger.test/additional_test_output"
+    }
+  }
+}
+am_instrument_timeout: 31536000
+
+INFO: Configuring AndroidTestApkInstallerPlugin: apks_to_install {
+  apk_paths: "/home/toph/nga-just-works/lib_base_logger/build/outputs/apk/androidTest/debug/lib_base_logger-debug-androidTest.apk"
+  install_options {
+  }
+  uninstall_after_test: true
+}
+
+INFO: No installables found in test fixture. Nothing to install.
+INFO: Installing [/home/toph/nga-just-works/lib_base_logger/build/outputs/apk/androidTest/debug/lib_base_logger-debug-androidTest.apk] on device REDACTED_SERIAL_XIAOMI.
+INFO: Start logcat streaming.
+INFO: Running Android Instrumentation driver.
+INFO: Copying files from device to host: /sdcard/Android/media/gov.anzong.androidnga.base.logger.test/additional_test_output to /home/toph/nga-just-works/lib_base_logger/build/outputs/connected_android_test_additional_output/debugAndroidTest/connected/24129PN74C - 15
+INFO: Stop logcat streaming.
+INFO: Uninstalling gov.anzong.androidnga.base.logger.test for device REDACTED_SERIAL_XIAOMI.
+INFO: Execute gov.anzong.androidnga.base.logger.ExampleInstrumentedTest.useAppContext: PASSED

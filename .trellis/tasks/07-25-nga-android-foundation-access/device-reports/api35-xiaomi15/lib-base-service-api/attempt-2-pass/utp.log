@@ -1,0 +1,31 @@
+INFO: Constructing runner from config.
+INFO: Configuring Android Instrumentation driver: android_instrumentation_runtime {
+  instrumentation_info {
+    app_package: "com.justwen.androidnga.base.service.api.test"
+    test_package: "com.justwen.androidnga.base.service.api.test"
+    test_runner_class: "androidx.test.runner.AndroidJUnitRunner"
+  }
+  instrumentation_args {
+    args_map {
+      key: "additionalTestOutputDir"
+      value: "/sdcard/Android/media/com.justwen.androidnga.base.service.api.test/additional_test_output"
+    }
+  }
+}
+am_instrument_timeout: 31536000
+
+INFO: Configuring AndroidTestApkInstallerPlugin: apks_to_install {
+  apk_paths: "/home/toph/nga-just-works/lib_base_service_api/build/outputs/apk/androidTest/debug/lib_base_service_api-debug-androidTest.apk"
+  install_options {
+  }
+  uninstall_after_test: true
+}
+
+INFO: No installables found in test fixture. Nothing to install.
+INFO: Installing [/home/toph/nga-just-works/lib_base_service_api/build/outputs/apk/androidTest/debug/lib_base_service_api-debug-androidTest.apk] on device REDACTED_SERIAL_XIAOMI.
+INFO: Start logcat streaming.
+INFO: Running Android Instrumentation driver.
+INFO: Copying files from device to host: /sdcard/Android/media/com.justwen.androidnga.base.service.api.test/additional_test_output to /home/toph/nga-just-works/lib_base_service_api/build/outputs/connected_android_test_additional_output/debugAndroidTest/connected/24129PN74C - 15
+INFO: Stop logcat streaming.
+INFO: Uninstalling com.justwen.androidnga.base.service.api.test for device REDACTED_SERIAL_XIAOMI.
+INFO: Execute com.example.lib_module_account_api.ExampleInstrumentedTest.useAppContext: PASSED

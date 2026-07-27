@@ -1,0 +1,40 @@
+INFO: Constructing runner from config.
+INFO: Configuring Android Instrumentation driver: android_instrumentation_runtime {
+  instrumentation_info {
+    app_package: "com.justwen.androidnga.base.service.api.test"
+    test_package: "com.justwen.androidnga.base.service.api.test"
+    test_runner_class: "androidx.test.runner.AndroidJUnitRunner"
+  }
+  instrumentation_args {
+    args_map {
+      key: "additionalTestOutputDir"
+      value: "/sdcard/Android/media/com.justwen.androidnga.base.service.api.test/additional_test_output"
+    }
+  }
+}
+am_instrument_timeout: 31536000
+
+INFO: Configuring AndroidTestApkInstallerPlugin: apks_to_install {
+  apk_paths: "/home/toph/nga-just-works/lib_base_service_api/build/outputs/apk/androidTest/debug/lib_base_service_api-debug-androidTest.apk"
+  install_options {
+  }
+  uninstall_after_test: true
+}
+
+INFO: No installables found in test fixture. Nothing to install.
+INFO: Installing [/home/toph/nga-just-works/lib_base_service_api/build/outputs/apk/androidTest/debug/lib_base_service_api-debug-androidTest.apk] on device JBGIM7GA6L8TQSMZ.
+INFO: Start logcat streaming.
+INFO: Running Android Instrumentation driver.
+INFO: Copying files from device to host: /sdcard/Android/media/com.justwen.androidnga.base.service.api.test/additional_test_output to /home/toph/nga-just-works/lib_base_service_api/build/outputs/connected_android_test_additional_output/debugAndroidTest/connected/25079RPDCC - 16
+INFO: Stop logcat streaming.
+INFO: Uninstalling com.justwen.androidnga.base.service.api.test for device JBGIM7GA6L8TQSMZ.
+SEVERE: Execute com.example.lib_module_account_api.ExampleInstrumentedTest.useAppContext: FAILED
+org.junit.ComparisonFailure: org.junit.ComparisonFailure: expected:<com.[example.lib_module_account_]api.test> but was:<com.[justwen.androidnga.base.service.]api.test>
+at org.junit.Assert.assertEquals(Assert.java:117)
+at org.junit.Assert.assertEquals(Assert.java:146)
+at com.example.lib_module_account_api.ExampleInstrumentedTest.useAppContext(ExampleInstrumentedTest.java:24)
+
+org.junit.ComparisonFailure: expected:<com.[example.lib_module_account_]api.test> but was:<com.[justwen.androidnga.base.service.]api.test>
+at org.junit.Assert.assertEquals(Assert.java:117)
+at org.junit.Assert.assertEquals(Assert.java:146)
+at com.example.lib_module_account_api.ExampleInstrumentedTest.useAppContext(ExampleInstrumentedTest.java:24)

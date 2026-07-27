@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.justwen.androidnga.base.network.ExampleInstrumentedTest" tests="1" failures="0" errors="0" skipped="0" time="0.582" timestamp="2026-07-26T02:14:21" hostname="localhost">
+  <properties>
+    <property name="device" value="24129PN74C - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":lib_base_network" />
+  </properties>
+  <testcase name="useAppContext" classname="com.justwen.androidnga.base.network.ExampleInstrumentedTest" time="0.022" />
+</testsuite>

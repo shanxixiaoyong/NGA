@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.example.lib_module_account_api.ExampleInstrumentedTest" tests="1" failures="0" errors="0" skipped="0" time="0.672" timestamp="2026-07-26T02:14:37" hostname="localhost">
+  <properties>
+    <property name="device" value="24129PN74C - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":lib_base_service_api" />
+  </properties>
+  <testcase name="useAppContext" classname="com.example.lib_module_account_api.ExampleInstrumentedTest" time="0.027" />
+</testsuite>

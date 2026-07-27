@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="gov.anzong.androidnga.base.logger.ExampleInstrumentedTest" tests="1" failures="0" errors="0" skipped="0" time="0.744" timestamp="2026-07-26T02:14:03" hostname="localhost">
+  <properties>
+    <property name="device" value="24129PN74C - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":lib_base_logger" />
+  </properties>
+  <testcase name="useAppContext" classname="gov.anzong.androidnga.base.logger.ExampleInstrumentedTest" time="0.014" />
+</testsuite>

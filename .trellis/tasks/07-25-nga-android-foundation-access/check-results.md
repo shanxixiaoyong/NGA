@@ -57,17 +57,44 @@ account snapshot can have a nonzero account generation, but request-layer
 anonymous contexts require generation zero. The repository now uses
 `NgaRequestContext.anonymousRead(...)` instead of copying that generation.
 
-## Gates not run
+## Device gates
 
-### Physical-device gate
+### API 35 primary gate - INCOMPLETE
 
-`adb devices -l` returned no attached devices on 2026-07-26. No current APK
-installation, launch, or instrumentation test ran. This is an external device
-gate, not a product pass. No emulator was started.
+The physical primary gate ran on exact serial `REDACTED_SERIAL_XIAOMI`, Xiaomi
+`24129PN74C` / `dada` (Xiaomi 15), Android 15 / API 35, `arm64-v8a`.
 
-The previously seen device was `REDACTED_SERIAL_MEIZU`, a MEIZU 18s on Android 13 /
-API 33. Its earlier installation attempts belong to the pre-migration tree and
-do not certify this fork.
+The first attempt lost ADB while installing `lib_base_logger` and discovered
+zero tests. After the competing USB/IP auto-attach process was stopped, the
+second ordered attempt produced four valid reports:
+
+| Module | Tests | Failures | Errors | Skipped | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `lib_base_logger` | 1 | 0 | 0 | 0 | PASS |
+| `lib_base_network` | 1 | 0 | 0 | 0 | PASS |
+| `lib_base_service_api` | 1 | 0 | 0 | 0 | PASS |
+| `lib_base_ui` | 1 | 0 | 0 | 0 | PASS |
+| `lib_base_ui_compose` | 0 | 0 | 0 | 0 | ADB disconnect during install |
+| `lib_bu_account` | 0 | - | - | - | Not run |
+| `lib_bu_message` | 0 | - | - | - | Not run |
+| `lib_module_debug` | 0 | - | - | - | Not run |
+
+The second run stopped when UTP again reported `device 'REDACTED_SERIAL_XIAOMI' not found`.
+The four passing UTP logs record AndroidJUnitRunner and successful automatic
+test-package uninstall. A read-only audit before the focused resume found no
+`.test` package and only the existing `gov.anzong.androidnga` store app. The
+package-list output was not retained, so this is an operator observation rather
+than independently replayable raw evidence.
+
+A third attempt requested only the four remaining owners, but `ui-compose`
+again lost the device during install commit and reported zero tests. Cleanup
+could not reach the disconnected device, so post-attempt-3 `.test` residue is
+unknown pending another read-only audit. Account, message, and debug did not
+start. The store app was not modified. No emulator, `su`, `adb root`, or
+device-security change was used.
+
+Evidence is under `device-reports/api35-xiaomi15/`. The API 35 primary gate is
+not a product pass until all eight owners report nonzero expected counts.
 
 ### Authorized NGA read gate
 
@@ -76,10 +103,26 @@ user-authorized, low-frequency board/topic/article read probe remains unrun.
 No challenge bypass, official-client impersonation, mutation, or automated
 retry was attempted.
 
-### API 36 forward check
+### API 36 forward check - PARTIAL
 
-No API 36 SDK/device validation ran. The current target-35 application is not
-claimed to be target-36 certified.
+The target-35 debug APK was installed and cold-launched on exact serial
+`JBGIM7GA6L8TQSMZ`, Xiaomi `25079RPDCC` / `turner` (REDMI K Pad), Android 16 /
+API 36, `arm64-v8a`. `MainActivity` resumed with a live process and no reviewed
+launch-log crash/ANR or NGA URL/network match. No real NGA request was sent.
+Raw install, `dumpsys`, and launch-log output was not retained, so these are
+operator observations; the evidence directory independently substantiates only
+the instrumentation results below.
+
+Instrumentation produced `lib_base_logger` 1/1 PASS and `lib_base_network`
+1/1 PASS. `lib_base_service_api` ran one test and failed its stale package
+assertion. That assertion remains in the current source and must be corrected
+and re-run; this recorded failure is unresolved. The remaining five owners were
+not run before the device was re-scoped. UTP automatically removed all three
+module `.test` packages. Evidence is under
+`device-reports/api36-kpad/`.
+
+This is partial `target35-on-api36` evidence only, not target-36 certification
+or a completed instrumentation gate.
 
 ## Release blockers
 
@@ -90,4 +133,3 @@ claimed to be target-36 certified.
   blocked until those assets are cleared or replaced.
 - The task remains `in_progress` until the required physical-device and
   authorized-read acceptance gates are either run or explicitly re-scoped.
-

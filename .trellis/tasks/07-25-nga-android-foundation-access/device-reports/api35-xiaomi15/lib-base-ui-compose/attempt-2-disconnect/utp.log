@@ -1,0 +1,33 @@
+INFO: Constructing runner from config.
+INFO: Configuring Android Instrumentation driver: android_instrumentation_runtime {
+  instrumentation_info {
+    app_package: "com.justwen.androidnga.ui.compose.test"
+    test_package: "com.justwen.androidnga.ui.compose.test"
+    test_runner_class: "androidx.test.runner.AndroidJUnitRunner"
+  }
+  instrumentation_args {
+    args_map {
+      key: "additionalTestOutputDir"
+      value: "/sdcard/Android/media/com.justwen.androidnga.ui.compose.test/additional_test_output"
+    }
+  }
+}
+am_instrument_timeout: 31536000
+
+INFO: Configuring AndroidTestApkInstallerPlugin: apks_to_install {
+  apk_paths: "/home/toph/nga-just-works/lib_base_ui_compose/build/outputs/apk/androidTest/debug/lib_base_ui_compose-debug-androidTest.apk"
+  install_options {
+  }
+  uninstall_after_test: true
+}
+
+INFO: No installables found in test fixture. Nothing to install.
+INFO: Installing [/home/toph/nga-just-works/lib_base_ui_compose/build/outputs/apk/androidTest/debug/lib_base_ui_compose-debug-androidTest.apk] on device REDACTED_SERIAL_XIAOMI.
+SEVERE: Test execution failed with fatal error!
+INFO: Copying files from device to host: /sdcard/Android/media/com.justwen.androidnga.ui.compose.test/additional_test_output to /home/toph/nga-just-works/lib_base_ui_compose/build/outputs/connected_android_test_additional_output/debugAndroidTest/connected/24129PN74C - 15
+WARNING: Failed to retrieve additional test outputs from device.
+WARNING: Failed to retrieve test storage service outputs from device.
+INFO: Stop logcat streaming.
+INFO: Uninstalling com.justwen.androidnga.ui.compose.test for device REDACTED_SERIAL_XIAOMI.
+WARNING: Device REDACTED_SERIAL_XIAOMI failed to uninstall test APK com.justwen.androidnga.ui.compose.test.
+[Failure [DELETE_FAILED_INTERNAL_ERROR]]
