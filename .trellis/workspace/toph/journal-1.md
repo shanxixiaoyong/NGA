@@ -472,3 +472,24 @@ Separated local board-bookmark terminology from server-side topic favorites and 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 22: Customize article text selection menu
+
+**Date**: 2026-07-27
+**Task**: Customize article text selection menu
+**Branch**: `main`
+
+### Summary
+
+Limited native article text selection to Copy, Select all, and Search; delegated web search safely, covered Unicode blank selections, and passed module tests, lint, compile, and debug assembly.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `550c799d` | (see git log) |
+
+### Status
+
+[OK] **Completed**

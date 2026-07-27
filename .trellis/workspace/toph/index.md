@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 21
+- **Total Sessions**: 22
 - **Last Active**: 2026-07-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~474 | Active |
+| `journal-1.md` | ~495 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 22 | 2026-07-27 | Customize article text selection menu | `550c799d` | `main` |
 | 21 | 2026-07-27 | 收藏页跟手拖拽侧栏 | `62e18f9a` | `main` |
 | 20 | 2026-07-27 | 默认跳过 ADB 真机测试 | `607f4e99` | `main` |
 | 19 | 2026-07-27 | Clarify favorite board navigation | `723df1f3` | `main` |
