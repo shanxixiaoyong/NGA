@@ -1,0 +1,242 @@
+[
+  {
+    "assets": [
+      {
+        "content_type": "application/octet-stream",
+        "created_at": "2026-07-27T03:50:54Z",
+        "digest": "sha256:cfc2514a0a7aaf815d837c2f4b81cee97d44e71ccfec7975adff4febe9de6f8a",
+        "id": 490983383,
+        "label": "",
+        "name": "NGA-Just-Works-4.6.0.apk.sha256",
+        "size": 91,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T03:50:54Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      },
+      {
+        "content_type": "application/vnd.android.package-archive",
+        "created_at": "2026-07-27T03:50:54Z",
+        "digest": "sha256:e62ee04edcb0433a9b2aadfd06028035ff3ce6b642c59479be84086f24d8cab6",
+        "id": 490983384,
+        "label": "",
+        "name": "NGA-Just-Works-4.6.0.apk",
+        "size": 20069064,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T03:50:55Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      }
+    ],
+    "author": {
+      "id": 41898282,
+      "login": "github-actions[bot]"
+    },
+    "body": "**Full Changelog**: https://github.com/tophtab/nga-just-works/compare/4.5.0...4.6.0",
+    "created_at": "2026-07-27T03:45:09Z",
+    "draft": false,
+    "id": 360194448,
+    "immutable": false,
+    "name": "NGA Just Works 4.6.0",
+    "prerelease": false,
+    "published_at": "2026-07-27T03:50:55Z",
+    "tag_name": "4.6.0",
+    "target_commitish": "main"
+  },
+  {
+    "assets": [
+      {
+        "content_type": "application/vnd.android.package-archive",
+        "created_at": "2026-07-27T04:36:08Z",
+        "digest": "sha256:2a53182096455727dd20b91f78c26dd47defa54cfd6c9ad0d6ef3b3ccc47cf39",
+        "id": 491022829,
+        "label": "",
+        "name": "NGA-Just-Works-4.7.0.apk",
+        "size": 20069144,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T04:36:09Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      },
+      {
+        "content_type": "application/octet-stream",
+        "created_at": "2026-07-27T04:36:08Z",
+        "digest": "sha256:ee6e420c94c03a8348637eabea86a49ab61d1786e34fa4b81e5341292ec17795",
+        "id": 491022830,
+        "label": "",
+        "name": "NGA-Just-Works-4.7.0.apk.sha256",
+        "size": 91,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T04:36:09Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      }
+    ],
+    "author": {
+      "id": 41898282,
+      "login": "github-actions[bot]"
+    },
+    "body": "**Full Changelog**: https://github.com/tophtab/nga-just-works/compare/4.6.0...4.7.0",
+    "created_at": "2026-07-27T04:29:56Z",
+    "draft": false,
+    "id": 360205139,
+    "immutable": false,
+    "name": "NGA Just Works 4.7.0",
+    "prerelease": false,
+    "published_at": "2026-07-27T04:36:10Z",
+    "tag_name": "4.7.0",
+    "target_commitish": "main"
+  },
+  {
+    "assets": [
+      {
+        "content_type": "application/vnd.android.package-archive",
+        "created_at": "2026-07-27T10:29:16Z",
+        "digest": "sha256:ce60f52cd4b65ad1c9209fa28ea690fdc384ed5cefed7aa8ae67023fcf362204",
+        "id": 491323353,
+        "label": "",
+        "name": "NGA-Just-Works-4.7.1.apk",
+        "size": 20085528,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T10:29:17Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      },
+      {
+        "content_type": "application/octet-stream",
+        "created_at": "2026-07-27T10:29:16Z",
+        "digest": "sha256:d094d5dd5f8cb502024b387fb306e68f36b889c374028b679ff817880abcb968",
+        "id": 491323354,
+        "label": "",
+        "name": "NGA-Just-Works-4.7.1.apk.sha256",
+        "size": 91,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T10:29:16Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      }
+    ],
+    "author": {
+      "id": 41898282,
+      "login": "github-actions[bot]"
+    },
+    "body": "**Full Changelog**: https://github.com/tophtab/nga-just-works/compare/4.7.0...4.7.1",
+    "created_at": "2026-07-27T10:24:59Z",
+    "draft": false,
+    "id": 360351485,
+    "immutable": false,
+    "name": "NGA Just Works 4.7.1",
+    "prerelease": false,
+    "published_at": "2026-07-27T10:29:17Z",
+    "tag_name": "4.7.1",
+    "target_commitish": "main"
+  },
+  {
+    "assets": [
+      {
+        "content_type": "application/vnd.android.package-archive",
+        "created_at": "2026-07-27T12:24:49Z",
+        "digest": "sha256:42b2e2b8e7762b600a118dc4fc17873bc4db60a7a8a590611ef904d70f10c020",
+        "id": 491430718,
+        "label": "",
+        "name": "NGA-Just-Works-4.7.1-debug.21.apk",
+        "size": 48620783,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T12:24:51Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      },
+      {
+        "content_type": "application/octet-stream",
+        "created_at": "2026-07-27T12:24:49Z",
+        "digest": "sha256:8179a072254a7db72aa96413746558e382be66b2b2b823d17d460134fed337d9",
+        "id": 491430719,
+        "label": "",
+        "name": "NGA-Just-Works-4.7.1-debug.21.apk.sha256",
+        "size": 100,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T12:24:49Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      }
+    ],
+    "author": {
+      "id": 41898282,
+      "login": "github-actions[bot]"
+    },
+    "body": "**Full Changelog**: https://github.com/tophtab/nga-just-works/compare/4.7.1...debug-0e4c06600830",
+    "created_at": "2026-07-27T12:21:55Z",
+    "draft": false,
+    "id": 360408702,
+    "immutable": false,
+    "name": "NGA Just Works 4.7.1-debug.21 (Debug)",
+    "prerelease": true,
+    "published_at": "2026-07-27T12:24:52Z",
+    "tag_name": "debug-0e4c06600830",
+    "target_commitish": "c7e76d3cb6873b17149019417398eec54b41c294"
+  },
+  {
+    "assets": [
+      {
+        "content_type": "application/vnd.android.package-archive",
+        "created_at": "2026-07-27T12:29:14Z",
+        "digest": "sha256:dcf7e697846159db6aab4ae14f497a03a713643ba3db8498a160d447f136e44a",
+        "id": 491434361,
+        "label": "",
+        "name": "NGA-Just-Works-4.7.2.apk",
+        "size": 20069144,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T12:29:19Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      },
+      {
+        "content_type": "application/octet-stream",
+        "created_at": "2026-07-27T12:29:14Z",
+        "digest": "sha256:d93fc35c0cfb0fc97129c79d060a3b212de2bb6da9cd6c1eb6b570f55b60248a",
+        "id": 491434363,
+        "label": "",
+        "name": "NGA-Just-Works-4.7.2.apk.sha256",
+        "size": 91,
+        "state": "uploaded",
+        "updated_at": "2026-07-27T12:29:14Z",
+        "uploader": {
+          "id": 41898282,
+          "login": "github-actions[bot]"
+        }
+      }
+    ],
+    "author": {
+      "id": 41898282,
+      "login": "github-actions[bot]"
+    },
+    "body": "**Full Changelog**: https://github.com/tophtab/nga-just-works/compare/4.7.1...4.7.2",
+    "created_at": "2026-07-27T12:22:40Z",
+    "draft": false,
+    "id": 360410967,
+    "immutable": false,
+    "name": "NGA Just Works 4.7.2",
+    "prerelease": false,
+    "published_at": "2026-07-27T12:29:19Z",
+    "tag_name": "4.7.2",
+    "target_commitish": "main"
+  }
+]
