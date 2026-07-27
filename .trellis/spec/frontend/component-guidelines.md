@@ -44,21 +44,35 @@ and add a source contract test for ordering and idempotent padding.
 ### 1. Scope / Trigger
 
 Use this contract when changing the home board Pager, the favorite page's
-leading boundary, drawer gestures, or favorite reorder arbitration. The drawer
-is logically adjacent to the favorite page, but it is not a Pager page and does
-not track the pointer while opening.
+leading direction, drawer gestures, or favorite reorder arbitration. The drawer
+is logically adjacent to the favorite page, but it is an overlay rather than a
+Pager page. It follows a leading drag that begins inside the favorite Pager
+content.
 
 ### 2. Signatures
 
 ```kotlin
+data class PagerInteractionState(
+    val settledPage: Int,
+    val isScrollInProgress: Boolean,
+)
+
 TabLayoutWithPager(
-    leadingBoundaryGestureEnabled: Boolean = true,
-    onLeadingBoundaryGesture: (() -> Unit)? = null,
+    pagerModifier: Modifier = Modifier,
+    onPagerInteractionChanged: ((PagerInteractionState?) -> Unit)? = null,
 )
 
 ForumBoardView(
-    leadingBoundaryGestureEnabled: Boolean = true,
-    onLeadingBoundaryGesture: (() -> Unit)? = null,
+    pagerModifier: Modifier = Modifier,
+    onPagerInteractionChanged: ((PagerInteractionState?) -> Unit)? = null,
+    onFavoriteReorderActiveChanged: (Boolean) -> Unit = {},
+)
+
+HomeNavigationDrawer(
+    drawerState: HomeDrawerState,
+    gestureState: HomeDrawerGestureState,
+    drawerContent: @Composable BoxScope.() -> Unit,
+    content: @Composable BoxScope.() -> Unit,
 )
 ```
 
@@ -68,78 +82,104 @@ label `打开侧边栏`.
 
 ### 3. Contracts
 
-- Attach the observer to the `HorizontalPager` modifier, not the enclosing
-  home surface, toolbar, or tab row. Observe at the Initial pass without
-  consuming pointer changes.
-- Snapshot a settled page `0` at pointer down. On the final release, call the
-  boundary callback when movement is horizontal-dominant and leading distance
-  reaches 50% of Pager width, or leading velocity reaches 400dp/s. Normalize
-  leading direction for LTR/RTL.
-- A valid final release is unconsumed and leaves no pointer pressed. Compose
-  1.7 represents `ACTION_CANCEL` as a consumed `Release`; it must not complete
-  the gesture.
-- Combine `leadingBoundaryGestureEnabled` and `userScrollEnabled` with local
-  favorite reorder state. Active long-press reorder owns the stream.
-- A closed `ModalNavigationDrawer` has `gesturesEnabled = false`; the callback
-  calls `DrawerState.open()`. Once open, enable Material gestures so drag close
-  and scrim dismissal remain available.
-- Do not add an edge band or `systemGestureExclusion`. The existing opposite
-  direction remains completely owned by `HorizontalPager` and continues from
-  favorites to the next board page.
+- Attach `pagerModifier` directly to `HorizontalPager`. Report its bounds in
+  the same root coordinate space as the home drawer; the toolbar and tab row
+  must remain outside the opening region.
+- At pointer down, snapshot whether the Pager is settled on page `0`. A stream
+  that begins on a later page or while the Pager is moving remains content-owned
+  even if page `0` is reached before that stream ends.
+- Observe at the Initial pass. Keep the stream undecided through small jitter,
+  leave vertical-dominant and physical trailing movement unconsumed, and latch
+  leading horizontal movement to the drawer. In LTR, physical right is leading;
+  reverse the physical direction in RTL.
+- Drive drag, release settlement, Menu open, scrim close, dismiss, and Back
+  through one home-only `AnchoredDraggableState`. Its anchors are
+  `Closed = -sheetWidth` and `Open = 0`; preserve the current target explicitly
+  when measurement replaces anchors.
+- Once the drawer owns a stream, enter one `anchoredDrag(UserInput)` transaction,
+  apply the full displacement accumulated during direction classification, then
+  consume and apply subsequent deltas. The stationary home content must not
+  move; the sheet offset and scrim opacity derive from the same state.
+- Settle a valid release at 50% distance or 400dp/s leading velocity with a
+  256ms snap animation. A consumed release, `ACTION_CANCEL`, tracked-pointer
+  loss, active reorder, or owner teardown rolls back to the stable value
+  captured at down. Drain remaining pointers before accepting a new gesture;
+  teardown must reset in non-cancellable cleanup so a half-open offset cannot
+  survive coroutine cancellation.
+- Active favorite reorder owns its stream and keeps Pager scrolling disabled.
+  If reorder activates while an opening candidate exists, cancel and roll back
+  the drawer transaction.
+- Place the sheet with an absolute physical offset. Align it to start in LTR
+  and end in RTL, but mirror the logical offset exactly once. Clear closed-sheet
+  semantics; while visible, retain pane/dismiss semantics, scrim click, Back,
+  Menu open, and horizontal drag close.
+- Do not use a 24dp edge band, `systemGestureExclusion`, Material internal APIs,
+  reflection, or a recomposition-time Boolean handoff.
 
 ### 4. Validation & Error Matrix
 
 | Condition | Required result |
 | --- | --- |
-| Settled favorite page, leading distance >= 50% | Open after release |
-| Settled favorite page, leading velocity >= 400dp/s | Open after release |
-| Opposite direction or later page | Pager behavior only |
-| Vertical-dominant, below both thresholds, or unsettled start | Do not open |
-| Consumed release / cancellation / another pointer still pressed | Do not open |
+| Settled favorite page, leading drag inside Pager bounds | Sheet and scrim follow during the same stream |
+| Leading release reaches 50% or 400dp/s | Settle open |
+| Leading release below both thresholds | Animate closed |
+| Opposite direction, vertical dominance, later page, or unsettled start | Content/Pager behavior only |
+| Consumed release, cancellation, pointer loss, or teardown | Restore the captured stable anchor |
+| Another pointer remains pressed | Cancel and drain before another gesture |
 | Favorite reorder active | Reorder only; no drawer or Pager transition |
-| Drawer already open | Retain Material drag-close and scrim close |
+| Drawer visible | Horizontal drag, scrim, dismiss, Menu state, and Back share the same anchors |
+| Sheet width or layout direction changes | Preserve target and mirror physical placement exactly once |
 
 ### 5. Good/Base/Bad Cases
 
-- **Good**: a completed leading-boundary swipe inside favorite Pager content
-  opens the drawer with its normal animation.
-- **Base**: the opposite swipe still moves from favorites to `魔兽世界` through
-  the existing Pager behavior.
-- **Bad**: observing the whole home surface, consuming Pager events, restoring
-  a 24dp edge trigger, or treating a consumed `Release` as completion.
+- **Good**: a rightward LTR drag from anywhere inside favorite content exposes
+  the left sheet before release, then settles from the same offset.
+- **Base**: a leftward LTR drag still moves from favorites to `魔兽世界`; a
+  later page returns through normal Pager order before a new stream may open
+  the drawer.
+- **Bad**: waiting for `UP` before showing the sheet, observing the entire home
+  surface, consuming vertical/trailing movement, double-mirroring RTL, or
+  allowing cancellation to leave a partial offset.
 
 ### 6. Tests Required
 
-- Unit-test LTR/RTL direction, settled page zero, later pages, horizontal
-  dominance, inclusive 50% distance and 400dp/s velocity thresholds, disabled
-  reorder state, cancellation, consumed release, and remaining pointers.
-- Assert the shared Back default, the home Menu label, and closed/open drawer
-  gesture gating.
+- Unit-test Pager-bound eligibility, LTR/RTL direction and offset, settled page
+  zero, same-stream later pages, jitter/vertical classification, the 50%
+  distance and 400dp/s velocity thresholds, first accumulated delta, measured
+  anchor replacement, cancellation reset, consumed release, and remaining
+  pointers.
+- Assert the shared Back default, the home Menu label, stationary content,
+  progressive scrim, closed semantics, and visible Back/scrim/dismiss paths.
 - Compile, unit-test, and lint both `lib_base_ui_compose` and
   `nga_phone_base_3.0`; scan for `DrawerEdgeWidth`, `isWithinDrawerEdge`,
-  `systemGestureExclusion`, and obsolete full-surface arbitration symbols.
+  `systemGestureExclusion`, obsolete completion callbacks, Material internal
+  APIs, and reflection in affected sources.
+- Keep physical device/emulator playback as the final gate for continuous
+  pixels, first-frame ownership, Pager/reorder interaction, scrim/Back, and RTL.
 
 ### 7. Wrong vs Correct
 
 #### Wrong
 
 ```kotlin
+onRelease = { if (distance >= width / 2) drawerState.open() }
 Modifier.systemGestureExclusion { /* 24dp edge */ }
-ModalNavigationDrawer(gesturesEnabled = true)
 ```
 
-This conflicts with system back and lets Material open a closed drawer outside
-the Pager-local completion contract.
+This provides no follow-finger feedback and reintroduces an undiscoverable,
+system-gesture-conflicting edge target.
 
 #### Correct
 
 ```kotlin
-HorizontalPager(modifier = pagerBoundaryObserver)
-ModalNavigationDrawer(gesturesEnabled = drawerState.isOpen)
+HorizontalPager(modifier = pagerModifier)
+anchoredState.anchoredDrag(MutatePriority.UserInput) {
+    dragTo((anchoredState.requireOffset() + delta).coerceIn(minAnchor(), maxAnchor()))
+}
 ```
 
-The observer reports only a completed boundary gesture; Pager keeps its own
-pointer stream and the existing drawer performs the opening animation.
+The Pager supplies the eligible region, and one shared anchor transaction
+produces continuous sheet and scrim progress while keeping content stationary.
 
 ## Favorite board grid
 

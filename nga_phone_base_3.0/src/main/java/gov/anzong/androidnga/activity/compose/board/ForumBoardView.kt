@@ -46,6 +46,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
+import com.justwen.androidnga.ui.compose.widget.PagerInteractionState
 import com.justwen.androidnga.ui.compose.widget.TabLayoutWithPager
 import com.justwent.androidnga.bu.UserManager
 import gov.anzong.androidnga.R
@@ -56,18 +57,26 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 
+@Suppress("ModifierParameter")
 @Composable
 fun ForumBoardView(
     forumBoardViewModel: ForumBoardViewModel,
     pagerUserScrollEnabled: Boolean = true,
-    leadingBoundaryGestureEnabled: Boolean = true,
-    onLeadingBoundaryGesture: (() -> Unit)? = null,
+    pagerModifier: Modifier = Modifier,
+    onPagerInteractionChanged: ((PagerInteractionState?) -> Unit)? = null,
+    onFavoriteReorderActiveChanged: (Boolean) -> Unit = {},
 ) {
     val boardData by forumBoardViewModel.boardLiveData.observeAsState()
     var reorderActive by remember { mutableStateOf(false) }
+    val currentOnFavoriteReorderActiveChanged by
+        rememberUpdatedState(onFavoriteReorderActiveChanged)
     val tabs = arrayListOf<String>()
     DisposableEffect(Unit) {
-        onDispose { reorderActive = false }
+        currentOnFavoriteReorderActiveChanged(false)
+        onDispose {
+            reorderActive = false
+            currentOnFavoriteReorderActiveChanged(false)
+        }
     }
     boardData?.let {
         it.forEach {
@@ -78,11 +87,12 @@ fun ForumBoardView(
             tabs = tabs,
             initialPage = initialPage,
             userScrollEnabled = pagerUserScrollEnabled && !reorderActive,
-            leadingBoundaryGestureEnabled = leadingBoundaryGestureEnabled && !reorderActive,
-            onLeadingBoundaryGesture = onLeadingBoundaryGesture,
+            pagerModifier = pagerModifier,
+            onPagerInteractionChanged = onPagerInteractionChanged,
         ) {
             ForumBoardContent(it, forumBoardViewModel) { active ->
                 reorderActive = active
+                currentOnFavoriteReorderActiveChanged(active)
             }
         }
     }

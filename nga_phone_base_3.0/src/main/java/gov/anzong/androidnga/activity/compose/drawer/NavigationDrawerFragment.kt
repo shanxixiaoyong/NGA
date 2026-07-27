@@ -25,14 +25,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -46,6 +43,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.painterResource
@@ -66,8 +65,6 @@ import gov.anzong.androidnga.activity.compose.board.ForumBoardView
 import gov.anzong.androidnga.activity.compose.board.ForumBoardViewModel
 import kotlinx.coroutines.launch
 import sp.phone.common.User
-
-internal fun shouldEnableDrawerGestures(drawerOpen: Boolean): Boolean = drawerOpen
 
 class NavigationDrawerFragment : BaseComposeFragment() {
 
@@ -295,9 +292,12 @@ class NavigationDrawerFragment : BaseComposeFragment() {
     fun NavigationDrawerView() {
         val paddingValues = WindowInsets.statusBars.asPaddingValues()
         val top = paddingValues.calculateTopPadding()
-        val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+        val drawerState = rememberHomeDrawerState()
         val scope = rememberCoroutineScope()
-        ModalNavigationDrawer(
+        val drawerGestureState = remember { HomeDrawerGestureState() }
+        HomeNavigationDrawer(
+            drawerState = drawerState,
+            gestureState = drawerGestureState,
             drawerContent = {
                 ModalDrawerSheet(
                     drawerContainerColor = Color.Transparent,
@@ -350,8 +350,6 @@ class NavigationDrawerFragment : BaseComposeFragment() {
 
                 }
             },
-            drawerState = drawerState,
-            gesturesEnabled = shouldEnableDrawerGestures(drawerState.isOpen),
         ) {
             ScaffoldApp(getTopAppBarData(navigationIconAction = {
                 scope.launch {
@@ -360,8 +358,15 @@ class NavigationDrawerFragment : BaseComposeFragment() {
             })) {
                 ForumBoardView(
                     forumBoardViewModel = forumBoardViewModel,
-                    onLeadingBoundaryGesture = {
-                        scope.launch { drawerState.open() }
+                    pagerModifier = Modifier.onGloballyPositioned {
+                        drawerGestureState.pagerBounds = it.boundsInRoot()
+                    },
+                    onPagerInteractionChanged = {
+                        drawerGestureState.settledPage = it?.settledPage ?: -1
+                        drawerGestureState.pagerSettled = it?.isScrollInProgress == false
+                    },
+                    onFavoriteReorderActiveChanged = {
+                        drawerGestureState.favoriteReorderActive = it
                     },
                 )
             }
