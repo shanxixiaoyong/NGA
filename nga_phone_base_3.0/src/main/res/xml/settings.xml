@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="通用设置">
+    <PreferenceCategory android:title="域名与账号">
 
         <ListSummaryPreference
             android:defaultValue="1"
@@ -16,6 +16,9 @@
             android:key="pref_user_compose"
             android:title="@string/setting_title_user" />
 
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="外观设置">
 
         <SwitchPreference
             android:defaultValue="false"
@@ -33,18 +36,6 @@
             android:summary="@string/setting_solid_color_bg_summary"
             android:title="@string/setting_solid_color_bg_title" />
 
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="enableNotification"
-            android:title="@string/notification_on" />
-
-        <SwitchPreference
-            android:defaultValue="false"
-            android:dependency="enableNotification"
-            android:key="notificationSound"
-            android:title="@string/notification_sound" />
-
-
         <ListSummaryPreference
             android:defaultValue="2"
             android:entries="@array/material_theme"
@@ -56,6 +47,25 @@
             android:fragment="sp.phone.ui.fragment.SettingsSizeFragment"
             android:key="adjust_size"
             android:title="@string/setting_title_size" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="通知设置">
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="enableNotification"
+            android:title="@string/notification_on" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:dependency="enableNotification"
+            android:key="notificationSound"
+            android:title="@string/notification_sound" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="其他设置">
 
         <PreferenceScreen
             android:fragment="gov.anzong.androidnga.activity.compose.filter.FilterWordFragment"

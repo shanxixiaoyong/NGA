@@ -7,9 +7,13 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -50,6 +54,56 @@ public class DefaultSettingsContractTest {
     }
 
     @Test
+    public void settingsAreGroupedByPurpose() throws Exception {
+        Document document = DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(new File("src/main/res/xml/settings.xml"));
+        Element preferenceScreen = document.getDocumentElement();
+
+        assertTopLevelSections(preferenceScreen,
+                "PreferenceCategory:域名与账号",
+                "PreferenceCategory:外观设置",
+                "PreferenceCategory:通知设置",
+                "PreferenceCategory:其他设置",
+                "PreferenceCategory:主题列表设置",
+                "PreferenceCategory:主题详情设置",
+                "PreferenceCategory:发帖设置",
+                "PreferenceScreen:实验室");
+        assertCategory(preferenceScreen, "域名与账号",
+                "nga_domain", "pref_user_compose");
+        assertCategory(preferenceScreen, "外观设置",
+                "nightmode", "key_night_mode_follow_system", "use_solid_color_bg",
+                "material_theme", "adjust_size");
+        assertCategory(preferenceScreen, "通知设置",
+                "enableNotification", "notificationSound");
+        assertCategory(preferenceScreen, "其他设置",
+                "pref_black_list_new", "key_clear_cache");
+        assertCategory(preferenceScreen, "主题列表设置",
+                "sort_by_post", "filter_sub_board");
+        assertCategory(preferenceScreen, "主题详情设置",
+                "@string/pref_load_pic_strategy", "@string/pref_load_avatar_strategy",
+                "showSignature");
+        assertCategory(preferenceScreen, "发帖设置",
+                "showColortxt", "refresh_after_post_setting_mode");
+    }
+
+    @Test
+    public void regroupedPreferencesRetainBehavioralAttributes() throws Exception {
+        Document document = DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(new File("src/main/res/xml/settings.xml"));
+
+        assertAttribute(document, "notificationSound", "android:dependency",
+                "enableNotification");
+        assertAttribute(document, "pref_user_compose", "android:fragment",
+                "com.justwent.androidnga.bu.user.UserManagerFragment");
+        assertAttribute(document, "adjust_size", "android:fragment",
+                "sp.phone.ui.fragment.SettingsSizeFragment");
+        assertAttribute(document, "pref_black_list_new", "android:fragment",
+                "gov.anzong.androidnga.activity.compose.filter.FilterWordFragment");
+    }
+
+    @Test
     public void sizeDefaultsMatchStandardSettings() {
         assertEquals(20, Constants.TOPIC_TITLE_SIZE_DEFAULT);
         assertEquals(100, Constants.AVATAR_SIZE_DEFAULT);
@@ -84,5 +138,59 @@ public class DefaultSettingsContractTest {
                 throw new AssertionError("Unexpected preference key: " + key);
             }
         }
+    }
+
+    private static void assertAttribute(
+            Document document, String key, String attribute, String expected) {
+        NodeList elements = document.getElementsByTagName("*");
+        for (int i = 0; i < elements.getLength(); i++) {
+            Element element = (Element) elements.item(i);
+            if (key.equals(element.getAttribute("android:key"))) {
+                assertEquals(expected, element.getAttribute(attribute));
+                return;
+            }
+        }
+        throw new AssertionError("Missing preference key: " + key);
+    }
+
+    private static void assertTopLevelSections(Element preferenceScreen, String... expected) {
+        List<String> actual = new ArrayList<>();
+        NodeList children = preferenceScreen.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() == Node.ELEMENT_NODE) {
+                Element element = (Element) child;
+                actual.add(element.getTagName() + ":" + element.getAttribute("android:title"));
+            }
+        }
+        assertEquals(Arrays.asList(expected), actual);
+    }
+
+    private static void assertCategory(
+            Element preferenceScreen, String title, String... expectedKeys) {
+        NodeList children = preferenceScreen.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() != Node.ELEMENT_NODE) {
+                continue;
+            }
+            Element category = (Element) child;
+            if (!"PreferenceCategory".equals(category.getTagName())
+                    || !title.equals(category.getAttribute("android:title"))) {
+                continue;
+            }
+
+            List<String> actualKeys = new ArrayList<>();
+            NodeList preferences = category.getChildNodes();
+            for (int j = 0; j < preferences.getLength(); j++) {
+                Node preference = preferences.item(j);
+                if (preference.getNodeType() == Node.ELEMENT_NODE) {
+                    actualKeys.add(((Element) preference).getAttribute("android:key"));
+                }
+            }
+            assertEquals(Arrays.asList(expectedKeys), actualKeys);
+            return;
+        }
+        throw new AssertionError("Missing preference category: " + title);
     }
 }
