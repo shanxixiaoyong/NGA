@@ -221,6 +221,36 @@ produces continuous sheet and scrim progress while keeping content stationary.
 - Retain pull-to-refresh and `ScrollAwareFabBehavior` scroll hide/show
   behavior.
 
+## Article native text selection
+
+- Apply the custom selection action-mode callback only to the selectable
+  `tv_content` used for native article bodies. Formatted article
+  `LocalWebView` instances and other text controls keep their existing
+  long-click and selection behavior.
+- Rebuild the floating selection menu with exactly Copy, Select all, and
+  Search, in that order. Use the platform Copy and Select all item IDs and
+  return `false` for those actions so `TextView` retains its native behavior.
+  Mark all three as `SHOW_AS_ACTION_ALWAYS` because this contract requires
+  direct actions rather than overflow entries; keep the corresponding
+  `AlwaysShowAction` lint suppression scoped to the menu-building method.
+- Search must pass the exact nonblank selection as `SearchManager.QUERY` in an
+  `Intent.ACTION_WEB_SEARCH` intent. Validate selection bounds, reject Unicode
+  whitespace-only selections, and handle a missing search activity without
+  crashing.
+- Keep the source contract test synchronized with callback installation, exact
+  menu membership and order, native action delegation, selection validation,
+  and the web-search intent contract.
+
+`String.trim()` only removes characters up to U+0020 and is not a valid blank
+check for selected forum text. Iterate by code point and combine both Unicode
+predicates so no-break and ideographic spaces are rejected as blank:
+
+```java
+if (!Character.isWhitespace(codePoint) && !Character.isSpaceChar(codePoint)) {
+    return false;
+}
+```
+
 ## Verification
 
 ```bash
