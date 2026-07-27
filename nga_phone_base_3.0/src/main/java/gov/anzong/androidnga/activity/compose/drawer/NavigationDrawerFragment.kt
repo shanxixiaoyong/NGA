@@ -8,6 +8,9 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,19 +36,25 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,12 +67,18 @@ import com.justwen.androidnga.ui.compose.theme.AppTheme
 import com.justwen.androidnga.ui.compose.widget.OptionMenuData
 import com.justwen.androidnga.ui.compose.widget.ScaffoldApp
 import com.justwen.androidnga.ui.compose.widget.TopAppBarData
+import com.justwen.androidnga.ui.compose.widget.TopAppBarNavigationIcon
 import com.justwent.androidnga.bu.UserManager
 import gov.anzong.androidnga.R
 import gov.anzong.androidnga.activity.compose.board.ForumBoardView
 import gov.anzong.androidnga.activity.compose.board.ForumBoardViewModel
 import kotlinx.coroutines.launch
 import sp.phone.common.User
+
+private val DrawerEdgeWidth = 24.dp
+
+internal fun isWithinDrawerEdge(positionX: Float, edgeWidthPx: Float): Boolean =
+    positionX in 0f..edgeWidthPx
 
 class NavigationDrawerFragment : BaseComposeFragment() {
 
@@ -91,6 +106,7 @@ class NavigationDrawerFragment : BaseComposeFragment() {
     private fun getTopAppBarData(navigationIconAction: (() -> Unit)? = null): TopAppBarData {
         val topAppBarData = TopAppBarData(title = activity?.title.toString())
         topAppBarData.navigationIconAction = navigationIconAction
+        topAppBarData.navigationIcon = TopAppBarNavigationIcon.Menu
         topAppBarData.optionMenuData = getOptionMenuData()
         return topAppBarData
     }
@@ -292,7 +308,43 @@ class NavigationDrawerFragment : BaseComposeFragment() {
         val top = paddingValues.calculateTopPadding()
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
+        val edgeWidthPx = with(LocalDensity.current) { DrawerEdgeWidth.toPx() }
+        var edgeGestureActive by remember { mutableStateOf(false) }
+        DisposableEffect(Unit) {
+            onDispose { edgeGestureActive = false }
+        }
         ModalNavigationDrawer(
+            modifier = Modifier
+                .systemGestureExclusion { coordinates ->
+                    Rect(
+                        left = 0f,
+                        top = 0f,
+                        right = edgeWidthPx,
+                        bottom = coordinates.size.height.toFloat(),
+                    )
+                }
+                .pointerInput(drawerState, edgeWidthPx) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(
+                            requireUnconsumed = false,
+                            pass = PointerEventPass.Initial,
+                        )
+                        val startedAtDrawerEdge = drawerState.isClosed &&
+                            isWithinDrawerEdge(down.position.x, edgeWidthPx)
+                        if (startedAtDrawerEdge) {
+                            edgeGestureActive = true
+                        }
+                        try {
+                            do {
+                                val event = awaitPointerEvent(PointerEventPass.Final)
+                            } while (event.changes.any { it.pressed })
+                        } finally {
+                            if (startedAtDrawerEdge) {
+                                edgeGestureActive = false
+                            }
+                        }
+                    }
+                },
             drawerContent = {
                 ModalDrawerSheet(
                     drawerContainerColor = Color.Transparent,
@@ -350,7 +402,10 @@ class NavigationDrawerFragment : BaseComposeFragment() {
                     drawerState.open()
                 }
             })) {
-                ForumBoardView(forumBoardViewModel)
+                ForumBoardView(
+                    forumBoardViewModel = forumBoardViewModel,
+                    pagerUserScrollEnabled = !edgeGestureActive,
+                )
             }
         }
     }

@@ -4,6 +4,34 @@ The pinned Justwen layouts, navigation, themes, and screen structure are the UI
 baseline. Do not introduce a parallel UI architecture or broad visual redesign
 while making compatibility fixes.
 
+## Home navigation drawer
+
+- `TopAppBarData` defaults to `TopAppBarNavigationIcon.Back`. Screens that open
+  a drawer must explicitly select `TopAppBarNavigationIcon.Menu` and retain an
+  accessibility description that names the drawer action.
+- The home drawer reserves a narrow leading-edge band for opening gestures and
+  applies `systemGestureExclusion` to that same band. Do not exclude the whole
+  screen or a wider region from Android's system back gesture.
+- Observe the edge pointer stream without consuming it. While that gesture is
+  active, disable the nested home `HorizontalPager` so
+  `ModalNavigationDrawer` owns the original continuous drag and its velocity /
+  threshold settling.
+- Combine the external drawer gate with favorite reorder state:
+
+```kotlin
+TabLayoutWithPager(
+    userScrollEnabled = pagerUserScrollEnabled && !reorderActive,
+)
+```
+
+Reset the edge gate when the pointer stream ends or is cancelled and when the
+composition is disposed. Non-edge horizontal gestures must continue to page,
+and active favorite long-press drag must continue to own reorder behavior.
+
+Tests must assert the shared top-app-bar back default, the drawer menu's
+accessibility label, and the inclusive/exclusive bounds of the leading-edge
+band. Compile and lint both `lib_base_ui_compose` and `nga_phone_base_3.0`.
+
 ## Favorite board grid
 
 - A short press opens the selected board.

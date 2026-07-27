@@ -20,6 +20,7 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -113,9 +114,12 @@ fun TopAppBarEx(
                 topAppBarData.navigationIconAction?.invoke()
             }) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = when (topAppBarData.navigationIcon) {
+                        TopAppBarNavigationIcon.Back -> Icons.AutoMirrored.Filled.ArrowBack
+                        TopAppBarNavigationIcon.Menu -> Icons.Default.Menu
+                    },
                     tint = Color.White,
-                    contentDescription = "Localized description"
+                    contentDescription = topAppBarData.navigationIcon.contentDescription,
                 )
             }
         },
@@ -126,8 +130,14 @@ fun TopAppBarEx(
 
 data class TopAppBarData(val title: String) {
     var navigationIconAction: (() -> Unit)? = null
+    var navigationIcon: TopAppBarNavigationIcon = TopAppBarNavigationIcon.Back
     var optionMenuData: List<OptionMenuData>? = null
     var customTopBar: @Composable (() -> Unit)? = null
+}
+
+enum class TopAppBarNavigationIcon(val contentDescription: String) {
+    Back("返回"),
+    Menu("打开侧边栏"),
 }
 
 data class OptionMenuData(

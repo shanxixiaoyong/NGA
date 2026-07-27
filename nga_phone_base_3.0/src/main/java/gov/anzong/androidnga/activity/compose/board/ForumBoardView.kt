@@ -57,7 +57,10 @@ import kotlin.math.abs
 
 
 @Composable
-fun ForumBoardView(forumBoardViewModel: ForumBoardViewModel) {
+fun ForumBoardView(
+    forumBoardViewModel: ForumBoardViewModel,
+    pagerUserScrollEnabled: Boolean = true,
+) {
     val boardData by forumBoardViewModel.boardLiveData.observeAsState()
     var reorderActive by remember { mutableStateOf(false) }
     val tabs = arrayListOf<String>()
@@ -72,7 +75,7 @@ fun ForumBoardView(forumBoardViewModel: ForumBoardViewModel) {
         TabLayoutWithPager(
             tabs = tabs,
             initialPage = initialPage,
-            userScrollEnabled = !reorderActive,
+            userScrollEnabled = pagerUserScrollEnabled && !reorderActive,
         ) {
             ForumBoardContent(it, forumBoardViewModel) { active ->
                 reorderActive = active
