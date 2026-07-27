@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -16,7 +15,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -97,31 +95,18 @@ public class ArticleTabFragment extends BaseRxFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
-        if (mConfig.isShowBottomTab()) {
-            return inflater.inflate(R.layout.fragment_article_tab_bottom, container, false);
-        } else {
-            return inflater.inflate(R.layout.fragment_article_tab, container, false);
-        }
+        return inflater.inflate(R.layout.fragment_article_tab, container, false);
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         ButterKnife.bind(this, view);
-        updateFloatingActionButton();
         mPagerAdapter = new ArticlePagerAdapter(getChildFragmentManager(), mRequestParam);
         mViewPager.setAdapter(mPagerAdapter);
 
         mTabLayout.setTabOnScreenLimit(1);
         mTabLayout.setUpWithViewPager(mViewPager);
         super.onViewCreated(view, savedInstanceState);
-    }
-
-    private void updateFloatingActionButton() {
-        CoordinatorLayout.LayoutParams lp = (CoordinatorLayout.LayoutParams) mFab.getLayoutParams();
-        if (mConfig.isLeftHandMode()) {
-            lp.gravity = Gravity.START | Gravity.BOTTOM;
-            mFab.setLayoutParams(lp);
-        }
     }
 
     @Override

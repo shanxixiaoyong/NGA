@@ -28,11 +28,6 @@
             android:title="夜间模式跟随系统"/>
 
         <SwitchPreference
-            android:defaultValue="false"
-            android:key="left_hand"
-            android:title="@string/setting_title_left_hand" />
-
-        <SwitchPreference
             android:defaultValue="true"
             android:key="use_solid_color_bg"
             android:summary="@string/setting_solid_color_bg_summary"
@@ -103,13 +98,6 @@
             android:entries="@array/load_pic_strategy"
             android:defaultValue="0"
             android:entryValues="@array/load_pic_strategy_value"/>
-
-        <SwitchPreference
-            android:defaultValue="false"
-            android:key="bottom_tab"
-            android:title="@string/setting_title_bottom_tab" />
-
-
 
         <SwitchPreference
             android:defaultValue="false"

@@ -201,10 +201,6 @@
     <string name="swipeback_right">右侧</string>
     <string name="swipeback_left_right">左右侧</string>
     <string name="swipeback_left_right_bottom">左右及下侧</string>
-    <string name="lefthand_righthand">按键常用操作习惯(4.0以上 )</string>
-    <string name="righthand_option_original">右手</string>
-    <string name="lefthand_option_original">左手</string>
-    <string name="lefthand_righthand_chooser_prompt">选择常用手：</string>
     <string name="swipeback_chooser_prompt">在哪侧启用侧滑返回：</string>
     <string name="image_quality_option_small">小图</string>
     <string name="image_quality_option_medium">中图</string>
@@ -336,8 +332,6 @@
     <string name="setting_title_material_mode">Material Mode</string>
     <string name="setting_title_size">调整字体和头像大小</string>
     <string name="setting_title_material_theme">主题风格</string>
-    <string name="setting_title_bottom_tab">主题页面显示底部标签页</string>
-    <string name="setting_title_left_hand">左手模式</string>
     <string name="summary_show_with_webview">加载出错时默认使用内置浏览器打开</string>
     <string name="title_show_with_webview">使用内置浏览器打开</string>
     <string name="setting_title_sort_by_post">按发帖顺序排序</string>

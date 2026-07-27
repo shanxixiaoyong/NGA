@@ -46,11 +46,7 @@ public class ArticleCacheActivity extends BaseActivity {
             return;
         }
 
-        if (mConfig.isShowBottomTab()) {
-            setContentView(R.layout.fragment_article_tab_bottom);
-        } else {
-            setContentView(R.layout.fragment_article_tab);
-        }
+        setContentView(R.layout.fragment_article_tab);
 
         mPagerAdapter = new ArticlePagerAdapter(getSupportFragmentManager(), mRequestParam);
         mPagerAdapter.setPageIndexList(mCachePageList);

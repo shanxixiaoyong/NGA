@@ -25,7 +25,6 @@ public class DefaultSettingsContractTest {
         assertDefault(document, "nightmode", "false");
         assertDefault(document, "key_night_mode_follow_system",
                 Boolean.toString(Constants.NIGHT_MODE_FOLLOW_SYSTEM_DEFAULT));
-        assertDefault(document, "left_hand", "false");
         assertDefault(document, "use_solid_color_bg", "true");
         assertDefault(document, "enableNotification", "true");
         assertDefault(document, "notificationSound",
@@ -35,10 +34,19 @@ public class DefaultSettingsContractTest {
         assertDefault(document, "filter_sub_board", "false");
         assertDefault(document, "@string/pref_load_pic_strategy", "0");
         assertDefault(document, "@string/pref_load_avatar_strategy", "0");
-        assertDefault(document, "bottom_tab", "false");
         assertDefault(document, "showSignature", "false");
         assertDefault(document, "showColortxt", "false");
         assertDefault(document, "refresh_after_post_setting_mode", "true");
+    }
+
+    @Test
+    public void removedPreferencesAreNotExposed() throws Exception {
+        Document document = DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(new File("src/main/res/xml/settings.xml"));
+
+        assertMissingPreference(document, "left_hand");
+        assertMissingPreference(document, "bottom_tab");
     }
 
     @Test
@@ -66,5 +74,15 @@ public class DefaultSettingsContractTest {
             }
         }
         throw new AssertionError("Missing preference key: " + key);
+    }
+
+    private static void assertMissingPreference(Document document, String key) {
+        NodeList elements = document.getElementsByTagName("*");
+        for (int i = 0; i < elements.getLength(); i++) {
+            Element element = (Element) elements.item(i);
+            if (key.equals(element.getAttribute("android:key"))) {
+                throw new AssertionError("Unexpected preference key: " + key);
+            }
+        }
     }
 }

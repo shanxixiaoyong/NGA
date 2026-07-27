@@ -32,10 +32,6 @@ public class PhoneConfiguration extends PreferenceKey implements SharedPreferenc
 
     private boolean mShowClassicIcon;
 
-    private boolean mLeftHandMode;
-
-    private boolean mShowBottomTab;
-
     private boolean mFilterSubBoard;
 
     private boolean mSortByPostOrder;
@@ -64,12 +60,6 @@ public class PhoneConfiguration extends PreferenceKey implements SharedPreferenc
                 break;
             case PreferenceKey.SHOW_ICON_MODE:
                 mShowClassicIcon = sp.getBoolean(key, false);
-                break;
-            case PreferenceKey.LEFT_HAND:
-                mLeftHandMode = sp.getBoolean(key, false);
-                break;
-            case PreferenceKey.BOTTOM_TAB:
-                mShowBottomTab = sp.getBoolean(key, false);
                 break;
             case PreferenceKey.FILTER_SUB_BOARD:
                 mFilterSubBoard = sp.getBoolean(key, false);
@@ -112,8 +102,6 @@ public class PhoneConfiguration extends PreferenceKey implements SharedPreferenc
         mShowColorText = sp.getBoolean(PreferenceKey.SHOW_COLORTXT, false);
         mUpdateAfterPost = sp.getBoolean(PreferenceKey.REFRESH_AFTERPOST_SETTING_MODE, true);
         mShowClassicIcon = sp.getBoolean(PreferenceKey.SHOW_ICON_MODE, false);
-        mLeftHandMode = sp.getBoolean(PreferenceKey.LEFT_HAND, false);
-        mShowBottomTab = sp.getBoolean(PreferenceKey.BOTTOM_TAB, false);
         mFilterSubBoard = sp.getBoolean(PreferenceKey.FILTER_SUB_BOARD, false);
         mSortByPostOrder = sp.getBoolean(PreferenceKey.SORT_BY_POST, false);
 
@@ -125,16 +113,8 @@ public class PhoneConfiguration extends PreferenceKey implements SharedPreferenc
         return mSortByPostOrder;
     }
 
-    public boolean isShowBottomTab() {
-        return mShowBottomTab;
-    }
-
     public boolean needFilterSubBoard() {
         return mFilterSubBoard;
-    }
-
-    public boolean isLeftHandMode() {
-        return mLeftHandMode;
     }
 
     public boolean needUpdateAfterPost() {

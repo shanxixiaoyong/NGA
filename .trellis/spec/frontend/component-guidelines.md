@@ -23,8 +23,13 @@ while making compatibility fixes.
   opens reply composition. The cached article activity hides that button.
 - Do not restore `FloatingActionsMenu`, `fab_refresh`,
   `ScrollAwareFamBehavior`, or the bundled `floatingactionmenu.aar`.
-- Retain pull-to-refresh, left-hand gravity, and
-  `ScrollAwareFabBehavior` scroll hide/show behavior.
+- Topic-list and article floating action buttons use their layout-default
+  `end|bottom` placement. Do not add a handedness preference or runtime
+  gravity override.
+- Article pages always use `fragment_article_tab`, with the page tabs at the
+  top. Do not add a bottom-tab preference or a second bottom-tab layout.
+- Retain pull-to-refresh and `ScrollAwareFabBehavior` scroll hide/show
+  behavior.
 
 ## Verification
 
@@ -33,7 +38,10 @@ rg -n "FloatingActionsMenu|fab_refresh|ScrollAwareFamBehavior|floatingactionmenu
   nga_phone_base_3.0
 rg -n "fab_post|SwipeRefreshLayout|ScrollAwareFabBehavior" \
   nga_phone_base_3.0/src/main
+rg -n "left_hand|bottom_tab|isLeftHandMode|isShowBottomTab|fragment_article_tab_bottom" \
+  lib_base_common nga_phone_base_3.0/src/main
 ```
 
 The first scan must have no active matches. The second scan should show one
-direct action per relevant layout and the retained refresh/scroll wiring.
+direct action per relevant layout and the retained refresh/scroll wiring. The
+third scan must have no matches.

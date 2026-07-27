@@ -24,18 +24,12 @@ public class PreferenceKey {
     public static final String SHOW_COLORTXT = "showColortxt";
     String SHOW_NEWWEIBA = "showNewweiba";
     String SHOW_LAJIBANKUAI = "showLajibankuai";
-    String HANDSIDE = "HandSide";
-
     public static final String USER_LIST = "userList";
     public static final String SHOW_ICON_MODE = "showiconmode";
 
     public static final String ADJUST_SIZE = "adjust_size";
 
     public static final String MATERIAL_THEME = "material_theme";
-
-    public static final String BOTTOM_TAB = "bottom_tab";
-
-    public static final String LEFT_HAND = "left_hand";
 
     public static final String BOOKMARK_BOARD = "bookmark_board";
 
