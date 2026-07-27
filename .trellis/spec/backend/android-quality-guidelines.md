@@ -139,6 +139,92 @@ Run `connectedDebugAndroidTest` only when an ADB device is available, using its
 exact serial and without triggering real NGA traffic. API 30 floor and API 36
 forward checks remain separately labelled device gates.
 
+## Scenario: Windows ADB From WSL
+
+### 1. Scope / Trigger
+
+Apply this rule to every physical-device or emulator operation started from
+this repository's WSL workspace. The maintainer has selected the Windows
+Android SDK ADB as the single device transport. The WSL SDK may remain installed
+for build tooling, but its `platform-tools/adb` must not be used.
+
+### 2. Signatures
+
+The workspace device executable is:
+
+```text
+/mnt/c/Users/inter/AppData/Local/Android/Sdk/platform-tools/adb.exe
+```
+
+Example invocation:
+
+```bash
+WINDOWS_ANDROID_ADB=/mnt/c/Users/inter/AppData/Local/Android/Sdk/platform-tools/adb.exe
+"$WINDOWS_ANDROID_ADB" devices -l
+"$WINDOWS_ANDROID_ADB" -s <serial> install --no-streaming -r -t <apk>
+```
+
+### 3. Contracts
+
+- All package listing, install, uninstall, shell, logcat, port-forward, and
+  instrumentation commands use the executable above with the exact serial when
+  a device is connected.
+- Do not invoke `.android-sdk/platform-tools/adb`, `adb` resolved from the WSL
+  `PATH`, or any other Linux ADB binary for device operations.
+- Do not uninstall the WSL ADB merely because Gradle downloaded it; it is an SDK
+  component. The rule is to avoid using it as the device transport.
+- A WSL Gradle `connected*AndroidTest` task normally resolves the Linux SDK ADB
+  and therefore violates this workspace rule. Build test APKs with Gradle, then
+  install and invoke instrumentation explicitly through Windows `adb.exe`,
+  unless the build is later configured and verified to use the Windows binary.
+- Device unavailability does not authorize starting another ADB server or
+  switching transports. Preserve the result and wait for reconnection.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required result |
+| --- | --- |
+| Windows `adb.exe devices -l` lists the target | Continue with that executable and exact serial |
+| Windows ADB reports no devices | Stop device operations; do not fall back to WSL ADB |
+| A command or Gradle task starts Linux ADB | Stop it and rerun the equivalent operation through Windows ADB |
+| Test APK must be exercised | Build it locally, install with Windows ADB, then run `am instrument` with Windows ADB |
+| WSL ADB is present on disk | Leave it installed and unused for device transport |
+
+### 5. Good/Base/Bad Cases
+
+- **Good**: Gradle builds an APK, Windows ADB installs it on the named device,
+  and Windows ADB records the resulting package or instrumentation status.
+- **Base**: no device is visible to Windows ADB; JVM/build checks continue, while
+  the device gate remains unavailable.
+- **Bad**: start WSL ADB because the Windows device is temporarily absent, run a
+  broad connected task that silently selects Linux ADB, or uninstall SDK files
+  to enforce the convention.
+
+### 6. Tests Required
+
+- Before a device operation, run the Windows executable with `devices -l` and
+  record the exact serial.
+- After install or uninstall, query the package with Windows ADB and verify the
+  expected presence or absence.
+- After removing DevTools forwards, run Windows ADB `forward --list` and verify
+  the task-owned ports are absent.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```bash
+adb install app-debug.apk
+./gradlew connectedDebugAndroidTest
+```
+
+#### Correct
+
+```bash
+WINDOWS_ANDROID_ADB=/mnt/c/Users/inter/AppData/Local/Android/Sdk/platform-tools/adb.exe
+"$WINDOWS_ANDROID_ADB" -s <serial> install --no-streaming -r app-debug.apk
+```
+
 ## Scenario: Physical-device APK installation authorization
 
 ### 1. Scope / Trigger

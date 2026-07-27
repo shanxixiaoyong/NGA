@@ -118,29 +118,24 @@ Evidence:
 `LoginViewModel.kt:13-77`, `UserManager.kt:12-149`, and
 `nga_phone_base_3.0/.../NgaClientApp.java:101-105` in the pinned checkout.
 
-## Scenario: Controlled Web Login With Justwen Multi-Account Sessions
+## Scenario: Restored Justwen Web Login
 
 ### 1. Scope / Trigger
 
-Use this contract when changing the login route, WebView navigation or
-completion, Passport Cookie parsing, saved-account selection, or request-time
-active-account Cookie injection. Native password POST, RSA keys, CAPTCHA
-sessions, response parsers, and quick-cookie emulation are forbidden fork
-protocols; credentials remain inside the NGA-controlled Web page.
+Use this contract when changing the login route, its WebView navigation or
+completion, Passport Cookie parsing, or request-time active-account Cookie
+injection. The current fork intentionally restores the pinned Justwen login
+files instead of maintaining a native shell, an account-list intermediary, or
+a second controlled-Web activity. Native password POST, RSA keys, CAPTCHA
+sessions, response parsers, and quick-cookie emulation remain forbidden fork
+protocols; credentials stay inside the NGA page.
 
 ### 2. Signatures
 
 ```kotlin
-fun WebLoginPolicy.isAllowed(url: String?): Boolean
-fun WebLoginPolicy.shouldCheckCookies(
-    trigger: CompletionTrigger,
-    url: String?,
-    message: String? = null,
-): Boolean
-fun WebLoginPolicy.isValidSession(uid: String, cid: String): Boolean
-fun WebLoginPolicy.extractLoginSession(cookies: String): LoginSession?
-fun UserManager.addUserAndSelect(uid: String, cid: String, name: String)
-fun UserManager.setActiveIndex(index: Int)
+fun LoginViewModel.checkLoginResult(result: Pair<String, String>): Boolean
+fun LoginViewModel.checkLoginResult(url: String = currentUrl): Boolean
+fun UserManager.addUser(uid: String, cid: String, name: String)
 ```
 
 Normal Retrofit requests retain the existing provider boundary:
@@ -151,27 +146,24 @@ RetrofitHelper.setCookieProvider(() -> UserManagerImpl.getInstance().getCookie()
 
 ### 3. Contracts
 
-- `LoginActivity` is an account-entry screen. It selects a saved account by
-  stable uid resolved against the current list, or launches the same
-  unexported `WebLoginActivity` from “登录新账号” and the shared globe-lock
-  top action.
-- Web login starts at
-  `https://ngabbs.com/nuke.php?__lib=login&__act=account&login`. Navigation,
-  subresources, and Cookie reads require an exact allowed HTTPS host, no
-  user-info, and the default port or 443.
-- `onPageFinished` may record an allowed URL only. It must be structurally
-  unable to read Cookies or complete login because persisted WebView Cookies
-  do not prove a new authentication event.
-- Only the exact legacy confirmation on the exact login URL, or a deliberate
-  user exit, may trigger an origin-bound Cookie check. Confirmation text alone
-  is never success.
-- Parse exact Passport Cookie names. A result requires a bounded positive
-  ASCII-decimal uid and bounded Cookie-safe cid; malformed/blank username may
-  fall back to uid without weakening session validation.
-- The browser result contains only validated uid, cid, and username.
-  `LoginActivity` revalidates it, then `addUserAndSelect` appends or replaces
-  that uid and makes it active. Passwords, raw Cookie headers, and WebView
-  objects never cross the result boundary or enter logs.
+- `/account/login` opens the unexported `LoginActivity` and its one full-page
+  WebView directly. It never shows a native credential form or saved-account
+  list and never launches a separate `WebLoginActivity`.
+- The WebView starts at
+  `https://ngabbs.com/nuke.php?__lib=login&__act=account&login`, enables
+  JavaScript and automatic window opening, and explicitly loads every requested
+  navigation while recording it as `currentUrl`. This is exact pinned behavior:
+  there is no origin, scheme, redirect, port, or subresource policy.
+- A JavaScript confirm asks the ViewModel to check Cookies only when its URL is
+  exactly the login URL and its text contains `登录成功 是否返回首页`. Finishing
+  the Activity also checks Cookies for the last recorded URL.
+- Cookie parsing uses the pinned substring matching for
+  `ngaPassportUid`, `ngaPassportCid`, and `ngaPassportUrlencodedUname` and
+  double-decodes the username as GBK. All three values must be non-empty before
+  `UserManager.addUser` is called.
+- Successful callback handling sets `RESULT_OK`; the original implementation
+  does not introduce a separate browser-result DTO or explicitly select the
+  newly added account.
 - `RetrofitHelper` reads the active account Cookie when its interceptor builds
   an outgoing request. That header is fixed for the resulting in-flight
   request; switching accounts affects subsequent interceptor executions.
@@ -186,64 +178,65 @@ RetrofitHelper.setCookieProvider(() -> UserManagerImpl.getInstance().getCookie()
 
 | Condition | Required result |
 | --- | --- |
-| Page finishes with an old valid Passport Cookie | Remain in Web login; do not inspect the Cookie |
-| Exact success confirmation, Cookie already propagated | Validate, return the minimal result, and close Web login |
-| Exact success confirmation, Cookie not yet propagated | Consume the dialog, retry once after the bounded delay, otherwise stay open |
-| Other dialog text or non-exact login URL | Use normal WebView handling; never check login Cookies |
-| HTTP, foreign/subdomain host, non-443 custom port, user-info, file/content URL | Block the WebView request and never expose NGA Cookies |
-| uid is zero/non-ASCII/non-decimal/oversized, or cid is blank/oversized/delimited/control text | Reject without mutating saved accounts |
-| Saved-account list changes before a row tap is handled | Resolve the captured uid in the current list; select it or no-op if removed |
-| Valid Web result for a new/existing uid | Append or replace by uid, select it, and return `RESULT_OK` |
-| User exits with no valid Cookie | Return cancellation and leave accounts unchanged |
+| Exact login URL and confirm text contains the legacy success message | Poll that URL's Cookies; set `RESULT_OK` when all three Passport values parse |
+| Other confirm URL or text | Preserve normal WebChromeClient handling and do not poll from that callback |
+| User exits after any recorded navigation | Poll the recorded URL's Cookies before returning |
+| Missing uid, cid, or username | Leave the account store unchanged and do not report success |
+| Any requested navigation, including a foreign or non-HTTPS URL | Record and load it in the same WebView, matching the pinned implementation |
+| Valid Cookie for a new or existing uid | Pass it to `UserManager.addUser`; do not add separate selection behavior |
 
 ### 5. Good/Base/Bad Cases
 
-- **Good**: an existing Web Cookie is present when the page opens, but nothing
-  completes until the exact success event or deliberate exit; a validated new
-  uid is then upserted and selected while all other accounts remain.
-- **Base**: NGA changes the page or legacy message. The screen remains open and
-  the user can exit; the App does not fall back to a private password protocol.
-- **Bad**: complete from `onPageFinished`, accept `message.contains(...)`,
-  persist whichever account remains at a stale list index, or replace the
-  Room-backed account list with one global CookieJar.
+- **Good**: the NGA page owns credential and challenge interaction, emits the
+  legacy confirmation, and the original Cookie parser hands a non-empty account
+  to `UserManager.addUser`.
+- **Base**: NGA changes the page or legacy message. The Web page remains the only
+  login UI; the App does not fall back to a private password protocol.
+- **Bad**: reintroduce a native shell, route login through a saved-account list,
+  add a second login Activity/policy, or claim that hardening changes are part
+  of the exact compatibility restoration.
 
 ### 6. Tests Required
 
-- Unit-test exact HTTPS host/port/user-info rejection and every completion
-  trigger, including decorated success text rejection.
-- Unit-test exact Cookie parsing, double GB18030 username decoding/fallback,
-  positive ASCII uid bounds, and Cookie-safe cid bounds.
-- Unit-test stable-uid account lookup after list reorder/removal.
-- Assert both activities are unexported, only one shared `btn_ic_browser`
-  source exists, and no native password/RSA/CAPTCHA/quick-cookie symbols or
-  dedicated dependencies remain.
+- Diff `LoginActivity.kt`, `LoginViewModel.kt`, and the account manifest against
+  pinned Justwen commit `5d807617f8058950f7ea81dda405e38fb0cc37ec`;
+  final-newline differences are allowed.
+- Assert `WebLoginActivity`, `WebLoginPolicy`, native-shell/DOM automation, and
+  their task-specific tests and instrumentation fixtures are absent.
+- Assert the original `LoginActivity` is unexported and no native
+  password/RSA/CAPTCHA/quick-cookie implementation or dedicated dependency
+  remains.
 - Build and run focused account/network tests plus App debug assemble/test/lint.
-  Real login remains a manually authorized device smoke and must stop on
-  challenge, CAPTCHA, or rate limiting.
+  A real login remains a separately authorized manual device smoke.
 
-### 7. Wrong vs Correct
+### 7. Restoration Boundary
 
-#### Wrong
+#### Restored
 
 ```kotlin
-override fun onPageFinished(view: WebView?, url: String?) {
-    completeFromCookies(url)
+override fun shouldOverrideUrlLoading(
+    view: WebView?,
+    request: WebResourceRequest?,
+): Boolean {
+    request?.url?.let {
+        viewModel.currentUrl = it.toString()
+        view?.loadUrl(it.toString())
+    }
+    return true
 }
 ```
 
-This confuses persisted browser state with proof that the current login flow
-succeeded and causes the Web page to close immediately.
+This unrestricted navigation is a known pinned-source risk retained only
+because the user requested an exact restoration.
 
-#### Correct
+#### Do Not Reintroduce
 
 ```kotlin
-override fun onPageFinished(view: WebView?, url: String?) {
-    if (WebLoginPolicy.isAllowed(url)) currentAllowedUrl = requireNotNull(url)
-}
+webLoginLauncher.launch(Intent(this, WebLoginActivity::class.java))
 ```
 
-Cookie extraction remains reachable only from the exact success confirmation
-or deliberate user-exit paths.
+The login route must not become an account chooser, native shell, or launcher
+for a second Web login implementation.
 
 ## Request Identity And Privacy
 
@@ -257,6 +250,10 @@ or deliberate user-exit paths.
   boundaries and default to no Cookie.
 - Browser/WebView fallbacks are not typed transport retries and do not inherit
   an account session automatically.
+- Restored `AUTH.WEB_LOGIN` is a documented compatibility exception to the
+  origin-hardening rule above. Its unrestricted pinned behavior must not be
+  copied into any new WebView or expanded without a separate user-approved
+  migration.
 
 ## Error And Mutation Contract
 
