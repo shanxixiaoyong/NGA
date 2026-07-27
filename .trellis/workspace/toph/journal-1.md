@@ -314,3 +314,24 @@ Regrouped settings into domain and account, appearance, notifications, and other
 ### Status
 
 [OK] **Completed**
+
+
+## Session 15: Home drawer edge navigation
+
+**Date**: 2026-07-27
+**Task**: Home drawer edge navigation
+**Branch**: `main`
+
+### Summary
+
+Added a home-only menu icon and reliable left-edge drawer dragging without breaking pager navigation or favorite reorder gestures; verified both affected Compose modules.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7edb805c` | (see git log) |
+
+### Status
+
+[OK] **Completed**

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 14
+- **Total Sessions**: 15
 - **Last Active**: 2026-07-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~316 | Active |
+| `journal-1.md` | ~337 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 15 | 2026-07-27 | Home drawer edge navigation | `7edb805c` | `main` |
 | 14 | 2026-07-27 | Refine settings categories | `c240bc8c` | `main` |
 | 13 | 2026-07-27 | Article page tab reselect scroll-to-top | `c594869b` | `main` |
 | 12 | 2026-07-27 | Absorb Android Device Gate Evidence | `fa70d258` | `main` |
