@@ -430,3 +430,24 @@ Separated local board-bookmark terminology from server-side topic favorites and 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 20: 默认跳过 ADB 真机测试
+
+**Date**: 2026-07-27
+**Task**: 默认跳过 ADB 真机测试
+**Branch**: `main`
+
+### Summary
+
+将 ADB 和设备测试改为按任务显式授权；默认不探测或等待设备，设备测试未运行不阻塞交付，同时保留授权后的 Windows ADB、安全与报告规则。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `607f4e99` | (see git log) |
+
+### Status
+
+[OK] **Completed**
