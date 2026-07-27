@@ -152,6 +152,19 @@ pointer stream and the existing drawer performs the opening animation.
 - Provide TalkBack custom actions for move up, move down, move to top, and move
   to bottom. Pointer drag cannot be the only reorder mechanism.
 
+## Home drawer terminology and placement
+
+- The App-wide local list of bookmarked boards is displayed as `收藏板块` on
+  the home Pager. Its drawer action is `清理收藏板块`, and the confirmation copy
+  must use the same term.
+- `收藏夹` / `已收藏的主题` is the separate server-side topic-favorite screen.
+  Do not place the board-cleanup action on that screen or add a topic cleanup
+  button as part of the board-bookmark workflow.
+- `关于` is the final drawer item and is anchored to the bottom with flexible
+  space after the primary drawer actions.
+- Source contract tests must assert these labels, the absence of the ambiguous
+  `清空我的收藏` copy, and the ordering of the bottom spacer before `关于`.
+
 ## Contextual floating action buttons
 
 - A topic list contains one Material `FloatingActionButton` that directly

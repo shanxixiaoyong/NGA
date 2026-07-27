@@ -69,7 +69,7 @@ object ForumBoardRepository {
     fun loadBookmarkBoardList(context: Context): BoardEntity {
         val bookmarkBoard = BoardEntity().apply {
             id = "bookmark"
-            name = "我的收藏"
+            name = "收藏板块"
             type = BoardEntity.BoardType.BOOKMARK
             children = mutableListOf()
         }

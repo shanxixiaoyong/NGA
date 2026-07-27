@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -325,7 +326,7 @@ class NavigationDrawerFragment : BaseComposeFragment() {
                             iconId = R.drawable.ic_action_forward,
                             onClick = { viewModel.forwardWithUrl(this@NavigationDrawerFragment) })
                         NavigationItem(
-                            label = "清空我的收藏",
+                            label = "清理收藏板块",
                             iconId = R.drawable.ic_action_warning,
                             onClick = { viewModel.showClearFavoriteBoards(requireContext()) })
 
@@ -340,6 +341,7 @@ class NavigationDrawerFragment : BaseComposeFragment() {
                             onClick = { viewModel.startNotificationActivity(requireActivity()) },
                             extra = extra
                         )
+                        Spacer(modifier = Modifier.weight(1f))
                         NavigationItem(
                             label = "关于",
                             iconId = R.drawable.ic_action_about,

@@ -59,7 +59,7 @@ class NavigationDrawerViewModel : ViewModel() {
 
     fun showClearFavoriteBoards(context: Context) {
         val builder = AlertDialog.Builder(context)
-        builder.setMessage("是否要清空我的收藏？")
+        builder.setMessage("是否要清理收藏板块？")
             .setNegativeButton(R.string.cancel, null)
             .setPositiveButton(
                 R.string.ok
