@@ -251,3 +251,24 @@ Removed the two legacy QQ groups from the About page, added the upstream-derived
 ### Status
 
 [OK] **Completed**
+
+
+## Session 12: Absorb Android Device Gate Evidence
+
+**Date**: 2026-07-27
+**Task**: Absorb Android Device Gate Evidence
+**Branch**: `main`
+
+### Summary
+
+Reviewed the pending foundation check-results update, corrected an inaccurate claim that the service API package assertion had been fixed, marked device observations without retained stdout as non-replayable operator observations, and committed the API 35/API 36 XML, UTP, and textproto evidence into the existing in-progress Trellis task. XML parsing, result-count reconciliation, staged diff checks, and targeted credential scans passed.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fa70d258` | (see git log) |
+
+### Status
+
+[OK] **Completed**
