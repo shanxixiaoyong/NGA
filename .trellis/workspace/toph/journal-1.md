@@ -493,3 +493,48 @@ Limited native article text selection to Copy, Select all, and Search; delegated
 ### Status
 
 [OK] **Completed**
+
+
+## Session 23: Release 4.10.0
+
+**Date**: 2026-07-27
+**Task**: Release 4.10.0
+**Branch**: `main`
+
+### Summary
+
+Published signed stable 4.10.0 with the native text-selection menu and adaptive launcher icon; added validated structured stable notes, backfilled 4.9.0 notes, passed local and exact-SHA CI gates, and verified tag, Release body, and assets.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c1149650` | (see git log) |
+| `57816978` | (see git log) |
+| `839534cb` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 24: Publish 4.10.0 with structured changelog
+
+**Date**: 2026-07-27
+**Task**: Publish 4.10.0 with structured changelog
+**Branch**: `main`
+
+### Summary
+
+Backfilled the 4.9.0 Release body; added validated versioned Added/Removed/Fixed notes for stable releases; published signed 4.10.0 at 57816978 with article text-search, selection-menu cleanup, and the adaptive launcher icon; verified exact-SHA main/tag workflows, tag target, Release body, and asset metadata.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `57816978` | (see git log) |
+| `839534cb` | (see git log) |
+
+### Status
+
+[OK] **Completed**
