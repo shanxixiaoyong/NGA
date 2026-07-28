@@ -140,6 +140,59 @@ class NavigationDrawerGestureTest {
     }
 
     @Test
+    fun fastFlingPicksAnchorByDirectionRegardlessOfHowFarTheSheetTravelled() {
+        // 只越过 10px 就快速右甩，仍然开；已经拉开九成再快速左甩，仍然关。
+        assertEquals(
+            HomeDrawerValue.Open,
+            settleTarget(offset = -270f, velocity = 3200f),
+        )
+        assertEquals(
+            HomeDrawerValue.Closed,
+            settleTarget(offset = -28f, currentValue = HomeDrawerValue.Open, velocity = -3200f),
+        )
+    }
+
+    @Test
+    fun fastFlingTowardsTheAlreadySettledSideStaysPut() {
+        assertEquals(
+            HomeDrawerValue.Closed,
+            settleTarget(offset = -270f, velocity = -3200f),
+        )
+        assertEquals(
+            HomeDrawerValue.Open,
+            settleTarget(offset = -28f, currentValue = HomeDrawerValue.Open, velocity = 3200f),
+        )
+    }
+
+    @Test
+    fun slowReleaseFallsBackToTheHalfWidthPositionalThreshold() {
+        assertEquals(
+            HomeDrawerValue.Closed,
+            settleTarget(offset = -141f, velocity = 120f),
+        )
+        assertEquals(
+            HomeDrawerValue.Open,
+            settleTarget(offset = -140f, velocity = 120f),
+        )
+        assertEquals(
+            HomeDrawerValue.Open,
+            settleTarget(offset = -139f, currentValue = HomeDrawerValue.Open, velocity = -120f),
+        )
+        assertEquals(
+            HomeDrawerValue.Closed,
+            settleTarget(offset = -140f, currentValue = HomeDrawerValue.Open, velocity = -120f),
+        )
+    }
+
+    @Test
+    fun settlingBeforeTheSheetIsMeasuredKeepsTheCurrentAnchor() {
+        assertEquals(
+            HomeDrawerValue.Closed,
+            settleTarget(offset = 0f, sheetWidth = 0f, velocity = 3200f),
+        )
+    }
+
+    @Test
     fun sheetUsesAbsolutePhysicalOffsetsForBothLayoutDirections() {
         assertEquals(-280f, homeDrawerPhysicalOffset(-280f, LayoutDirection.Ltr), 0f)
         assertEquals(280f, homeDrawerPhysicalOffset(-280f, LayoutDirection.Rtl), 0f)
@@ -227,5 +280,18 @@ class NavigationDrawerGestureTest {
         layoutDirection = layoutDirection,
         displacement = displacement,
         directionJitter = 2f,
+    )
+
+    private fun settleTarget(
+        offset: Float,
+        velocity: Float,
+        currentValue: HomeDrawerValue = HomeDrawerValue.Closed,
+        sheetWidth: Float = 280f,
+    ) = homeDrawerSettleTarget(
+        currentValue = currentValue,
+        offset = offset,
+        sheetWidth = sheetWidth,
+        velocity = velocity,
+        velocityThresholdPx = 1200f,
     )
 }

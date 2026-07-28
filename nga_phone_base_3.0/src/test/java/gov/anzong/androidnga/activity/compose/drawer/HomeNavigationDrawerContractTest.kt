@@ -26,7 +26,7 @@ class HomeNavigationDrawerContractTest {
     @Test
     fun dragUsesOnePublicAnchorTransactionAndImmediateAccumulatedDelta() {
         assertTrue(stateSource.contains("anchoredState.anchoredDrag(MutatePriority.UserInput)"))
-        assertTrue(stateSource.contains("anchoredState.settle(command.velocity)"))
+        assertTrue(stateSource.contains("homeDrawerSettleTarget("))
         assertTrue(
             Regex(
                 """HomeDrawerDragCommand\.DragBy\(\s*displacement\.x\s*\*\s*leadingSign"""
@@ -36,6 +36,17 @@ class HomeNavigationDrawerContractTest {
         assertTrue(containerSource.contains("awaitAllPointersUp(event)"))
         assertTrue(containerSource.contains("withContext(NonCancellable)"))
         assertTrue(containerSource.contains("drawerState.resetTo(it.rollbackValue)"))
+    }
+
+    @Test
+    fun everyReleasePathAnimatesWithTheSharedSnapSpec() {
+        // settle() 在快甩时会切到 decay 动画，几十毫秒收尾，观感像瞬移。
+        // 所有停靠都必须走 animateTo，也就是 snapAnimationSpec 的 tween。
+        assertFalse("anchoredState.settle", stateSource.contains("anchoredState.settle("))
+        assertTrue(stateSource.contains("snapAnimationSpec = tween(HomeDrawerAnimationDurationMillis)"))
+        assertTrue(stateSource.contains("anchoredState.animateTo(rollbackValue)"))
+        assertTrue(stateSource.contains("anchoredState.animateTo(HomeDrawerValue.Open)"))
+        assertTrue(stateSource.contains("anchoredState.animateTo(HomeDrawerValue.Closed)"))
     }
 
     @Test

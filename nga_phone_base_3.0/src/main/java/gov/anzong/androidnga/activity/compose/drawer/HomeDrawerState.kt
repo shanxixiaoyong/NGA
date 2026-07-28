@@ -43,15 +43,49 @@ internal fun homeDrawerOffsetAfterDelta(
     maximum: Float,
 ): Float = (offset + delta).coerceIn(minimum, maximum)
 
+/**
+ * 松手后停靠到哪个锚点：先看甩动速度，速度不够再看是否越过一半宽度。
+ *
+ * 与 [AnchoredDraggableState.settle] 的判定一致，但刻意不复用它 —— settle 在快速甩动时会改用
+ * decay 动画跑完剩余距离，时长由物理决定，几十毫秒就结束，观感像瞬移。这里只借用它的方向判定，
+ * 收尾统一交给 [HomeDrawerAnimationDurationMillis] 的 tween，快慢手势和点击菜单打开的动画一致。
+ */
+internal fun homeDrawerSettleTarget(
+    currentValue: HomeDrawerValue,
+    offset: Float,
+    sheetWidth: Float,
+    velocity: Float,
+    velocityThresholdPx: Float,
+): HomeDrawerValue {
+    if (sheetWidth <= 0f) return currentValue
+    if (abs(velocity) >= velocityThresholdPx) {
+        return if (velocity > 0f) HomeDrawerValue.Open else HomeDrawerValue.Closed
+    }
+
+    val currentAnchor = when (currentValue) {
+        HomeDrawerValue.Closed -> homeDrawerClosedAnchor(sheetWidth)
+        HomeDrawerValue.Open -> 0f
+    }
+    if (abs(offset - currentAnchor) < homeDrawerPositionalThreshold(sheetWidth)) {
+        return currentValue
+    }
+    return when (currentValue) {
+        HomeDrawerValue.Closed -> HomeDrawerValue.Open
+        HomeDrawerValue.Open -> HomeDrawerValue.Closed
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 internal class HomeDrawerState(
     initialValue: HomeDrawerValue,
-    velocityThresholdPx: Float,
+    private val velocityThresholdPx: Float,
     decayAnimationSpec: DecayAnimationSpec<Float>,
 ) {
     private val anchoredState = AnchoredDraggableState(
         initialValue = initialValue,
         positionalThreshold = ::homeDrawerPositionalThreshold,
+        // 停靠判定走 homeDrawerSettleTarget，settle 从不被调用，
+        // 这里的 velocityThreshold / decayAnimationSpec 只是构造函数必填项。
         velocityThreshold = { velocityThresholdPx },
         snapAnimationSpec = tween(HomeDrawerAnimationDurationMillis),
         decayAnimationSpec = decayAnimationSpec,
@@ -139,7 +173,16 @@ internal class HomeDrawerState(
         }
 
         when (val command = terminalCommand) {
-            is HomeDrawerDragCommand.Release -> anchoredState.settle(command.velocity)
+            is HomeDrawerDragCommand.Release -> anchoredState.animateTo(
+                homeDrawerSettleTarget(
+                    currentValue = anchoredState.currentValue,
+                    offset = offset,
+                    sheetWidth = sheetWidth,
+                    velocity = command.velocity,
+                    velocityThresholdPx = velocityThresholdPx,
+                )
+            )
+
             else -> anchoredState.animateTo(rollbackValue)
         }
     }
