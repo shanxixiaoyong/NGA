@@ -560,3 +560,25 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 ### Status
 
 [OK] **Completed**
+
+
+## Session 26: WebView 正文选词菜单接管
+
+**Date**: 2026-07-28
+**Task**: WebView 正文选词菜单接管
+**Branch**: `main`
+
+### Summary
+
+查明 4.10.0 的选词菜单定制从未生效：正文恒由 LocalWebView 渲染，tv_content 恒为 GONE。改为覆写 LocalWebView.startActionMode 包装 Chromium 回调，重建菜单为 复制/全选/搜索 并自行实现三个动作。删除失效实现，纯逻辑抽到 ArticleSelectionText 以便真实单测。未做真机验证。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3c68dc86` | (see git log) |
+| `a24efb70` | (see git log) |
+
+### Status
+
+[OK] **Completed**

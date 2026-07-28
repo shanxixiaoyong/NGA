@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 25
+- **Total Sessions**: 26
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~562 | Active |
+| `journal-1.md` | ~584 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 26 | 2026-07-28 | WebView 正文选词菜单接管 | `3c68dc86`, `a24efb70` | `main` |
 | 25 | 2026-07-28 | Merge release workflow Gradle invocations and settle parallel execution | `8035f7ec`, `a5f51180` | `main` |
 | 24 | 2026-07-27 | Publish 4.10.0 with structured changelog | `57816978`, `839534cb` | `main` |
 | 23 | 2026-07-27 | Release 4.10.0 | `c1149650`, `57816978`, `839534cb` | `main` |
