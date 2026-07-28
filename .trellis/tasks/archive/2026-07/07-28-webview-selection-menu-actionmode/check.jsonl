@@ -1,0 +1,2 @@
+{"file": ".trellis/tasks/07-28-webview-selection-menu-actionmode/research/webview-selection-actionmode.md", "reason": "核对菜单接管点、作用域边界与本轮未验证项，避免复述未经真机确认的结论"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "确认其他 WebView 与 UI 行为未被改动，且 spec 新一节记录了真实渲染路径"}

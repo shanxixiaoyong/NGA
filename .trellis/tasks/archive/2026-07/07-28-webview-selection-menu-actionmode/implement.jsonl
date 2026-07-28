@@ -1,0 +1,2 @@
+{"file": ".trellis/tasks/07-28-webview-selection-menu-actionmode/research/webview-selection-actionmode.md", "reason": "4.10.0 失效的证据链、ActionMode 拦截点、作用域与单测环境限制"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "现有组件约定；本任务需替换其中基于错误前提的 Article native text selection 一节"}

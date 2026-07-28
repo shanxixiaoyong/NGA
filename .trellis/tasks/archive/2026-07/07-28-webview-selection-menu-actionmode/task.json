@@ -1,0 +1,28 @@
+{
+  "id": "webview-selection-menu-actionmode",
+  "name": "webview-selection-menu-actionmode",
+  "title": "WebView 正文选词菜单定制",
+  "description": "",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "toph",
+  "assignee": "toph",
+  "createdAt": "2026-07-28",
+  "completedAt": "2026-07-28",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "description": "把帖子正文 LocalWebView 的长按选词菜单接管为 复制/全选/搜索，移除 Chromium 自带的分享与第三方文本处理项；同时清理 4.10.0 装在不可达 tv_content 上的失效实现"
+  }
+}
