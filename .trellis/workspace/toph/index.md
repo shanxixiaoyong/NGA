@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 24
-- **Last Active**: 2026-07-27
+- **Total Sessions**: 25
+- **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~540 | Active |
+| `journal-1.md` | ~562 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 25 | 2026-07-28 | Merge release workflow Gradle invocations and settle parallel execution | `8035f7ec`, `a5f51180` | `main` |
 | 24 | 2026-07-27 | Publish 4.10.0 with structured changelog | `57816978`, `839534cb` | `main` |
 | 23 | 2026-07-27 | Release 4.10.0 | `c1149650`, `57816978`, `839534cb` | `main` |
 | 22 | 2026-07-27 | Customize article text selection menu | `550c799d` | `main` |

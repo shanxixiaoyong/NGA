@@ -538,3 +538,25 @@ Backfilled the 4.9.0 Release body; added validated versioned Added/Removed/Fixed
 ### Status
 
 [OK] **Completed**
+
+
+## Session 25: Merge release workflow Gradle invocations and settle parallel execution
+
+**Date**: 2026-07-28
+**Task**: Merge release workflow Gradle invocations and settle parallel execution
+**Branch**: `main`
+
+### Summary
+
+Collapsed each publication job to one Gradle invocation: stable now resolves verifyReleaseTag and assembleRelease in a single task graph, staging takes the version from CI_VERSION_NAME instead of a printAppVersion run, and publication no longer starts Gradle. The staging step fell from 16s to 4s on CI. Benchmarked parallel execution on the ubuntu-latest runner with paired interleaved samples after an uncontrolled local A/B proved misleading; kept org.gradle.parallel=true as a non-regression (-2.1%, inside noise) rather than a speedup, since minifyReleaseWithR8 is ~70% of the build and cannot be parallelized.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8035f7ec` | (see git log) |
+| `a5f51180` | (see git log) |
+
+### Status
+
+[OK] **Completed**
