@@ -410,11 +410,29 @@ package migration is approved.
   prerelease titled with `(Debug)`.
 - Pushes containing only `.trellis/**` and Markdown files do not publish.
   `workflow_dispatch` is disabled so arbitrary refs cannot manufacture a
-  preview or stable release.
+  preview or stable release. That prohibition governs the publication
+  workflow. A separate dispatch-only workflow may exist to answer a build
+  question, but it must not sign, package, publish, or read repository
+  secrets, and it is deleted once its question is answered.
 - A stable tag must match `X.Y.Z` exactly. The same workflow checks out that
   tag, uses it as `CI_VERSION_NAME`, builds and signs once, verifies the APK,
   and creates a normal GitHub Release directly from the current job's `dist/`.
   It must not query or download an earlier Actions artifact.
+- Each publication job starts Gradle exactly once. The identity step emits one
+  controlled task list — `:nga_phone_base_3.0:assemblePreview` for Debug,
+  `verifyReleaseTag` plus `:nga_phone_base_3.0:assembleRelease` for stable —
+  and the build step splits it into a Bash array for a single `./gradlew`
+  call. Staging and publication must not start Gradle. That task list comes
+  only from the workflow's own constant branches, never from a tag, commit
+  message, or other input.
+- Because the stable tag check shares the build's task graph, a tag/version
+  mismatch fails that one invocation and stops staging and publication before
+  anything is released. Moving the check after `gh release create`, or
+  replacing it with a shell string comparison, is not equivalent.
+- The staged APK filename comes from the already-validated `CI_VERSION_NAME`.
+  The APK's own `versionName` and `versionCode` are still verified from the
+  built manifest, so dropping a separate version-printing Gradle invocation
+  removes a process start, not a version check.
 - Every stable tag must have a matching `release-notes/<X.Y.Z>.md` in the tagged
   source. The complete body contains exactly one `## 新增`, `## 删除`, and
   `## 修复` heading in that order, and every section contains a non-empty
@@ -441,6 +459,19 @@ package migration is approved.
   whose tag starts with legacy `preview-` or current `debug-`, must exclude the
   current tag, and must delete the matching tag with the Release. Stable and
   unrelated prereleases are outside the cleanup set.
+- Build-performance switches are decided from CI measurements, not local ones.
+  The local machine's core count and background load differ from the
+  `ubuntu-latest` runner, and a contended local A/B can invert the verdict:
+  parallel execution measured 25% slower locally under concurrent load and
+  −2.1% (inside noise) on the runner. Time candidates interleaved inside one
+  job so a pair shares a runner, use a mode-matched `clean`, disable the build
+  cache, and decide on medians.
+- Keep `org.gradle.parallel=true` unless a repeated CI median regresses by more
+  than 5%, or it causes OOM, races, output differences, or build/test/lint
+  failures. Do not claim a speedup that the samples do not support: this
+  project's release build is dominated by the single non-parallelizable
+  `minifyReleaseWithR8` task, so cross-subproject parallelism has little room
+  to help until the module graph changes.
 - The job requires `contents: write`; it does not require `actions: read`.
   Gradle caching remains owned by `setup-gradle@v4`, with main allowed to write
   and tag refs read-only. Do not layer another Gradle User Home cache action.

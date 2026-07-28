@@ -167,3 +167,65 @@ runner spec, and the run URL. Time two pairs first. If the difference is below
 Keep `org.gradle.parallel=true` unless parallel regresses the median by more
 than 5% or causes OOM, races, output differences, or build/test/lint failures.
 Implementation appends the raw samples and final decision here.
+
+## CI Results
+
+### Invocation merge, exact-SHA remote gate
+
+Work commit `8035f7ec` on `main`, run
+[30357213636](https://github.com/tophtab/nga-just-works/actions/runs/30357213636),
+success. Compared against the pre-change Debug run `30278468487` at `799fbf9e`,
+which is the same publication path (both build the unminified `preview`
+variant), so the steps are directly comparable:
+
+| Step | Before `799fbf9e` | After `8035f7ec` |
+| --- | --- | --- |
+| Build signed APK | `70s` | `72s` |
+| **Verify and stage APK** | **`16s`** | **`4s`** |
+| Create GitHub Release | `8s` | `5s` |
+| Run wall time | `2m39s` | `2m30s` |
+
+The staging step is the clean measurement: its only change was dropping the
+`printAppVersion` Gradle start, and it fell from 16s to 4s. `Build signed APK`
+moved 2s, which is noise for the same work. The stable path additionally drops
+the publication-time `verifyReleaseTag` start; that saving can only be observed
+on the next real tag run and is not claimed here.
+
+### Parallel off/on, paired on one runner
+
+Run
+[30357699652](https://github.com/tophtab/nga-just-works/actions/runs/30357699652),
+`ubuntu-latest`, 4 vCPU / 15989 MB RAM, at commit `8035f7ec`. Two interleaved
+pairs, Gradle User Home restored read-only so both modes started from the same
+dependency cache.
+
+| pair | mode | elapsed | `compileReleaseArtProfile` | `minifyReleaseWithR8` |
+| --- | --- | --- | --- | --- |
+| 1 | off | `238.33s` | `0.624s` | `2m43.35s` |
+| 1 | on | `227.36s` | `0.507s` | `2m40.44s` |
+| 2 | off | `226.32s` | `0.486s` | `2m39.44s` |
+| 2 | on | `227.63s` | `0.442s` | `2m43.24s` |
+
+Median off `232.32s`, median on `227.50s`, delta **−2.1%**.
+
+**Decision: keep `org.gradle.parallel=true`.** The 5% regression threshold was
+not reached, so the pre-agreed rule retains the setting.
+
+The −2.1% must not be reported as a speedup. It is inside noise:
+
+- The two `off` samples differ from each other by `12.01s`, far more than the
+  `4.82s` between the two medians. The two `on` samples differ by `0.27s`.
+- The larger `off` sample is the job's first measurement, the position most
+  exposed to cold-start effects.
+- `minifyReleaseWithR8` — `2m43.35s`, `2m40.44s`, `2m39.44s`, `2m43.24s` — shows
+  no correlation with the mode at all. It alone accounts for roughly 70% of the
+  build, and being a single task it cannot be split by parallel execution.
+
+This also refutes the invalidated local result rather than confirming it: local
+measurement showed parallel 25% *slower*, which was contention from concurrent
+work on that machine, not a property of the build. Measuring on the target
+runner was the deciding correction.
+
+Expect the setting to matter more if the module graph grows or the R8 tail
+shrinks; until then it is retained as "not a regression", not as an
+optimization.

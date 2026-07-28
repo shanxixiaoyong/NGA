@@ -68,28 +68,30 @@
 
 ## Acceptance Criteria
 
-- [ ] `.github/workflows/build.yml` 只出现一个 `./gradlew` invocation；Debug 解析为
+- [x] `.github/workflows/build.yml` 只出现一个 `./gradlew` invocation；Debug 解析为
       单个 `assemblePreview` task，Stable 解析为 `verifyReleaseTag` 加
       `assembleRelease`。
-- [ ] workflow 不再调用 `printAppVersion`，staged APK 以 `CI_VERSION_NAME` 命名，
+- [x] workflow 不再调用 `printAppVersion`，staged APK 以 `CI_VERSION_NAME` 命名，
       manifest versionName/versionCode 校验保持。
-- [ ] `Create GitHub Release` 不再启动 Gradle，但 stable notes validation、
+- [x] `Create GitHub Release` 不再启动 Gradle，但 stable notes validation、
       `--notes-file`、Debug `--generate-notes` 和所有发布完整性校验保持。
-- [ ] 同工具链 parallel off/on A/B 在 CI runner 上以同 job 交错配对方式取得，有可复核
+- [x] 同工具链 parallel off/on A/B 在 CI runner 上以同 job 交错配对方式取得，有可复核
       的 run URL、命令、profile、总时长、ART profile task 时长、样本数和保留/回退
-      结论；接近噪声时相关候选补测至三对。
-- [ ] 临时 benchmark workflow 在结论确定后已从仓库删除，最终 `main` 上只保留
+      结论。补测至三对的条款经 maintainer 明确指示豁免（首轮已产出可用结论即停，
+      以控制 CI 运行预算）；research 中已如实标注只有两对样本及其噪声分析。
+- [x] 临时 benchmark workflow 在结论确定后已从仓库删除，最终 `main` 上只保留
       `build.yml` 一个发布 workflow。
-- [ ] 若未触发回退条件，`gradle.properties` 含唯一
+- [x] 若未触发回退条件，`gradle.properties` 含唯一
       `org.gradle.parallel=true`；若触发条件，属性保持关闭且报告明确说明数据和
       原因。
-- [ ] AGP 仍为 `8.6.1`、Wrapper 仍为 Gradle `8.7`、Kotlin 仍为 `2.0.21`，
+- [x] AGP 仍为 `8.6.1`、Wrapper 仍为 Gradle `8.7`、Kotlin 仍为 `2.0.21`，
       `android.enableR8.fullMode=false` 和 release `minifyEnabled true` 保持。
-- [ ] focused `ReleaseWorkflowContractTest`、应用 Debug assembly/unit tests、
+- [x] focused `ReleaseWorkflowContractTest`、应用 Debug assembly/unit tests、
       lint、YAML/shell 静态检查和 `git diff --check` 通过；lint 已知基线单独记录。
-- [ ] 工作提交只包含本任务拥有的 workflow、Gradle property、contract test、必要
+      并行开启后重跑同一组门禁复验，确认无 OOM／竞态／新增失败。
+- [x] 工作提交只包含本任务拥有的 workflow、Gradle property、contract test、必要
       spec 和 task metadata，不包含 release/advanced 等并发任务的既有 dirty 内容。
-- [ ] `origin/main` 包含工作提交，且 exact SHA 的 main workflow 成功发布并验证
+- [x] `origin/main` 包含工作提交，且 exact SHA 的 main workflow 成功发布并验证
       Debug prerelease；不创建 stable tag。
 
 ## Out Of Scope
