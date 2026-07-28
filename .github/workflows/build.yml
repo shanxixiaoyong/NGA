@@ -44,7 +44,7 @@ jobs:
             release_tag="$GITHUB_REF_NAME"
             release_title="NGA Just Works $GITHUB_REF_NAME"
             prerelease=false
-            gradle_task=assembleRelease
+            gradle_tasks="verifyReleaseTag :nga_phone_base_3.0:assembleRelease"
             apk_dir=release
             expected_debuggable=false
           else
@@ -65,7 +65,7 @@ jobs:
             release_tag="debug-${short_sha}"
             release_title="NGA Just Works ${version_name} (Debug)"
             prerelease=true
-            gradle_task=assemblePreview
+            gradle_tasks=":nga_phone_base_3.0:assemblePreview"
             apk_dir=preview
             expected_debuggable=true
           fi
@@ -78,7 +78,7 @@ jobs:
             echo "tag=$release_tag"
             echo "title=$release_title"
             echo "prerelease=$prerelease"
-            echo "gradle_task=$gradle_task"
+            echo "gradle_tasks=$gradle_tasks"
             echo "apk_dir=$apk_dir"
             echo "expected_debuggable=$expected_debuggable"
           } >> "$GITHUB_OUTPUT"
@@ -116,13 +116,18 @@ jobs:
           ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
           ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
           ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
-        run: ./gradlew :nga_phone_base_3.0:${{ steps.release.outputs.gradle_task }} --no-daemon
+          GRADLE_TASKS: ${{ steps.release.outputs.gradle_tasks }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          read -r -a gradle_tasks <<< "$GRADLE_TASKS"
+          test "${#gradle_tasks[@]}" -ge 1
+          ./gradlew "${gradle_tasks[@]}" --no-daemon
 
       - name: Verify and stage APK
         run: |
           set -euo pipefail
-          app_version="$(./gradlew -q printAppVersion --no-daemon --console=plain | tail -n 1)"
-          test "$app_version" = "$CI_VERSION_NAME"
+          app_version="$CI_VERSION_NAME"
           mapfile -t source_apks < <(
             find "nga_phone_base_3.0/build/outputs/apk/${{ steps.release.outputs.apk_dir }}" \
               -maxdepth 1 -type f -name '*.apk' ! -name '*unsigned*' -print
@@ -179,7 +184,6 @@ jobs:
           else
             release_notes="release-notes/${GITHUB_REF_NAME}.md"
             python3 scripts/validate_release_notes.py "$release_notes"
-            RELEASE_TAG="${{ steps.release.outputs.tag }}" ./gradlew -q verifyReleaseTag --no-daemon
             gh release create "${{ steps.release.outputs.tag }}" dist/* \
               --repo "$GITHUB_REPOSITORY" \
               --title "${{ steps.release.outputs.title }}" \

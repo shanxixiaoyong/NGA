@@ -49,11 +49,11 @@ class ReleaseWorkflowContractTest {
         assertTrue(workflow.contains("release_tag=\"debug-\${short_sha}\""))
         assertTrue(workflow.contains("release_title=\"NGA Just Works \${version_name} (Debug)\""))
         assertTrue(workflow.contains("release_title=\"NGA Just Works \$GITHUB_REF_NAME\""))
-        assertTrue(workflow.contains("gradle_task=assemblePreview"))
+        assertTrue(workflow.contains("gradle_tasks=\":nga_phone_base_3.0:assemblePreview\""))
         assertTrue(workflow.contains("apk_dir=preview"))
         assertTrue(workflow.contains("expected_debuggable=true"))
 
-        assertTrue(workflow.contains("gradle_task=assembleRelease"))
+        assertTrue(workflow.contains("gradle_tasks=\"verifyReleaseTag :nga_phone_base_3.0:assembleRelease\""))
         assertTrue(workflow.contains("apk_dir=release"))
         assertTrue(workflow.contains("expected_debuggable=false"))
         assertTrue(workflow.contains("release_apk=\"dist/NGA-Just-Works-\${app_version}.apk\""))
@@ -110,6 +110,43 @@ class ReleaseWorkflowContractTest {
         assertTrue("Stable notes must be validated before release creation", releaseCreation > validation)
         assertEquals(1, "--generate-notes".toRegex().findAll(publication).count())
         assertEquals(1, "--notes-file".toRegex().findAll(publication).count())
+    }
+
+    @Test
+    fun eachJobRunsExactlyOneGradleInvocationCarryingItsReleaseTasks() {
+        val workflow = File(repositoryRoot, ".github/workflows/build.yml").readText()
+
+        assertEquals(1, "\\./gradlew".toRegex().findAll(workflow).count())
+        assertFalse(workflow.contains("printAppVersion"))
+        assertEquals(1, "verifyReleaseTag".toRegex().findAll(workflow).count())
+
+        assertTrue(workflow.contains("gradle_tasks=\"verifyReleaseTag :nga_phone_base_3.0:assembleRelease\""))
+        assertTrue(workflow.contains("gradle_tasks=\":nga_phone_base_3.0:assemblePreview\""))
+        assertTrue(workflow.contains("echo \"gradle_tasks=\$gradle_tasks\""))
+
+        val build = stepBody(workflow, "Build signed APK", "Verify and stage APK")
+        assertTrue(build.contains("GRADLE_TASKS: \${{ steps.release.outputs.gradle_tasks }}"))
+        assertTrue(build.contains("RELEASE_TAG: \${{ steps.release.outputs.tag }}"))
+        assertTrue(build.contains("read -r -a gradle_tasks <<< \"\$GRADLE_TASKS\""))
+        assertTrue(build.contains("./gradlew \"\${gradle_tasks[@]}\" --no-daemon"))
+
+        val staging = stepBody(workflow, "Verify and stage APK", "Create GitHub Release")
+        assertTrue(staging.contains("app_version=\"\$CI_VERSION_NAME\""))
+        assertTrue(staging.contains("manifest version-name"))
+        assertTrue(staging.contains("manifest version-code"))
+        assertFalse("Staging must not start Gradle", staging.contains("gradlew"))
+
+        val publication = stepBody(workflow, "Create GitHub Release", "Remove older debug prereleases")
+        assertFalse("Publication must not start Gradle", publication.contains("gradlew"))
+    }
+
+    private fun stepBody(workflow: String, name: String, nextName: String): String {
+        val marker = "      - name: $name"
+        val start = workflow.indexOf(marker)
+        require(start >= 0) { "Missing workflow step: $name" }
+        val end = workflow.indexOf("      - name: $nextName", start)
+        require(end > start) { "Missing workflow step after $name: $nextName" }
+        return workflow.substring(start, end)
     }
 
     private fun buildTypeBlock(gradle: String, name: String): String {

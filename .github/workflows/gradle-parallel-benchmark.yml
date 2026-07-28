@@ -1,0 +1,145 @@
+name: Gradle Parallel Benchmark
+
+# Temporary, dispatch-only benchmark for
+# .trellis/tasks/07-27-optimize-gradle-invocations-parallelism.
+#
+# It answers one question: on the runner that actually builds our releases,
+# does Gradle multi-project parallel execution make the release compile/R8
+# chain faster or slower? Candidates A (--no-parallel) and B (--parallel) run
+# interleaved inside a single job so every pair shares one runner, which
+# removes runner-to-runner hardware variance from the comparison.
+#
+# Delete this file once the keep/rollback decision is recorded.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pairs:
+        description: "Number of interleaved A/B pairs to time"
+        type: string
+        default: "2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gradle-parallel-benchmark
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project sources
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          # Read-only so both candidates start from the same dependency cache
+          # and the benchmark never writes back into main's cache.
+          cache-read-only: true
+
+      - name: Run interleaved parallel off/on benchmark
+        env:
+          PAIRS: ${{ inputs.pairs }}
+          # The app module's taskGraph.whenReady guard rejects any graph holding
+          # an app task matching (assemble|bundle|package).*(release|preview).
+          # This target's graph includes packageReleaseResources, so the guard
+          # trips even though nothing is packaged or signed. These placeholders
+          # are not secrets and no keystore is read: the graph ends well before
+          # packageRelease, so no signing operation runs.
+          ANDROID_SIGNING_STORE_FILE: /nonexistent/benchmark-placeholder.p12
+          ANDROID_SIGNING_STORE_PASSWORD: benchmark-placeholder
+          ANDROID_SIGNING_KEY_ALIAS: benchmark-placeholder
+          ANDROID_SIGNING_KEY_PASSWORD: benchmark-placeholder
+        run: |
+          set -euo pipefail
+
+          target=':nga_phone_base_3.0:compileReleaseArtProfile'
+          results="$RUNNER_TEMP/benchmark-results.tsv"
+          parser="$RUNNER_TEMP/parse_profile.py"
+
+          cat > "$parser" <<'PARSER'
+          import re
+          import sys
+
+          profile, task_suffix = sys.argv[1], sys.argv[2]
+          text = open(profile, encoding="utf-8").read()
+          pattern = (
+              r'<td class="indentPath">([^<]*' + re.escape(task_suffix) + r')</td>'
+              r'\s*<td class="numeric">([^<]+)</td>'
+          )
+          match = re.search(pattern, text)
+          print(match.group(2).strip() if match else "n/a")
+          PARSER
+
+          printf 'pair\tmode\telapsed_seconds\ttarget_task\tr8_task\n' > "$results"
+          echo "runner: $(nproc) vCPU, $(free -m | awk '/^Mem:/{print $2}') MB RAM" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          measure() {
+            local pair="$1" mode="$2" flag="$3" elapsed target_task r8_task profile
+
+            ./gradlew clean --no-daemon --no-build-cache --console=plain "$flag" \
+              > "$RUNNER_TEMP/clean-$pair-$mode.log" 2>&1
+
+            /usr/bin/time -f 'elapsed_seconds=%e' -o "$RUNNER_TEMP/time-$pair-$mode.txt" \
+              ./gradlew "$target" \
+              --no-daemon --no-build-cache --profile --console=plain "$flag" \
+              > "$RUNNER_TEMP/build-$pair-$mode.log" 2>&1
+
+            elapsed="$(sed -n 's/^elapsed_seconds=//p' "$RUNNER_TEMP/time-$pair-$mode.txt" | tail -n 1)"
+            profile="$(ls -t build/reports/profile/*.html | head -n 1)"
+            target_task="$(python3 "$parser" "$profile" compileReleaseArtProfile)"
+            r8_task="$(python3 "$parser" "$profile" minifyReleaseWithR8)"
+
+            printf '%s\t%s\t%s\t%s\t%s\n' \
+              "$pair" "$mode" "$elapsed" "$target_task" "$r8_task" >> "$results"
+          }
+
+          for ((pair = 1; pair <= PAIRS; pair++)); do
+            measure "$pair" off --no-parallel
+            measure "$pair" on --parallel
+          done
+
+          {
+            echo
+            echo '| pair | mode | elapsed_seconds | compileReleaseArtProfile | minifyReleaseWithR8 |'
+            echo '| --- | --- | --- | --- | --- |'
+            tail -n +2 "$results" | awk -F'\t' '{printf "| %s | %s | %s | %s | %s |\n", $1, $2, $3, $4, $5}'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          python3 - "$results" >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          import statistics
+          import sys
+
+          rows = [line.rstrip("\n").split("\t") for line in open(sys.argv[1])][1:]
+          off = [float(r[2]) for r in rows if r[1] == "off"]
+          on = [float(r[2]) for r in rows if r[1] == "on"]
+          if not off or not on:
+              sys.exit("benchmark produced no comparable samples")
+
+          median_off = statistics.median(off)
+          median_on = statistics.median(on)
+          delta = (median_on - median_off) / median_off * 100
+          print()
+          print(f"median off: {median_off:.2f}s over {len(off)} sample(s)")
+          print(f"median on:  {median_on:.2f}s over {len(on)} sample(s)")
+          print(f"parallel delta: {delta:+.1f}% (positive means parallel is slower)")
+          print()
+          print("Decision rule: keep org.gradle.parallel=true unless parallel "
+                "regresses the median by more than 5%.")
+          SUMMARY

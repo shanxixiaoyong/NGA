@@ -1,0 +1,2 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Apply the signed APK, stable/Debug publication, local packaging, lint, and no-device-operation contracts while consolidating Gradle invocations."}
+{"file":".trellis/tasks/07-27-optimize-gradle-invocations-parallelism/research/parallel-build-and-workflow-baseline.md","reason":"Use the recorded 4.10.0 baseline, Gradle 8.7 parallel semantics, controlled A/B protocol, and explicit keep/rollback threshold."}

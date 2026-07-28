@@ -1,0 +1,2 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Audit publication identity, signing, version/tag checks, notes behavior, APK integrity, local gates, and concurrent-file protection for regressions."}
+{"file":".trellis/tasks/07-27-optimize-gradle-invocations-parallelism/research/parallel-build-and-workflow-baseline.md","reason":"Verify benchmark comparability, raw evidence, profile references, decision math, toolchain invariants, and the parallel keep/rollback conclusion."}
