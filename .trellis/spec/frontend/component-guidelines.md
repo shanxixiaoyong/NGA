@@ -221,25 +221,58 @@ produces continuous sheet and scrim progress while keeping content stationary.
 - Retain pull-to-refresh and `ScrollAwareFabBehavior` scroll hide/show
   behavior.
 
-## Article native text selection
+## Article body rendering path
 
-- Apply the custom selection action-mode callback only to the selectable
-  `tv_content` used for native article bodies. Formatted article
-  `LocalWebView` instances and other text controls keep their existing
-  long-click and selection behavior.
-- Rebuild the floating selection menu with exactly Copy, Select all, and
-  Search, in that order. Use the platform Copy and Select all item IDs and
-  return `false` for those actions so `TextView` retains its native behavior.
-  Mark all three as `SHOW_AS_ACTION_ALWAYS` because this contract requires
-  direct actions rather than overflow entries; keep the corresponding
-  `AlwaysShowAction` lint suppression scoped to the menu-building method.
-- Search must pass the exact nonblank selection as `SearchManager.QUERY` in an
-  `Intent.ACTION_WEB_SEARCH` intent. Validate selection bounds, reject Unicode
-  whitespace-only selections, and handle a missing search activity without
-  crashing.
-- Keep the source contract test synchronized with callback installation, exact
-  menu membership and order, native action delegation, selection validation,
-  and the web-search intent contract.
+The article body is **always** a `LocalWebView`. The native `tv_content`
+`TextView` in `fragment_article_list_item.xml` is dead in this path:
+
+- `HtmlConvertFactory.convert()` always returns `String.format(sHtmlTemplate,
+  style, html)`, so it is never empty.
+- `ArticleConvertFactory.buildRowContent()` calls it unconditionally for every
+  row and writes the result to `formattedHtmlData`.
+- `ArticleListAdapter.getItemViewType()` therefore always returns
+  `VIEW_TYPE_WEB_VIEW`, and that branch sets `contentTextView` to `GONE`.
+
+Do not attach article body behavior to `tv_content`. Release 4.10.0 shipped a
+selection-menu customization bound to that `TextView`; it never executed on any
+device, on any vendor ROM. Before wiring behavior to a view, confirm the branch
+that makes it visible is actually reachable.
+
+`LocalWebView.setLocalMode()` calls `setLongClickable(false)`. That does **not**
+suppress long-press text selection: modern Chromium WebView handles the gesture
+in its content layer, outside the `View` long-click path.
+
+## Article WebView text selection
+
+- WebView has no `setCustomSelectionActionModeCallback`. The only
+  application-level hook is `startActionMode`, which Chromium calls on its
+  container view. Override **both** overloads on `LocalWebView` and wrap the
+  incoming callback. `View.startActionMode(callback)` dispatches to the
+  two-argument overload, so guard against double wrapping with an `instanceof`
+  check on the wrapper type.
+- The wrapper must extend `ActionMode.Callback2` and forward `onGetContentRect`
+  to the wrapped callback. Skipping it breaks floating toolbar positioning.
+- `onPrepareActionMode` must rebuild unconditionally and always return `true`.
+  Chromium repopulates the menu on every `invalidate()`, and vendor-injected
+  entries arrive through the same `Menu`, so a single build at create time is
+  not enough.
+- Rebuild the menu with exactly Copy, Select all, and Search, in that order,
+  using ids declared in `res/values/ids.xml`. Do **not** reuse
+  `android.R.id.copy` / `android.R.id.selectAll`: Chromium binds its own
+  handlers to ids inside the WebView APK that the app cannot reference, so a
+  rebuilt menu owns all three actions. Mark all three as
+  `SHOW_AS_ACTION_ALWAYS` and keep the `AlwaysShowAction` lint suppression
+  scoped to the menu-building method.
+- Read the selection with `evaluateJavascript`; this couples the toolbar to
+  `LocalWebView` keeping JavaScript enabled. Copy writes to `ClipboardManager`,
+  Select all runs `selectAllChildren(document.body)` without ending the mode,
+  and Search passes the nonblank selection as `SearchManager.QUERY` in an
+  `Intent.ACTION_WEB_SEARCH`, catching `ActivityNotFoundException`.
+- Do not push these overrides down into `lib_base_common`'s `WebViewEx`. It is a
+  shared base class and future subclasses would inherit the behavior silently.
+- Keep the source contract test synchronized with the override pair, the
+  double-wrap guard, `Callback2` conformance, menu membership and order, the
+  per-action guards, and the absence of any share or `ACTION_PROCESS_TEXT` path.
 
 `String.trim()` only removes characters up to U+0020 and is not a valid blank
 check for selected forum text. Iterate by code point and combine both Unicode
@@ -250,6 +283,11 @@ if (!Character.isWhitespace(codePoint) && !Character.isSpaceChar(codePoint)) {
     return false;
 }
 ```
+
+Keep this logic, and the decoding of `evaluateJavascript` JSON results, in a
+class free of `android.*` imports. The module has JUnit only — no Robolectric
+and no `returnDefaultValues` — so anything touching framework classes cannot be
+covered by an executing unit test.
 
 ## Verification
 
