@@ -11,3 +11,4 @@
 {"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Preserve the shared WebView, Cookie, transport, and bridge boundaries for advanced platform work."}
 {"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Apply exact URL/media policy, no-Cookie external hosts, privacy, automation, and authorized-access rules."}
 {"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Use filter, check-in, media/WebView, vote, and account-mutation operation evidence and exclusions."}
+{"file": ".trellis/tasks/07-25-nga-android-advanced/research/nga-harmony-ai-context.md", "reason": "nga_harmony AI 源码事实、安全缺口、Android 可行性与分阶段范围摘要；详细证据见同目录 source audit。"}

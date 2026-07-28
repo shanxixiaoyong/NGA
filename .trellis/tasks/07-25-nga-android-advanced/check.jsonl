@@ -11,3 +11,4 @@
 {"file":".trellis/spec/backend/network-foundation-contract.md","reason":"Verify WebView, bridge, transport, session, and neutral-identity foundation rules."}
 {"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Check URL/media/Cookie isolation, redaction, bounded automation, errors, and offline validation."}
 {"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Check advanced features against pinned operation IDs and explicit media/dormant exclusions."}
+{"file": ".trellis/tasks/07-25-nga-android-advanced/research/nga-harmony-ai-context.md", "reason": "核对 AI parity、Key/consent/HTTPS/cancel/SSE/privacy 测试与延后范围；详细证据见同目录 source audit。"}

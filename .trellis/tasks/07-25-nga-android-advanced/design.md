@@ -67,6 +67,26 @@ Justwen screen intent
 - `ProviderAdapter` normalizes model-list, connection-test, chat and streaming events; SSE parser handles partial frames, malformed events, server errors, cancellation and usage metadata without logging raw content. Unknown provider responses do not trigger retries.
 - Results are local and account-scoped. The app never proxies requests, stores provider content centrally, or silently sends data after consent revocation.
 
+### Object-scoped AI scenario flow
+
+```text
+floor iv_more -> capture row identity + immutable floor snapshot
+              -> payload preview + post_summary consent
+              -> provider request -> cancellable result bound to the same row identity
+
+profile menu -> capture mProfileData.uid + profile identity
+             -> NGA topic page 1 + reply page 1 under the active NGA session
+             -> normalized sample -> payload preview + user_analysis consent
+             -> provider request -> cancellable result bound to the same profile identity
+```
+
+- 楼层入口复用 `fragment_article_list_item.xml` 的 `iv_more`、`ArticleListAdapter` 的现有 listener，以及 `ArticleListFragment` 中由 `view.getTag()` 取得的当前 `ThreadRowInfo`。`article_list_context_menu.xml` 与 `article_list_context_menu_with_tid.xml` 都增加“AI 总结”，否则不同帖子路由会出现入口不一致。
+- 楼层 payload 只有帖子标题、楼层、作者和当前楼层的纯文本正文。它不发送 URL，不追取其他楼层；内部 scenario 名称、UI 文案和输出免责声明都不得暗示整帖总结。
+- 用户入口复用 `menu_user_profile.xml` 与 `ProfileActivity` 的 options dispatch。action 只在 `mProfileData != null` 时可见，捕获 `mProfileData.uid` 作为目标 UID，沿用现有搜索发帖/回复的对象绑定方式，不能回退到 active account UID。
+- 用户活动由 NGA client 分别请求 `/thread.php?page=1&authorid=<targetUid>` 和 `/thread.php?page=1&authorid=<targetUid>&searchpost=1`，不自动翻页，再本地归一化为用户名、UID、主题/回复样本数、活跃版面、发帖时段、主题标题/日期和每条最多 200 字的回复片段。删除片段中的 URL；发给 AI provider 的是这些结构化内容，不是 NGA 页面链接。预览、加载态和结果页统一标注“基于近期公开活动样本（主题第 1 页 + 回复第 1 页）”，计数只能写成样本数，不能把单页结果描述成全部历史。
+- payload preview 与 wire body 共用同一个不可变 scenario request DTO。consent 确认后，provider、对象标识、payload hash 和 request generation 一并冻结；任何列表/资料刷新、旋转恢复、返回、账号/provider 切换或新请求都通过 generation/object key 丢弃过期回调并取消底层 `OkHttp Call`。
+- 结果界面是对象上下文动作的详情状态，而不是两个场景的独立 AI 首页。它可以流式展示、停止、重试和在保留原始 scenario context 的前提下继续追问。
+
 ## API 30 / API 35 / API 36 compatibility
 
 The fork keeps `minSdk 30` and `compile/target 35`. Android 15/API 35 is the required primary path for media decoder, WebView, TTS, SSE cancellation, edge-to-edge and performance. API 30 is only a minimum-install/core-smoke layer, while API 36 is only a forward-runtime layer for the current target-35 artifact. Run either optional layer only on a matching user-provided physical device; do not start an emulator or require the user to currently own either device. A `targetSdk 36` upgrade is a separate task, and security policy never weakens across the matrix.
@@ -79,5 +99,5 @@ The source ledger records retained/modified Justwen files and full commit `5d807
 
 - Unit: filter truth-table/account isolation, URL normalization/redirect blocking, key-vault lifecycle, consent/redaction, provider JSON/SSE framing, TTS segmentation and capability matrix.
 - Integration/MockWebServer: safe/unsafe media hosts, MIME mismatch, oversized/decompression-bomb responses, WebView redirect policy, domain/throttle behavior, check-in outcomes, provider error/stream cancellation and key deletion.
-- Compose/View/instrumentation: filter consistency across list/detail, settings/account switch, media rotation/background, TTS cancel, AI consent gating, model/test/delete flows and Android 15/API 35 lifecycle; optional API 30 minimum and API 36 target-35-forward smoke when devices exist.
+- Compose/View/instrumentation: filter consistency across list/detail, settings/account switch, media rotation/background, TTS cancel, AI consent gating, model/test/delete flows, both floor-menu variants, profile target-UID binding, preview/wire equality, stale-result suppression, and Android 15/API 35 lifecycle; optional API 30 minimum and API 36 target-35-forward smoke when devices exist.
 - Authorized low-frequency E2E: each check-in/domain/media/provider contract only after permission; save redacted evidence and never provider keys or forum/private content.
