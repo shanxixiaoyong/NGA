@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Check that the shared UI remains consistent and existing favorite interactions are preserved."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Verify the navigation gesture does not break pager gating or favorite reorder state contracts."}

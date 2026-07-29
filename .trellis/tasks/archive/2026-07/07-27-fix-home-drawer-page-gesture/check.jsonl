@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Verify the implemented drawer interaction matches the adjacent-page contract and app-bar convention."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Verify favorite reorder remains exclusive and pager state resets on every terminal path."}

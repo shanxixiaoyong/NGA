@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Replace the incorrect edge-only drawer convention with the reviewed adjacent-page gesture contract."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Preserve favorite reorder ownership and pager gating while adding drawer gesture arbitration."}

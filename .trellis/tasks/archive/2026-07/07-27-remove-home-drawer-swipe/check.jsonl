@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Verify closed drawers cannot be opened by swipe, while Menu open and open-drawer close remain available."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Verify board paging and favorite reorder no longer depend on drawer gesture state."}

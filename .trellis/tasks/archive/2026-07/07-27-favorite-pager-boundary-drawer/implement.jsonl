@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Replace the obsolete 24dp home-drawer convention with the approved pager-local boundary completion contract while retaining Menu accessibility."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Preserve the existing favorite reorder ownership and Pager user-scroll gate while adding the optional boundary action."}

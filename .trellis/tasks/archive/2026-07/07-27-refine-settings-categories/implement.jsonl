@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Defines the frontend guideline index and identifies the active Android UI guidance."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Requires preserving the restored Justwen settings structure and avoiding unrelated UI redesigns."}

@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Provides the applicable frontend spec inventory for review."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Review must confirm the settings regrouping preserves existing Android UI behavior and architecture."}

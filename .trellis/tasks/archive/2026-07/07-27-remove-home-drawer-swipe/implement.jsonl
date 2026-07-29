@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Remove the abandoned drawer-open gesture contract while preserving the home Menu icon and drawer-close behavior."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Restore pager gating to favorite-reorder state only and preserve the reorder contract."}

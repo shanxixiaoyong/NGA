@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Review the final workflow and tests against signing, release identity, notes, checksum, CI ownership, lint, and device-authorization requirements."}
+{"file":".trellis/tasks/07-27-optimize-android-release-workflow/research/current-release-bottleneck.md","reason":"Verify that performance claims use the recorded remote evidence without treating preview and stable builds as equivalent."}
+{"file":".trellis/tasks/07-27-optimize-android-release-workflow/research/gradle-upgrade-and-parallelism.md","reason":"Check version compatibility, benchmark comparability, keep/rollback decisions, and preservation of R8 and ART profile behavior."}
+{"file":".trellis/tasks/07-27-optimize-android-release-workflow/research/agp-major-upgrade-assessment.md","reason":"Verify that the selected target follows the approved risk scope and that a 9.x route does not hide mandatory migrations behind temporary opt-outs."}

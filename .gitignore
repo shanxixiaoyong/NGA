@@ -1,31 +1,53 @@
-/PagerSlidingTabStrip/gen
-/PagerSlidingTabStrip/bin
-/PinterestLikeAdapterView/bin
-/PinterestLikeAdapterView/gen
-/.gradle
-/.idea
-build
-*.iml
-local.properties
-*.DS_Store
-__pycache__/
-gradle.properties
-/gradle
+# AI tooling directories (.trellis/ .claude/ .agents/ .codex/ .grok/) are
+# intentionally TRACKED — do not add blanket rules for them here. Doing so
+# hides new task artifacts from `git status` and forces `git add -f` on every
+# file. Runtime state is scoped out by .trellis/.gitignore instead.
+
+# ---- Build output ----
+build/
+/dist/
 *.apk
-projectFilesBackup/
-nga_phone_base_3.0/release/
-/.android-sdk/
+*.aab
+*.hprof
+
+# ---- IDE & tool caches ----
+/.gradle/
+/.idea/
 /.kotlin/
+/.android-sdk/
 /.toolchains/
-/.agents/
-/.claude/
-/.codex/
-/.grok/
-/.trellis/
-/references/
+*.iml
+captures/
+__pycache__/
+*.pyc
+.DS_Store
+
+# ---- Machine-local config ----
+local.properties
+*.properties.local
+.claude/settings.local.json
+
+# ---- Signing material & secrets ----
+# A 2018 upstream keystore (keystore/nga.jks) is still reachable in this repo's
+# inherited history. Releases sign with a PKCS#12 held in GitHub Secrets, never
+# from the working tree — keep it that way.
 *.jks
 *.keystore
 *.p12
+*.pfx
+*.der
 *.pem
 *.key
-*.properties.local
+keystore/
+keystore.properties
+signing.properties
+.env
+.env.*
+
+# ---- Third-party service config (holds app keys) ----
+google-services.json
+agconnect-services.json
+**/cloud_config.xml
+
+# ---- Vendored upstream sources (see references/.gitignore) ----
+/references/

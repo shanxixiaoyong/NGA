@@ -1,0 +1,2 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Preserve the existing Android UI baseline and favorite-board gesture behavior while changing home navigation."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"The drawer edge gesture must not regress favorite long-press reorder or pager gesture arbitration."}

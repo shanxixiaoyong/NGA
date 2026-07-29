@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Defines the signed APK, stable/Debug publication, validation, no-local-packaging, and no-device-operation contracts that implementation must preserve."}
+{"file":".trellis/tasks/07-27-optimize-android-release-workflow/research/current-release-bottleneck.md","reason":"Provides the measured 4.9.0 remote baseline, redundant invocation evidence, and cache caveats for implementation decisions."}
+{"file":".trellis/tasks/07-27-optimize-android-release-workflow/research/gradle-upgrade-and-parallelism.md","reason":"Records the official AGP/Gradle compatibility decision, parallel execution semantics, benchmark matrix, and rollback thresholds."}
+{"file":".trellis/tasks/07-27-optimize-android-release-workflow/research/agp-major-upgrade-assessment.md","reason":"Defines current 8.x/9.x targets and the repository-specific built-in Kotlin, DSL, KAPT, R8, R class, Build Tools, and performance trade-offs."}
