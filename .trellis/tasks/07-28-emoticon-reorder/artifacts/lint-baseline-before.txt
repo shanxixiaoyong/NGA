@@ -1,0 +1,27 @@
+# lint baseline BEFORE (Step 1)
+# task: 07-28-emoticon-reorder
+# command: ./gradlew :nga_phone_base_3.0:lintDebug
+# note: process exit code was 0; judgement is 'no NEW errors vs this list'.
+
+total issues : 734
+errors       : 11
+warnings     : 722
+
+errors by id:
+  FragmentLiveDataObserve: 6
+  WebViewLayout: 3
+  MissingSuperCall: 1
+  UseRequireInsteadOfGet: 1
+
+error detail:
+  [MissingSuperCall] nga_phone_base_3.0/src/main/java/gov/anzong/androidnga/activity/ProfileActivity.java:385
+  [WebViewLayout] nga_phone_base_3.0/src/main/res/layout/dialog_signature.xml:12
+  [WebViewLayout] nga_phone_base_3.0/src/main/res/layout/dialog_vote.xml:12
+  [WebViewLayout] nga_phone_base_3.0/src/main/res/layout/list_message_content.xml:19
+  [UseRequireInsteadOfGet] nga_phone_base_3.0/src/main/java/gov/anzong/androidnga/ui/fragment/TopicListBaseFragment.kt:39
+  [FragmentLiveDataObserve] nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/TopicCacheFragment.java:34
+  [FragmentLiveDataObserve] nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/TopicFavoriteFragment.java:28
+  [FragmentLiveDataObserve] nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/TopicSearchFragment.java:169
+  [FragmentLiveDataObserve] nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/TopicSearchFragment.java:177
+  [FragmentLiveDataObserve] nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/TopicSearchFragment.java:179
+  [FragmentLiveDataObserve] nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/TopicSearchFragment.java:184

@@ -294,6 +294,46 @@ class free of `android.*` imports. The module has JUnit only — no Robolectric
 and no `returnDefaultValues` — so anything touching framework classes cannot be
 covered by an executing unit test.
 
+## Emoticon picker order
+
+The post/reply emoticon panel (`EmoticonControlPanel` → `EmoticonParentAdapter`
+→ `EmoticonChildAdapter`) lets users reorder emoticons inside a category by
+long-press drag. Apply this contract when touching the panel adapters, the
+emoticon tables, or the order preference.
+
+- A short press inserts the emoticon; a long press starts drag reorder. There is
+  no edit mode and no separate reorder entry. Reorder is within a category only:
+  the category tabs themselves are not sortable.
+- `EmoticonUtils.EMOTICON_LABEL` and `EMOTICON_URL` stay read-only constants.
+  The custom order is a separate index permutation over the built-in table, held
+  by the adapter and persisted on its own. Never write user preference back into
+  the static tables: they are process-wide constants, mutating them would add a
+  startup initialization dependency, and reset would lose its reference point.
+- Identify an emoticon by its image file name (`EMOTICON_URL[c][i][1]`), never by
+  array index. Indices shift whenever a release adds or removes emoticons.
+  `EmoticonUtilsContractTest` pins the file-name-uniqueness premise; if it fails,
+  re-plan the identity choice rather than patching the key in place.
+- Column 0 is the emoticon name and column 1 is the file name. `getFilePath()`
+  reads column 0 while treating it as a URL, which is why `getPathByURI()`
+  always returns `null` today. Do not copy that column choice; use
+  `EmoticonUtils.getFileNames(int)`.
+- Merge saved order against the built-in table on every read: drop entries the
+  app no longer ships, drop duplicates, and append newly shipped emoticons at the
+  end in built-in relative order. Corrupt data falls back to the built-in order
+  and must never crash the panel.
+- Preference key is `key_emoticon_order_<categoryId>` holding a JSON array of
+  file names. A category matching the built-in order stores nothing.
+- Grid drag flags must include `LEFT | RIGHT` as well as `UP | DOWN`, otherwise
+  items cannot swap within a row. Swipe stays disabled. Request
+  `requestDisallowInterceptTouchEvent(true)` when the drag starts so the hosting
+  `ViewPager` does not steal the horizontal gesture.
+- Persist on `clearView` (drag end), not on each `onMove`.
+- Keep the insert payload byte-identical: `[s:<id>:<name>]-<id>/<fileName>`.
+  The adapter derives it from the emoticon at the dragged position, so a custom
+  order must not change any emitted string.
+- Adding a settings entry changes `DefaultSettingsContractTest`. Update the
+  pinned key list deliberately; never relax the assertion.
+
 ## Verification
 
 ```bash
@@ -303,8 +343,10 @@ rg -n "fab_post|SwipeRefreshLayout|ScrollAwareFabBehavior" \
   nga_phone_base_3.0/src/main
 rg -n "left_hand|bottom_tab|isLeftHandMode|isShowBottomTab|fragment_article_tab_bottom" \
   lib_base_common nga_phone_base_3.0/src/main
+rg -n "EMOTICON_URL|EMOTICON_LABEL" lib_base_common nga_phone_base_3.0/src/main
 ```
 
 The first scan must have no active matches. The second scan should show one
 direct action per relevant layout and the retained refresh/scroll wiring. The
-third scan must have no matches.
+third scan must have no matches. The fourth scan must show reads only — no
+assignment into the emoticon tables outside `EmoticonUtils` itself.

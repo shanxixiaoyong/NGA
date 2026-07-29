@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "构建/测试/lint 门禁与设备测试禁令；决定本任务只跑 JVM 单测、不编译 androidTest"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "保持 Justwen UI 基线，不引入并行 UI 架构；收尾需在此补表情拖拽契约"}
