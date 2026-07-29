@@ -14,11 +14,23 @@ buildscript {
         rxjava_version = '2.2.6'
     }
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-        google()
-        mavenCentral()
+        // CI runs outside China, where the Aliyun mirrors are slow and intermittently
+        // answer 502. Gradle treats that as fatal instead of falling through to the next
+        // repository, so the canonical repositories go first there. Local builds keep the
+        // mirrors in front.
+        if (System.getenv('CI')) {
+            google()
+            mavenCentral()
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        } else {
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+            google()
+            mavenCentral()
+        }
     }
     dependencies {
         classpath libs.gradle
@@ -29,12 +41,22 @@ buildscript {
 
 allprojects {
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        //TODO Remove all dependencies in jcenter
-        maven { url 'https://maven.aliyun.com/repository/public' }
-        maven { url 'https://www.jitpack.io' }
-        google()
-        mavenCentral()
+        // Same CI/local ordering as the buildscript block above.
+        if (System.getenv('CI')) {
+            google()
+            mavenCentral()
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            //TODO Remove all dependencies in jcenter
+            maven { url 'https://maven.aliyun.com/repository/public' }
+            maven { url 'https://www.jitpack.io' }
+        } else {
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            //TODO Remove all dependencies in jcenter
+            maven { url 'https://maven.aliyun.com/repository/public' }
+            maven { url 'https://www.jitpack.io' }
+            google()
+            mavenCentral()
+        }
     }
 
 }
