@@ -82,9 +82,10 @@ Evidence:
 `lib_base_network/.../retrofit/RetrofitHelper.java:34-40,46-64,91-140` and
 `.../converter/JsonStringConvertFactory.java:25-45`.
 
-These are `original-source-observed` compatibility facts. The official-client
-identity, global session lookup, broad GBK conversion, raw logging, and silent
-empty response are legacy defects and must not be copied.
+These are `original-source-observed` compatibility facts. The global session
+lookup, broad GBK conversion, raw logging, and silent empty response are legacy
+defects and must not be copied. The `Nga_Official` identity header is kept
+deliberately — see `Request Identity And Privacy`.
 
 ## Original Web Login And Multi-Account Contract
 
@@ -240,8 +241,10 @@ for a second Web login implementation.
 
 ## Request Identity And Privacy
 
-- Never send `X-User-Agent: Nga_Official`, `Nga_Official/...`, or any equivalent
-  claim of official-client identity. Use a truthful neutral product identifier.
+- Keep the pinned Justwen identity headers: `X-User-Agent: Nga_Official` on the
+  Retrofit interceptor, and `Nga_Official/573(...)` on the legacy `HttpUtil`
+  GET. NGA gates client endpoints on them. Do not replace them with a neutral
+  product identifier.
 - Never commit or log Cookies, cid, account records, passwords, CAPTCHA data,
   private messages, post/report/filter text, upload bytes or tokens, signing
   secrets, or raw NGA responses.
@@ -301,5 +304,5 @@ reuse it as a generic mutation transport. Evidence:
 - Test account snapshotting, exact origin/redirect rejection, encoding and
   wrapper boundaries, redaction, cancellation, duplicate suppression, and all
   mutation outcomes including `UnknownOutcome`.
-- Search for official identity strings, raw response logging, global Cookie
-  lookup in new operations, cleartext hosts, and sensitive data in artifacts.
+- Search for raw response logging, global Cookie lookup in new operations,
+  cleartext hosts, and sensitive data in artifacts.

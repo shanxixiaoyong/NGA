@@ -130,7 +130,7 @@ public class HttpUtil {
         if (machine.length() < 19) {
             machine = "[" + machine + "]";
         }
-        final String USER_AGENT = new StringBuilder().append("nga-just-works/").append(573).append("(").append(machine).append(";Android").append(android.os.Build.VERSION.RELEASE).append(")").toString();
+        final String USER_AGENT = new StringBuilder().append("Nga_Official/").append(573).append("(").append(machine).append(";Android").append(android.os.Build.VERSION.RELEASE).append(")").toString();
         try {
             URL url = new URL(uri);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();

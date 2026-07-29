@@ -88,7 +88,8 @@ Do not copy cleartext NGA URLs, substring-based host checks, unrestricted
 - An explicit `Cookie` header overrides the provider. `THREAD.PAGE` uses this
   to retry a parser/server failure with the next account.
 - The original interceptor sends `X-User-Agent: Nga_Official`; `HttpUtil`
-  constructs `Nga_Official/573` for its generic legacy GET.
+  constructs `Nga_Official/573` for its generic legacy GET. This fork keeps both
+  unchanged.
 
 ### Migration Rule
 
@@ -99,16 +100,17 @@ Do not copy cleartext NGA URLs, substring-based host checks, unrestricted
   never accept a complete Cookie header as cid.
 - Never send account Cookies to media, redirects, browser fallbacks, or upload
   hosts unless the specific operation authorizes the exact destination.
-- Use a neutral truthful product identity. Preserve browser compatibility UA
-  only where required; never assert official-client status.
+- Keep the pinned Justwen identity headers (`X-User-Agent: Nga_Official`,
+  `Nga_Official/573(...)`) and the browser compatibility UA. NGA gates client
+  endpoints on them.
 - Account creation/update and active selection must be explicit. Removing an
   account must clear all of its persisted and browser session material.
 
 ### Do Not Copy
 
 Do not copy global request-time account lookup, next-account read retry,
-plaintext secret rendering, substring Cookie parsing, official identity
-headers, or login completion based only on dialog text.
+plaintext secret rendering, substring Cookie parsing, or login completion based
+only on dialog text.
 
 ## Encoding And Response Wrappers
 
