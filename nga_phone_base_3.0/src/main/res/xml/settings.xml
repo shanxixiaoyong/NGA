@@ -76,6 +76,11 @@
             android:key="key_clear_cache"
             android:title="清除缓存"/>
 
+        <Preference
+            android:key="key_reset_emoticon_order"
+            android:summary="恢复所有表情分类的默认排列"
+            android:title="重置表情顺序"/>
+
     </PreferenceCategory>
 
     <PreferenceCategory android:title="主题列表设置">

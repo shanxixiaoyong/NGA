@@ -77,7 +77,7 @@ public class DefaultSettingsContractTest {
         assertCategory(preferenceScreen, "通知设置",
                 "enableNotification", "notificationSound");
         assertCategory(preferenceScreen, "其他设置",
-                "pref_black_list_new", "key_clear_cache");
+                "pref_black_list_new", "key_clear_cache", "key_reset_emoticon_order");
         assertCategory(preferenceScreen, "主题列表设置",
                 "sort_by_post", "filter_sub_board");
         assertCategory(preferenceScreen, "主题详情设置",

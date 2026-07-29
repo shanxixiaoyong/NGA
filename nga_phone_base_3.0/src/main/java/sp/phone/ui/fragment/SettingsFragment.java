@@ -24,6 +24,7 @@ import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.base.util.ThreadUtils;
 import gov.anzong.androidnga.base.util.ToastUtils;
 import gov.anzong.androidnga.common.PreferenceKey;
+import gov.anzong.androidnga.common.util.EmoticonOrderStore;
 import gov.anzong.androidnga.ui.fragment.BasePreferenceFragment;
 import sp.phone.common.UserManagerImpl;
 import sp.phone.theme.ThemeManager;
@@ -47,6 +48,22 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
             return true;
         });
 
+        findPreference(PreferenceKey.KEY_RESET_EMOTICON_ORDER).setOnPreferenceClickListener(preference -> {
+            showResetEmoticonOrderDialog();
+            return true;
+        });
+
+    }
+
+    private void showResetEmoticonOrderDialog() {
+        AlertDialogFragment dialogFragment = AlertDialogFragment.create("确认要重置所有表情的自定义顺序吗？");
+        dialogFragment.setPositiveClickListener((dialog, which) -> resetEmoticonOrder());
+        dialogFragment.show(((BaseActivity) getActivity()).getSupportFragmentManager(), "reset_emoticon_order");
+    }
+
+    private void resetEmoticonOrder() {
+        EmoticonOrderStore.resetAll();
+        ToastUtils.success("表情顺序已重置");
     }
 
     private void showClearCacheDialog() {
