@@ -63,6 +63,8 @@ public class PreferenceKey {
 
     public static final String KEY_EMOTICON_SIZE = "emoticon_size";
 
+    public static final String KEY_RESET_EMOTICON_ORDER = "key_reset_emoticon_order";
+
     public static final String KEY_USE_SOLID_COLOR_BG = "use_solid_color_bg";
 
     public static final String KEY_CHECK_UPGRADE_STATE = "key_check_upgrade_state";

@@ -286,6 +286,27 @@ public class EmoticonUtils {
         return null;
     }
 
+    /**
+     * 返回某个分类的图片文件名数组，即 {@code EMOTICON_URL[category]} 的第 1 列。
+     *
+     * <p>文件名在分类内唯一（见 {@code EmoticonUtilsContractTest}），因此被用作表情自定义
+     * 顺序的稳定标识。注意不要参照 {@link #getFilePath} 去读第 0 列——那里读的是表情名，
+     * 是一处历史遗留问题。
+     *
+     * @return 分类下标越界时返回空数组
+     */
+    public static String[] getFileNames(int category) {
+        if (category < 0 || category >= EMOTICON_URL.length) {
+            return new String[0];
+        }
+        String[][] emoticons = EMOTICON_URL[category];
+        String[] fileNames = new String[emoticons.length];
+        for (int i = 0; i < emoticons.length; i++) {
+            fileNames[i] = emoticons[i][1];
+        }
+        return fileNames;
+    }
+
     private static String getFilePath(int category, int position) {
         String httpUri = EMOTICON_URL[category][position][0];
         return EMOTICON_LABEL[category][0] + "/" + FilenameUtils.getName(httpUri);
