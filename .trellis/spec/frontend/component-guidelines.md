@@ -268,6 +268,11 @@ in its content layer, outside the `View` long-click path.
   Select all runs `selectAllChildren(document.body)` without ending the mode,
   and Search passes the nonblank selection as `SearchManager.QUERY` in an
   `Intent.ACTION_WEB_SEARCH`, catching `ActivityNotFoundException`.
+- Vendor-injected entries arrive through the same `Menu`, so the rebuild clears
+  them too. Confirmed on HyperOS / Xiaomi 15 with 4.11.0: no share entry and no
+  vendor overlay survives. Xiaomi patches the framework more heavily than the
+  other major OEMs, so a clean result there is good evidence the takeover holds
+  broadly — WebView itself is a Mainline module and is not vendor-modified.
 - Do not push these overrides down into `lib_base_common`'s `WebViewEx`. It is a
   shared base class and future subclasses would inherit the behavior silently.
 - Keep the source contract test synchronized with the override pair, the
