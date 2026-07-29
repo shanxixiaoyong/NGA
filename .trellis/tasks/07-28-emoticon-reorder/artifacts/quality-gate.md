@@ -75,7 +75,38 @@ assetPath mismatches: 0
 ## 未执行项
 
 按用户 2026-07-28 决定及 `android-quality-guidelines.md` 设备测试策略：
-**未编译 androidTest、未构建测试 APK、未运行任何设备测试。**
+**未编译 androidTest、未构建测试 APK、未运行任何自动化设备测试。**
 
-AC1–AC6、AC12 为交付后由用户真机确认项，当前状态一律为「未验证」，
-详见 `prd.md` 验收标准第二段。
+## 真机验收（2026-07-29）
+
+用户手动验收，非自动化。设备通过 Windows ADB 连接，符合
+`android-quality-guidelines.md` 的单一设备传输规则：
+
+```
+adb.exe = /mnt/c/Users/inter/AppData/Local/Android/Sdk/platform-tools/adb.exe
+device  = REDACTED_SERIAL_XIAOMI  (product:dada  model:24129PN74C)
+package = com.github.tophtab.ngajustworks.debug  (versionName 4.5.0 / versionCode 4050)
+```
+
+### 第一轮：AC5 失败
+
+长按后横向拖拽被外层 `ViewPager` 抢走变成切换分类。
+
+根因是实现中那行「防止 ViewPager 抢手势」的保护代码本身：对 `RecyclerView`
+调用 `requestDisallowInterceptTouchEvent(true)` 会先通知所有
+`OnItemTouchListener`，而 `ItemTouchHelper` 就在其中，收到后执行
+`select(null, ACTION_STATE_IDLE)` 当场取消拖拽。
+
+根因通过反编译 `androidx.recyclerview:recyclerview:1.1.0` 字节码确认，
+非推测。完整证据链见 `prd.md` 缺陷记录。
+
+### 第二轮：全部通过
+
+删除该调用后重新构建安装（`lastUpdateTime=2026-07-29 10:08`），
+用户确认 AC1–AC6、AC12 全部通过。
+
+### 过程记录：并行会话改写了历史
+
+验收期间另一会话重写了本分支的提交（SHA 全变），并覆盖了当时尚未提交的修复。
+已核对本任务源码文件在改写前后内容零差异，修复已重新施加。
+本记录保留以说明为何提交 SHA 与实现时不一致。

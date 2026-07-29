@@ -116,16 +116,34 @@
 
 ### 交付后由用户在真机确认（不做自动化）
 
-用户 2026-07-28 决定不跑设备自动化测试。以下为功能性验收，实现方**不得**自行标记为通过，
-须在完成报告中如实标注「未验证，待用户真机确认」。
+用户 2026-07-28 决定不跑设备自动化测试。以下为功能性验收，实现方**不得**自行标记为通过。
 
-- [ ] AC1：在表情面板任一分类中长按一个表情并拖到其他位置，松手后该表情停在新位置。
-- [ ] AC2：单击表情仍然正常插入到输入框，拖拽结束后不会额外插入表情。
-- [ ] AC3：退出并重新进入发帖界面（或重启应用）后，AC1 中调整的顺序仍然保持。
-- [ ] AC4：调整 A 分类的顺序不影响 B 分类的顺序。
-- [ ] AC5：拖拽时 ViewPager 不会误响应为左右翻页。
-- [ ] AC6：设置页「重置表情顺序」点击后弹确认框；确认后所有分类恢复内置顺序并提示成功；取消则无变化。
-- [ ] AC12：夜间模式下 ac / a2 / dt 三组表情仍有白底。
+**验收结果：用户于 2026-07-29 在真机（`REDACTED_SERIAL_XIAOMI` / 24129PN74C，Android 15）
+逐条确认全部通过。** AC5 在首轮验收中失败，修复后复测通过，详见下方缺陷记录。
+
+- [x] AC1：在表情面板任一分类中长按一个表情并拖到其他位置，松手后该表情停在新位置。
+- [x] AC2：单击表情仍然正常插入到输入框，拖拽结束后不会额外插入表情。
+- [x] AC3：退出并重新进入发帖界面（或重启应用）后，AC1 中调整的顺序仍然保持。
+- [x] AC4：调整 A 分类的顺序不影响 B 分类的顺序。
+- [x] AC5：拖拽时 ViewPager 不会误响应为左右翻页。（首轮失败 → 修复 → 复测通过）
+- [x] AC6：设置页「重置表情顺序」点击后弹确认框；确认后所有分类恢复内置顺序并提示成功；取消则无变化。
+- [x] AC12：夜间模式下 ac / a2 / dt 三组表情仍有白底。
+
+### 缺陷记录：AC5 首轮失败
+
+- **现象**：长按后横向拖拽被外层 `ViewPager` 抢走，变成切换分类。
+- **根因**：实现中在 `onSelectedChanged` 里对 item 的父容器（即 `RecyclerView`）
+  调用了 `requestDisallowInterceptTouchEvent(true)`。`RecyclerView` 重写了该方法，
+  会**先遍历通知所有 `OnItemTouchListener`**；`ItemTouchHelper` 自身即是其中之一，
+  其处理为 `select(null, ACTION_STATE_IDLE)`，等于当场取消本次拖拽，
+  横向手势随即回落给 `ViewPager`。该「保护」代码正是故障本身。
+- **证据**：反编译 `androidx.recyclerview:recyclerview:1.1.0` 字节码确认
+  `RecyclerView.requestDisallowInterceptTouchEvent` 的转发行为、
+  `ItemTouchHelper$2.onRequestDisallowInterceptTouchEvent` 的取消逻辑，
+  以及 `ItemTouchHelper.select()` 内部已对 `mRecyclerView.getParent()` 申请 disallow。
+- **修复**：删除该调用，仅保留振动反馈。`ViewPager` 冲突由 `ItemTouchHelper` 自身处理。
+- **防复发**：`component-guidelines.md` 中原有的「应调用
+  `requestDisallowInterceptTouchEvent`」建议是错误指导，已改写为明确禁令并附原因。
 
 ## Known Limitations
 

@@ -324,9 +324,16 @@ emoticon tables, or the order preference.
 - Preference key is `key_emoticon_order_<categoryId>` holding a JSON array of
   file names. A category matching the built-in order stores nothing.
 - Grid drag flags must include `LEFT | RIGHT` as well as `UP | DOWN`, otherwise
-  items cannot swap within a row. Swipe stays disabled. Request
-  `requestDisallowInterceptTouchEvent(true)` when the drag starts so the hosting
-  `ViewPager` does not steal the horizontal gesture.
+  items cannot swap within a row. Swipe stays disabled.
+- Never call `RecyclerView.requestDisallowInterceptTouchEvent(true)` to protect a
+  drag from the hosting `ViewPager`. That override notifies every registered
+  `OnItemTouchListener` first, and `ItemTouchHelper` is one of them: its handler
+  runs `select(null, ACTION_STATE_IDLE)` and cancels the drag outright, after
+  which the horizontal gesture falls back to the pager and turns the page.
+  `ItemTouchHelper.select()` already requests disallow on
+  `mRecyclerView.getParent()` when a drag starts, so the pager conflict needs no
+  extra handling. Verified against `androidx.recyclerview:recyclerview:1.1.0`
+  bytecode; the failure was reproduced on a device on 2026-07-29.
 - Persist on `clearView` (drag end), not on each `onMove`.
 - Keep the insert payload byte-identical: `[s:<id>:<name>]-<id>/<fileName>`.
   The adapter derives it from the emoticon at the dragged position, so a custom

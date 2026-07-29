@@ -6,7 +6,6 @@ import android.content.Context;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -84,11 +83,12 @@ public class EmoticonParentAdapter extends PagerAdapter {
                     return;
                 }
                 View itemView = viewHolder.itemView;
-                // 拖拽期间禁止外层 ViewPager 把横向手势抢去翻页
-                ViewParent parent = itemView.getParent();
-                if (parent != null) {
-                    parent.requestDisallowInterceptTouchEvent(true);
-                }
+                // 不要在这里调 RecyclerView.requestDisallowInterceptTouchEvent(true)：
+                // 该方法会先遍历通知 OnItemTouchListener，而 ItemTouchHelper 自身就是其中之一，
+                // 它收到 disallow=true 后会 select(null, ACTION_STATE_IDLE) 立即取消本次拖拽，
+                // 横向手势随即回落给外层 ViewPager 变成翻页。
+                // ItemTouchHelper.select() 内部已对 mRecyclerView.getParent() 申请过 disallow，
+                // ViewPager 的手势冲突无需在此额外处理。
                 itemView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
             }
 
