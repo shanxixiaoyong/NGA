@@ -37,6 +37,14 @@ New work must cite an operation ID and preserve the original wire shape only
 where it is still intentionally supported. A fork delta may explain why code
 changed; it may not fill a missing original fact.
 
+When the maintainer asks to restore or match pinned Justwen behavior, reproduce
+that region verbatim and change only what they named. Do not extract a
+constant, introduce a shared helper, restyle the surrounding code, or re-shape
+it toward another client's captured traffic. Diff the result against
+`references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen/` and state that it
+matches. Any cleanup that seems worthwhile is proposed separately, not shipped
+inside the restore.
+
 ### Do Not Copy
 
 Do not turn `original-source-observed` into “official,” “stable,” “currently

@@ -486,11 +486,13 @@ package migration is approved.
   merged manifest `debuggable` value for the selected channel.
 - Local unit tests, static checks, and lint are the developer quality gate. APK
   packaging and signing verification run in GitHub Actions unless explicitly
-  authorized for a local build. A successful GitHub job is sufficient
-  automation evidence; remote asset download and repeated APK validation are
-  reserved for failure diagnosis. Installation and device-based functional
-  acceptance occur only when the maintainer explicitly requests them under the
-  global policy; they are not default automation or handoff gates.
+  authorized for a local build. Pushing `main` or a stable tag ends the task:
+  do not run `gh run watch`, poll `gh run list`, or otherwise wait on the
+  publication job. The maintainer monitors releases and reports a failure; a
+  workflow result is inspected only when they ask for it. Installation and
+  device-based functional acceptance occur only when the maintainer explicitly
+  requests them under the global policy; they are not default automation or
+  handoff gates.
 
 ### 4. Validation & Error Matrix
 
@@ -516,6 +518,7 @@ package migration is approved.
 | A `.trellis`/Markdown-only main push occurs | Skip the workflow; mixed pushes remain eligible |
 | Keystore/private-key material is tracked or packaged | Remove it from the release path and rotate if exposed |
 | The task requests commit/push/CI but not a local APK build | Do not run local `assemblePreview` or `assembleRelease`; push and inspect CI |
+| `main` or a stable tag has just been pushed | Report the pushed refs and stop; do not watch or poll the Actions run |
 
 ### 5. Good/Base/Bad Cases
 
@@ -567,11 +570,13 @@ package migration is approved.
   legacy `preview-*`, a stable Release, an unrelated prerelease, and a partial
   deletion failure. Cleanup starts only after successful publication.
 - Run focused local unit/static checks and lint before push. Do not run local
-  APK packaging unless the maintainer explicitly requests it. After push, use
-  the GitHub job result as the APK build/signing evidence. Do not routinely
-  download or install the published APK; installation, device-based functional
-  acceptance, or diagnosis requires an explicit maintainer request under the
-  global policy and is not required for handoff.
+  APK packaging unless the maintainer explicitly requests it. Everything that
+  gates a release happens before the push: remote ref unmoved, target tag not
+  already present, `release-notes/<X.Y.Z>.md` passing the validator, and the
+  touched modules compiling. After push, report the pushed refs and stop. Do
+  not routinely download or install the published APK; watching the workflow,
+  diagnosis, installation, and device-based functional acceptance each require
+  an explicit maintainer request and are not handoff gates.
 
 ### 7. Wrong vs Correct
 
