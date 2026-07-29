@@ -16,17 +16,22 @@
 - **收藏板块拖拽排序** — 长按拖动调整顺序，按 `fid + stid` 稳定标识，顺序全局持久保存。
 - **收藏板块边缘手势** — 在收藏板块页面边缘连续跟手拖出侧栏，松手后按位置或速度决定开合。
 - **表情面板拖拽排序** — 长按拖动自定义各分类内的表情排列并长期保留，设置页可一键重置。
-- **原生账号登录** — 在网页登录之外增加原生 NGA 账号登录，并恢复多账号网页登录。
 - **选词菜单接管** — 帖子正文长按选词由应用直接接管，固定为「复制 / 全选 / 搜索」，「搜索」把选中文字交给系统网页搜索处理。
-- **文章页回顶** — 重复选中当前标签时，文章正文滚动回顶部。
+- **主题页回顶** — 重复选中当前标签时，主题正文滚动回顶部。
 - **自适应启动图标** — 新的启动图标，含自适应图标前景与背景。
+
+### 调整
+
+- **默认设置** — 主题标题字号 20、头像尺寸 100、表情尺寸 60、网页文字缩放 80%、Material 主题取第 2 套、夜间模式默认跟随系统；通知提示音由默认开启改为**默认关闭**。
+- **设置页归类** — 设置项按用途重新分为「域名与账号」「外观设置」「通知设置」「其他设置」「主题列表设置」「主题详情设置」「发帖设置」七组。
+- **关于页** — 指向本项目的仓库、Releases 与 Issues，并修复内容被状态栏遮挡的排版问题。
 
 ### 移除
 
 - 二级「警报」菜单；「发帖 / 回复」改为一级按钮，去掉悬浮菜单的刷新入口（下拉刷新保留）。
-- 惯用手与底部标签相关设置，其余设置项按用途重新归类。
+- 左手模式与底部标签两项设置。
 - 选词菜单中的「分享」，以及系统与第三方注入的文本处理项。
-- 内嵌的 release 签名路径与口令；伪装官方客户端的 User-Agent 与身份头，改用中性标识 `nga-just-works`。
+- 内嵌的 release 签名路径与口令；伪装官方客户端的身份，User-Agent 由 `Nga_Official/573` 改为 `nga-just-works/573`，并去掉 `X-User-Agent: Nga_Official` 请求头。
 
 ### 安装说明
 
@@ -59,34 +64,9 @@ applicationId 为 `com.github.tophtab.ngajustworks`，作为独立应用安装�
 - [NgaLite](https://github.com/fhyxz001/NgaLite)
 - [open-nga](https://github.com/mlzzen/open-nga)
 
-**NGA 相关工具** — 协议与数据格式的参考
-
-- [ngapost2md](https://github.com/ludoux/ngapost2md)
-- [NgaCodeConverter](https://github.com/sjn4048/NgaCodeConverter)
-
-**Android 工程与 UI 参考**
-
-- [android/architecture-samples](https://github.com/android/architecture-samples)
-- [android/compose-samples](https://github.com/android/compose-samples)
-- [ReadYou](https://github.com/ReadYouApp/ReadYou)
-- [Jerboa](https://github.com/LemmyNet/jerboa)
-- [android-discourse](https://github.com/goodev/android-discourse)
-
-除上游代码基线外，以上项目均仅作阅读与设计参考。
-
 ## 风险说明
 
 本项目基于原项目进行 AI 辅助的 vibe coding，可能存在尚未发现的缺陷、安全或兼容性问题。安装与使用前请自行审查并评估风险，风险自负。欢迎审查代码、提交问题与改进，并在遵守许可证与来源声明的前提下继续二次开发。
-
-## 构建与发布
-
-```bash
-./gradlew :nga_phone_base_3.0:assembleDebug
-```
-
-release 构建需通过环境变量提供项目自己的 keystore、alias 与口令，仓库不含任何签名密钥。
-
-推送 `X.Y.Z` 标签会构建、签名并发布正式 Release，正文取自 `release-notes/<X.Y.Z>.md`（须依次且仅包含 `## 新增`、`## 删除`、`## 修复`，每节至少一条列表项）。`main` 的代码推送会发布 `debug-<12 位哈希>` prerelease，仅保留最新一个。
 
 ## 许可证与来源
 
