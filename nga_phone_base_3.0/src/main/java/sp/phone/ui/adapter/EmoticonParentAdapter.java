@@ -3,14 +3,17 @@ package sp.phone.ui.adapter;
 import static gov.anzong.androidnga.common.util.EmoticonUtils.EMOTICON_LABEL;
 
 import android.content.Context;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 
-import gov.anzong.androidnga.common.util.EmoticonUtils;
+import gov.anzong.androidnga.common.util.EmoticonOrderStore;
 
 /**
  * Created by Justwen on 2018/6/8.
@@ -35,35 +38,73 @@ public class EmoticonParentAdapter extends PagerAdapter {
         recyclerView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         EmoticonChildAdapter adapter = new EmoticonChildAdapter(mContext, mHeight);
-
-        adapter.setData(EMOTICON_LABEL[position][0], getEmotionList(EmoticonUtils.EMOTICON_URL[position], position, 1),
-                getEmotionList(EmoticonUtils.EMOTICON_URL[position], position, 0)
-        );
+        adapter.setData(position, EmoticonOrderStore.loadOrder(position));
 
         recyclerView.setAdapter(adapter);
+        attachReorderHelper(recyclerView, adapter, position);
 
         container.addView(recyclerView);
         return recyclerView;
     }
 
+    /**
+     * 长按拖拽调整分类内的表情顺序，松手即持久化。
+     */
+    private void attachReorderHelper(RecyclerView recyclerView, EmoticonChildAdapter adapter, int categoryIndex) {
+        // 网格布局必须同时给出上下和左右，否则同一行内无法换位。
+        int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN
+                | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
+        ItemTouchHelper touchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(dragFlags, 0) {
+
+            @Override
+            public boolean onMove(RecyclerView rv, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                int from = viewHolder.getAdapterPosition();
+                int to = target.getAdapterPosition();
+                if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) {
+                    return false;
+                }
+                adapter.moveItem(from, to);
+                return true;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                // 不启用滑动删除
+            }
+
+            @Override
+            public boolean isItemViewSwipeEnabled() {
+                return false;
+            }
+
+            @Override
+            public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
+                super.onSelectedChanged(viewHolder, actionState);
+                if (actionState != ItemTouchHelper.ACTION_STATE_DRAG || viewHolder == null) {
+                    return;
+                }
+                View itemView = viewHolder.itemView;
+                // 拖拽期间禁止外层 ViewPager 把横向手势抢去翻页
+                ViewParent parent = itemView.getParent();
+                if (parent != null) {
+                    parent.requestDisallowInterceptTouchEvent(true);
+                }
+                itemView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            }
+
+            @Override
+            public void clearView(RecyclerView rv, RecyclerView.ViewHolder viewHolder) {
+                super.clearView(rv, viewHolder);
+                // 一次拖拽只写一次偏好，而不是每个 onMove 都写
+                EmoticonOrderStore.saveOrder(categoryIndex, adapter.getOrder());
+            }
+        });
+        touchHelper.attachToRecyclerView(recyclerView);
+    }
+
     @Override
     public CharSequence getPageTitle(int position) {
         return EMOTICON_LABEL[position][1];
-    }
-
-    private String[] getEmotionList(String[][] list, int emotionPosion, int emotionType) {
-        String[] result = new String[list.length];
-        if (emotionType == 0) {
-            for (int i = 0; i < list.length; i++) {
-                result[i] = "[s:" + EmoticonUtils.EMOTICON_LABEL[emotionPosion][0] + ":" + list[i][emotionType] + "]";
-            }
-        } else {
-            for (int i = 0; i < list.length; i++) {
-                result[i] = list[i][emotionType];
-            }
-        }
-
-        return result;
     }
 
     @Override
