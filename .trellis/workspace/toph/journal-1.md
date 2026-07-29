@@ -582,3 +582,28 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 ### Status
 
 [OK] **Completed**
+
+
+## Session 27: 表情分类内拖拽排序
+
+**Date**: 2026-07-29
+**Task**: 表情分类内拖拽排序
+**Branch**: `feat/emoticon-reorder`
+
+### Summary
+
+表情面板支持长按拖拽调整分类内顺序，按图片文件名持久化到 SharedPreferences，设置页提供全局重置。EMOTICON_URL 保持只读常量，自定义顺序以独立的下标排列表存在。真机验收首轮 AC5 失败：为防 ViewPager 抢手势而对 RecyclerView 调 requestDisallowInterceptTouchEvent(true)，反而因 ItemTouchHelper 自身是 OnItemTouchListener 而触发 select(null, IDLE) 取消拖拽；删除该调用后复测全过。同时发现 getPathByURI() 因列语义错配恒返回 null 的既有 bug，按用户决定不修但已记入 spec。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e436b07f` | (see git log) |
+| `8e0e0231` | (see git log) |
+| `7abdf594` | (see git log) |
+| `c2861d93` | (see git log) |
+| `82caca77` | (see git log) |
+
+### Status
+
+[OK] **Completed**
