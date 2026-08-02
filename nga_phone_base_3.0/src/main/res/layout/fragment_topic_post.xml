@@ -65,12 +65,12 @@
             android:paddingTop="8dp">
 
             <ImageButton
-                android:id="@+id/btn_emoticon"
+                android:id="@+id/btn_category"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@null"
-                android:src="@drawable/btn_ic_insert_emoticon"/>
+                android:src="@drawable/ic_subtitles_24dp"/>
 
             <ImageButton
                 android:id="@+id/btn_text"
@@ -89,20 +89,12 @@
                 android:src="@drawable/ic_image_24dp"/>
 
             <ImageButton
-                android:id="@+id/btn_category"
+                android:id="@+id/btn_emoticon"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@null"
-                android:src="@drawable/ic_subtitles_24dp"/>
-
-            <ImageButton
-                android:id="@+id/btn_keyboard"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@null"
-                android:src="@drawable/ic_keyboard_24dp"/>
+                android:src="@drawable/btn_ic_insert_emoticon"/>
         </LinearLayout>
 
         <ViewStub

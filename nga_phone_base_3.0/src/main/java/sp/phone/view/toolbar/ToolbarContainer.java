@@ -56,25 +56,10 @@ public class ToolbarContainer extends LinearLayout
     @Override
     protected void onFinishInflate() {
         ((KeyboardLayout) findViewById(R.id.keyboard_layout)).setListener(this);
-        findViewById(R.id.btn_emoticon).setOnClickListener(v -> toggleEmoticonPanel());
-        findViewById(R.id.btn_text).setOnClickListener(v -> toggleTextPanel());
         findViewById(R.id.btn_category).setOnClickListener(v -> toggleCategoryPanel());
+        findViewById(R.id.btn_text).setOnClickListener(v -> toggleTextPanel());
         findViewById(R.id.btn_attachment).setOnClickListener(v -> mPresenter.showFilePicker());
-        findViewById(R.id.btn_keyboard).setOnClickListener(v -> {
-            InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm == null) {
-                return;
-            }
-            if (mKeyboardActive) {
-                imm.hideSoftInputFromWindow(getWindowToken(), 0);
-            } else if (mActivePanel == null || !mActivePanel.isShown()) {
-                if (mFocusView != null) {
-                    imm.showSoftInput(mFocusView, 0);
-                }
-            } else {
-                toggleInputMethod(mActivePanel);
-            }
-        });
+        findViewById(R.id.btn_emoticon).setOnClickListener(v -> toggleEmoticonPanel());
         super.onFinishInflate();
     }
 
