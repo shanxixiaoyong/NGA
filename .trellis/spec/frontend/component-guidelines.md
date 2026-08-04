@@ -221,6 +221,38 @@ produces continuous sheet and scrim progress while keeping content stationary.
 - Retain pull-to-refresh and `ScrollAwareFabBehavior` scroll hide/show
   behavior.
 
+## Topic list title tap
+
+Tapping the toolbar title of a topic list returns to the top of the list and
+reloads the first page. Apply this contract when touching `ToolbarUtils`, the
+topic list fragments, or their toolbars.
+
+- Bind the listener to the Toolbar's title `TextView`, never to the `Toolbar`
+  itself. Blank toolbar space, the navigation icon, and the overflow button are
+  not part of the gesture.
+- `Toolbar` exposes no accessor for that view, so `ToolbarUtils` finds it by
+  matching child text against `Toolbar.getTitle()`. Never index children
+  positionally.
+- `sp.phone.ui.fragment.BaseFragment` only stores the title and writes it to the
+  Activity in `onResume`, so the title view may not exist yet at
+  `onViewCreated`. Bind immediately and retry once through `Toolbar.post`. One
+  binding is enough: `Toolbar.setTitle` reuses the same `TextView` instance, so
+  a later title change keeps the listener.
+- Both topic list hierarchies wire it. `TopicSearchFragment` covers the board,
+  search, favorite, and cache screens; `TopicListSimpleFragment` covers the
+  digest and 24-hour lists.
+- Skip the reload and scroll only when pull-to-refresh is disabled or a load is
+  already in flight. `TopicCacheFragment` disables refresh once its data is in,
+  and the initial load already runs behind the loading view.
+- `TopicHistoryFragment` binds the same tap for the scroll only. It is a local
+  list with nothing to reload, and its toolbar belongs to the hosting
+  `LauncherSubActivity`, so it resolves `R.id.toolbar` from the Activity rather
+  than from its own view.
+- The board toolbar carries `SCROLL | ENTER_ALWAYS`, so returning to the top
+  must also expand the `AppBarLayout`. That already lives in the
+  `TopicListFragment` `scrollTo` override the title tap reuses; do not duplicate
+  it.
+
 ## Article body rendering path
 
 The article body is **always** a `LocalWebView`. The native `tv_content`
@@ -351,9 +383,12 @@ rg -n "fab_post|SwipeRefreshLayout|ScrollAwareFabBehavior" \
 rg -n "left_hand|bottom_tab|isLeftHandMode|isShowBottomTab|fragment_article_tab_bottom" \
   lib_base_common nga_phone_base_3.0/src/main
 rg -n "EMOTICON_URL|EMOTICON_LABEL" lib_base_common nga_phone_base_3.0/src/main
+rg -n "setOnTitleClickListener|onTitleClick" nga_phone_base_3.0/src/main
 ```
 
 The first scan must have no active matches. The second scan should show one
 direct action per relevant layout and the retained refresh/scroll wiring. The
 third scan must have no matches. The fourth scan must show reads only — no
-assignment into the emoticon tables outside `EmoticonUtils` itself.
+assignment into the emoticon tables outside `EmoticonUtils` itself. The fifth
+scan must show one binding per topic-list toolbar and the matching handler, and
+no listener attached to a `Toolbar` rather than its title view.

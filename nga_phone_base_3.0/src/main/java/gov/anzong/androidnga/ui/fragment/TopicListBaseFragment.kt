@@ -101,6 +101,16 @@ open class TopicListBaseFragment : BaseFragment(R.layout.fragment_topic_list_bas
         return TopicListAdapter(context)
     }
 
+    /**
+     * 点标题回到顶部并刷新。
+     */
+    protected open fun onTitleClick() {
+        mListView.scrollToPosition(0)
+        if (mRefreshLayout.isEnabled && !mRefreshLayout.isRefreshing) {
+            mPresenter.loadPage(1, mRequestParam)
+        }
+    }
+
     override fun onClick(v: View?) {
         TopicListFragment.handleClickEvent(context, v?.tag as ThreadPageInfo?, mRequestParam)
     }

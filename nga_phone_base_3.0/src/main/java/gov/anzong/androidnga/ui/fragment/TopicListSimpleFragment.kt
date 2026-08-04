@@ -5,7 +5,9 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.Toolbar
 import gov.anzong.androidnga.R
+import gov.anzong.androidnga.ui.widget.ToolbarUtils
 import sp.phone.mvp.model.entity.ThreadPageInfo
 import sp.phone.ui.adapter.BaseAppendableAdapter
 import sp.phone.ui.adapter.ReplyListAdapter
@@ -30,6 +32,7 @@ class TopicListSimpleFragment() : TopicListBaseFragment() {
 
         super.onViewCreated(view, savedInstanceState)
         initToolbar()
+        ToolbarUtils.setOnTitleClickListener(view.findViewById<Toolbar>(R.id.toolbar)) { onTitleClick() }
     }
 
     override fun createAdapter(): BaseAppendableAdapter<ThreadPageInfo, *> {

@@ -23,6 +23,7 @@ import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.base.widget.DividerItemDecorationEx;
 import gov.anzong.androidnga.common.ui.dialog.ConfirmDialog;
+import gov.anzong.androidnga.ui.widget.ToolbarUtils;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.common.TopicHistoryManager;
 import sp.phone.mvp.model.entity.ThreadPageInfo;
@@ -89,6 +90,11 @@ public class TopicHistoryFragment extends BaseFragment implements View.OnClickLi
         //将recycleView和ItemTouchHelper绑定
         touchHelper.attachToRecyclerView(mListView);
         setData(mTopicHistoryManager.getTopicHistoryList());
+
+        // 浏览历史是本地列表，没有东西可刷新，点标题只回顶部。工具栏属于宿主 Activity，
+        // 这个 Fragment 的布局里没有。
+        ToolbarUtils.setOnTitleClickListener(requireActivity().findViewById(R.id.toolbar),
+                v -> mListView.scrollToPosition(0));
     }
 
     private void setData(List<ThreadPageInfo> topicLIst) {

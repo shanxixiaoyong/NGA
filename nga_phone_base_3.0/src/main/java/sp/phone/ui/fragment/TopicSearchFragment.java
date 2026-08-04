@@ -25,6 +25,7 @@ import gov.anzong.androidnga.activity.BaseActivity;
 import gov.anzong.androidnga.arouter.ARouterConstants;
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.base.widget.DividerItemDecorationEx;
+import gov.anzong.androidnga.ui.widget.ToolbarUtils;
 import sp.phone.common.ApiConstants;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.common.TopicHistoryManager;
@@ -187,6 +188,18 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
                 hideLoadingView();
             }
         });
+
+        ToolbarUtils.setOnTitleClickListener(view.findViewById(R.id.toolbar), v -> onTitleClick());
+    }
+
+    /**
+     * 点标题回到顶部并刷新。缓存列表加载完会关掉下拉刷新，这里跟着一起停，只回顶部。
+     */
+    protected void onTitleClick() {
+        scrollTo(0);
+        if (mSwipeRefreshLayout.isEnabled() && !isRefreshing()) {
+            mPresenter.loadPage(1, mRequestParam);
+        }
     }
 
 
