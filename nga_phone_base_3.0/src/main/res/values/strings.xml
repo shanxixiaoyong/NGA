@@ -340,8 +340,11 @@
     <string name="setting_title_filter_sub_board">过滤版主固定的渣帖子</string>
     <string name="setting_nga_domain">NGA域名</string>
     <string name="setting_image_domain">图片域名</string>
-    <string name="setting_image_domain_custom_hint">如 img.nga.cn，留空则用默认</string>
-    <string name="setting_image_domain_custom_invalid">域名格式不对，填形如 img.nga.cn 的地址</string>
+    <!-- 输入框的 hint：直接给一个可照抄的完整地址，比描述格式更省事。 -->
+    <string name="setting_image_domain_custom_hint">https://img.nga.cn</string>
+    <!-- 仅供读屏软件播报。该单选项没有可见文案（输入框本身即说明），需要它才不至于被念成「未加标签的控件」。 -->
+    <string name="setting_image_domain_custom_option">自定义</string>
+    <string name="setting_image_domain_custom_invalid">域名格式不对，填形如 https://img.nga.cn 的地址</string>
     <string name="setting_avatar_network_title">载入头像</string>
     <string name="setting_avatar_network_summary">移动数据网络下载入头像</string>
     <string name="setting_image_network_title">载入帖子图片</string>

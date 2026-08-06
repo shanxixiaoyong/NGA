@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-    「图片域名」的选择页：三个单选项 + 「自定义」专属的输入框。
-    输入框缩进对齐在第三项之下，表明它是该选项的参数而非独立设置。
-    单选项文案由代码从 R.array.image_domain 填入，此处不写死，避免选项列表出现第二份。
+    「图片域名」的选择页：三个单选项，第三项直接就是一个输入框。
+
+    第三项刻意不带「自定义」字样——输入框本身已经说明了它是什么，
+    多一行标签只是把一件事拆成两行看。
+
+    注意：这里用的是 LinearLayout 而非 RadioGroup。RadioGroup 只对直接子节点做互斥，
+    而第三项的圈必须和 EditText 同处一个横向容器里才能同行，嵌一层就出了它的管辖范围。
+    互斥因此由 ImageDomainDialogFragment 手工维护，别改回 RadioGroup。
+
+    前两项文案由代码从 R.array.image_domain 填入，此处不写死。
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -14,43 +21,43 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <RadioGroup
-            android:id="@+id/rg_image_domain"
+        <RadioButton
+            android:id="@+id/rb_image_domain_default"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:minHeight="48dp" />
 
-            <RadioButton
-                android:id="@+id/rb_image_domain_default"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp" />
+        <RadioButton
+            android:id="@+id/rb_image_domain_alt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp" />
 
-            <RadioButton
-                android:id="@+id/rb_image_domain_alt"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <RadioButton
                 android:id="@+id/rb_image_domain_custom"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:contentDescription="@string/setting_image_domain_custom_option"
                 android:minHeight="48dp" />
 
-        </RadioGroup>
+            <EditText
+                android:id="@+id/et_image_domain_custom"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/setting_image_domain_custom_hint"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:maxLines="1"
+                android:minHeight="48dp" />
 
-        <EditText
-            android:id="@+id/et_image_domain_custom"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginBottom="8dp"
-            android:hint="@string/setting_image_domain_custom_hint"
-            android:importantForAutofill="no"
-            android:inputType="textUri"
-            android:maxLines="1"
-            android:minHeight="48dp" />
+        </LinearLayout>
 
     </LinearLayout>
 
