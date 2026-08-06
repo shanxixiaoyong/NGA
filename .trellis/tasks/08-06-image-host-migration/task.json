@@ -24,6 +24,8 @@
   "notes": "",
   "meta": {
     "commit": "fb88ef64",
-    "release_tag": "5.3.0"
+    "release_tag": "5.3.0",
+    "release_tag_2": "5.3.1",
+    "commit_2": "6c40781d"
   }
 }
