@@ -49,6 +49,12 @@ public class PreferenceKey {
 
     public static final String KEY_NGA_DOMAIN = "nga_domain";
 
+    /** 「图片域名」下拉选中的序号，与 {@code R.array.image_domain} 对应，默认 "0"。 */
+    public static final String KEY_IMAGE_DOMAIN = "pref_image_domain";
+
+    /** 「图片域名」选「自定义」时填写的域名，仅在该项被选中时生效。 */
+    public static final String KEY_IMAGE_DOMAIN_CUSTOM = "pref_image_domain_custom";
+
     public static final String KEY_SEARCH_HISTORY_TOPIC = "search_history_topic";
 
     public static final String KEY_SEARCH_HISTORY_BOARD = "search_history_board";

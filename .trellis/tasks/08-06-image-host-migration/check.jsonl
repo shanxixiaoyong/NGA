@@ -1,0 +1,6 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "通用质量门槛"}
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "Android 侧质量检查项，含单测与编译门槛"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "设置项 UI 改动的检查口径"}
+{"file": ".trellis/spec/backend/nga-platform-access-rules.md", "reason": "核对平台访问改动是否越界、证据标签是否如实标注"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "验证四模块改动一致、无半修复状态（尤其两份 MessageConvertFactory）"}

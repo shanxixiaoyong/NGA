@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import gov.anzong.androidnga.base.util.StringUtils;
 import gov.anzong.androidnga.common.util.EmoticonUtils;
+import gov.anzong.androidnga.common.util.NgaImageHost;
 import gov.anzong.androidnga.core.data.HtmlData;
 
 /**
@@ -26,13 +27,12 @@ public class ForumImageDecoder implements IForumDecoder {
 
     private static final String REGEX_IMG_NO_HTTP = IGNORE_CASE_TAG + "\\[img]\\s*\\.(/[^\\[|\\]]+)\\s*\\[/img]";
 
-    private static final String REPLACE_IMG_NO_HTTP = "<a href='http://%1$s/attachments%2$s'><img src='http://%1$s/attachments%2$s'></a>";
+    /** %1$s 是含协议的附件目录前缀（如 https://img.nga.cn/attachments），%2$s 是捕获到的路径。 */
+    private static final String REPLACE_IMG_NO_HTTP = "<a href='%1$s%2$s'><img src='%1$s%2$s'></a>";
 
     private static final String REGEX_IMG_WITH_HTTP = IGNORE_CASE_TAG + "\\[img]\\s*(http[^\\[|\\]]+)\\s*\\[/img]";
 
     private static final String REPLACE_IMG_WITH_HTTP = "<a href='$1'><img src='$1'></a>";
-
-    private static final String NGA_ATTACHMENT_HOST = "img.nga.178.com";
 
     @Override
     public String decode(String content) {
@@ -41,7 +41,11 @@ public class ForumImageDecoder implements IForumDecoder {
 
     @Override
     public String decode(String content, HtmlData htmlData) {
-        String replace = String.format(REPLACE_IMG_NO_HTTP, NGA_ATTACHMENT_HOST, "$1");
+        // 老帖子正文里写死的旧图床地址，切常量救不回来，只能在这儿重写主机名。
+        // 放在链的这一步是因为此时 [img] 的完整 URL 形式已定型，且表情已被上一步换成本地 asset。
+        content = NgaImageHost.normalizeLegacyHosts(content);
+
+        String replace = String.format(REPLACE_IMG_NO_HTTP, NgaImageHost.attachmentsPrefix(), "$1");
         content = StringUtils.replaceAll(content, REGEX_IMG_NO_HTTP, replace);
         content = StringUtils.replaceAll(content, REGEX_IMG_WITH_HTTP, REPLACE_IMG_WITH_HTTP);
         content = StringUtils.replaceAll(content, "(http\\S+).gif.(thumb_s|medium|thumb|thumb_ss).jpg", "$1.gif");

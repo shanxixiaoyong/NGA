@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.WindowManager;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
@@ -21,6 +22,7 @@ import gov.anzong.androidnga.activity.LauncherSubActivity;
 import gov.anzong.androidnga.activity.SettingsActivity;
 import gov.anzong.androidnga.activity.compose.TemplateComposeActivity;
 import gov.anzong.androidnga.base.util.ContextUtils;
+import gov.anzong.androidnga.base.util.PreferenceUtils;
 import gov.anzong.androidnga.base.util.ThreadUtils;
 import gov.anzong.androidnga.base.util.ToastUtils;
 import gov.anzong.androidnga.common.PreferenceKey;
@@ -29,8 +31,11 @@ import gov.anzong.androidnga.ui.fragment.BasePreferenceFragment;
 import sp.phone.common.UserManagerImpl;
 import sp.phone.theme.ThemeManager;
 import sp.phone.ui.fragment.dialog.AlertDialogFragment;
+import sp.phone.ui.fragment.dialog.ImageDomainDialogFragment;
 
-public class SettingsFragment extends BasePreferenceFragment implements Preference.OnPreferenceChangeListener {
+public class SettingsFragment extends BasePreferenceFragment
+        implements Preference.OnPreferenceChangeListener,
+        ImageDomainDialogFragment.OnImageDomainSavedListener {
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
@@ -87,6 +92,33 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
             }
         });
         ToastUtils.success("缓存清除成功");
+    }
+
+    /**
+     * 「图片域名」用自绘的选择页，而不是 {@code ListPreference} 默认的纯单选对话框——
+     * 「自定义」那一项需要在同一页里带上域名输入框，否则输入框只能另占一行设置项。
+     */
+    @Override
+    public void onDisplayPreferenceDialog(@NonNull Preference preference) {
+        if (PreferenceKey.KEY_IMAGE_DOMAIN.equals(preference.getKey())) {
+            // 用 childFragmentManager，好让对话框能通过 getParentFragment() 找回本 fragment 回调。
+            new ImageDomainDialogFragment().show(getChildFragmentManager());
+            return;
+        }
+        super.onDisplayPreferenceDialog(preference);
+    }
+
+    /**
+     * 选择页直写了 SharedPreferences，此处把 {@code ListPreference} 的内存值拉回一致，
+     * 顺带触发 summary 重新回显选中项。
+     */
+    @Override
+    public void onImageDomainSaved() {
+        Preference preference = findPreference(PreferenceKey.KEY_IMAGE_DOMAIN);
+        if (preference instanceof ListPreference) {
+            ((ListPreference) preference).setValue(
+                    PreferenceUtils.getData(PreferenceKey.KEY_IMAGE_DOMAIN, "0"));
+        }
     }
 
     @Override

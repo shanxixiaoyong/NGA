@@ -15,6 +15,7 @@ import com.justwen.androidnga.core.data.MessageArticlePageInfo;
 import com.justwen.androidnga.core.data.MessageDetailInfo;
 import sp.phone.theme.ThemeManager;
 import gov.anzong.androidnga.common.util.NLog;
+import gov.anzong.androidnga.common.util.NgaImageHost;
 import sp.phone.util.StringUtils;
 
 /**
@@ -121,7 +122,7 @@ public class MessageConvertFactory {
         js = js.replaceAll("\"content\":\\+(\\d+),", "\"content\":\"+$1\",");
         js = js.replaceAll("\"subject\":\\+(\\d+),", "\"subject\":\"+$1\",");
         js = js.replaceAll("/\\*\\$js\\$\\*/", "");
-        js = js.replaceAll("\\[img\\]./mon_", "[img]http://img6.nga.178.com/attachments/mon_");
+        js = js.replaceAll("\\[img\\]./mon_", "[img]" + NgaImageHost.attachmentsPrefix() + "/mon_");
 
         JSONObject o = null;
         try {

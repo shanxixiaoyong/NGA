@@ -6,8 +6,6 @@ public class AttachmentData {
 
     private String mThumb;
 
-    private String mAttachmentHost;
-
     public String getAttachUrl() {
         return mAttachUrl;
     }
@@ -22,13 +20,5 @@ public class AttachmentData {
 
     public void setThumb(String thumb) {
         mThumb = thumb;
-    }
-
-    public String getAttachmentHost() {
-        return mAttachmentHost;
-    }
-
-    public void setAttachmentHost(String attachmentHost) {
-        mAttachmentHost = attachmentHost;
     }
 }

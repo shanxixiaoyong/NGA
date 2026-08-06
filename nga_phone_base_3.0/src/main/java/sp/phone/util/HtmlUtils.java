@@ -12,6 +12,7 @@ import java.util.Map;
 
 import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.Utils;
+import gov.anzong.androidnga.common.util.NgaImageHost;
 import gov.anzong.androidnga.core.data.HtmlData;
 import gov.anzong.androidnga.core.decode.ForumDecoder;
 import sp.phone.common.PhoneConfiguration;
@@ -150,9 +151,9 @@ public class HtmlUtils {
 
     private static StringBuilder buildAudioAttachment(StringBuilder ret, Attachment attachment) {
         String url = attachment.getAttachurl();
-        ret.append("<tr><td><a href='http://")
-                .append(HttpUtil.NGA_ATTACHMENT_HOST)
-                .append("/attachments/")
+        ret.append("<tr><td><a href='")
+                .append(NgaImageHost.attachmentsPrefix())
+                .append("/")
                 .append(url)
                 .append("'>")
                 .append("nga_audio.mp3</a>")
@@ -162,9 +163,9 @@ public class HtmlUtils {
 
     private static StringBuilder buildVideoAttachment(StringBuilder ret, Attachment attachment) {
         String url = attachment.getAttachurl();
-        ret.append("<tr><td><a href='http://")
-                .append(HttpUtil.NGA_ATTACHMENT_HOST)
-                .append("/attachments/")
+        ret.append("<tr><td><a href='")
+                .append(NgaImageHost.attachmentsPrefix())
+                .append("/")
                 .append(url)
                 .append("'>")
                 .append("nga_video.mp4</a>")
@@ -174,7 +175,7 @@ public class HtmlUtils {
 
     private static StringBuilder buildImageAttachment(StringBuilder ret, Attachment attachment, int index, List<String> imageUrls) {
 
-        String attachUrl = "http://" + HttpUtil.NGA_ATTACHMENT_HOST + "/attachments/" + attachment.getAttachurl();
+        String attachUrl = NgaImageHost.attachmentsPrefix() + "/" + attachment.getAttachurl();
         String attachUrlThumb = attachUrl;
         String indexStr = String.valueOf(index);
         if ("1".equals(attachment.getThumb())) {

@@ -16,8 +16,6 @@ public class EmoticonUtils {
             {"dt", "外域三人组"},
     };
 
-    final static String PRR_EMOTION_URL = "https://img4.nga.178.com/ngabbs/post/smile/";
-
     public static final String[][][] EMOTICON_URL = {
             {
                     {"blink", "ac0.png"},

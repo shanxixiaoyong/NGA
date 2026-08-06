@@ -24,4 +24,21 @@
         <item>4</item>
     </string-array>
 
+    <!--
+        「图片域名」下拉。展示文案即完整 base url，与 nga_domain 的写法一致。
+        协议不是装饰：img9 的 https 稳定 404，只能走 http。
+        本数组须与 NgaImageHost.PRESET_BASE_URLS 按序号一一对应，由契约测试锁住。
+    -->
+    <string-array name="image_domain">
+        <item>https://img.nga.cn</item>
+        <item>http://img9.nga.cn</item>
+        <item>自定义</item>
+    </string-array>
+
+    <string-array name="image_domain_value">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
 </resources>

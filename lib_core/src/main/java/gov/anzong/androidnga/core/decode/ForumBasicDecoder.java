@@ -1,6 +1,7 @@
 package gov.anzong.androidnga.core.decode;
 
 import gov.anzong.androidnga.base.util.StringUtils;
+import gov.anzong.androidnga.common.util.NgaImageHost;
 import gov.anzong.androidnga.core.data.HtmlData;
 
 /**
@@ -230,10 +231,10 @@ public class ForumBasicDecoder implements IForumDecoder {
         content = StringUtils.replaceAll(content, "\\[collapse](.*?)\\[/collapse]", "<div><button onclick='toggleCollapse(this)'>点击显示内容</button><div name='collapse' class='collapse'style='display:none' >$1</div></div>");
 
         // [flash=video]/flash]
-        content = StringUtils.replaceAll(content, "\\[flash=video].(.*?)\\[/flash]", "<video src='http://img.ngacn.cc/attachments$1' controls='controls'></video>");
+        content = StringUtils.replaceAll(content, "\\[flash=video].(.*?)\\[/flash]", "<video src='" + NgaImageHost.attachmentsPrefix() + "$1' controls='controls'></video>");
 
         // [flash=audio][/flash]"
-        content = StringUtils.replaceAll(content, "\\[flash=audio].(.*?)\\[/flash]", "<audio src='http://img.ngacn.cc/attachments$1&filename=nga_audio.mp3' controls='controls'></audio>");
+        content = StringUtils.replaceAll(content, "\\[flash=audio].(.*?)\\[/flash]", "<audio src='" + NgaImageHost.attachmentsPrefix() + "$1&filename=nga_audio.mp3' controls='controls'></audio>");
 
         return content;
     }

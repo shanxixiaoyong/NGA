@@ -23,6 +23,7 @@ import gov.anzong.androidnga.Utils;
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.common.util.EmoticonUtils;
 import gov.anzong.androidnga.common.util.NLog;
+import gov.anzong.androidnga.common.util.NgaImageHost;
 import sp.phone.http.bean.StringFindResult;
 import sp.phone.theme.ThemeManager;
 
@@ -231,6 +232,9 @@ public class StringUtils {
                                         int imageQuality, @Nullable List<String> imageUrls) {
         if (StringUtils.isEmpty(ret))
             return "";
+        // 这是与 ForumImageDecoder 并行的另一条老解码路径，需独立做一次旧图床归一化，
+        // 否则走这条路的历史帖子仍然写死着已死的域名。
+        ret = NgaImageHost.normalizeLegacyHosts(ret);
         // s = StringUtils.unEscapeHtml(s);
         String quoteStyle = "<div style='background:#E8E8E8;padding:5px;border:1px solid #888' >";
         if (ThemeManager.getInstance().isNightMode())
@@ -430,10 +434,10 @@ public class StringUtils {
         // if(showImage){
         ret = ret.replaceAll(ignoreCaseTag
                         + "\\[img\\]\\s*\\.(/[^\\[|\\]]+)\\s*\\[/img\\]",
-                "<a href='http://" + HttpUtil.NGA_ATTACHMENT_HOST
-                        + "/attachments$1'><img src='http://"
-                        + HttpUtil.NGA_ATTACHMENT_HOST
-                        + "/attachments$1' style= 'max-width:100%' ></a>");
+                "<a href='" + NgaImageHost.attachmentsPrefix()
+                        + "$1'><img src='"
+                        + NgaImageHost.attachmentsPrefix()
+                        + "$1' style= 'max-width:100%' ></a>");
         ret = ret.replaceAll(ignoreCaseTag
                         + "\\[img\\]\\s*(http[^\\[|\\]]+)\\s*\\[/img\\]",
                 "<a href='$1'><img src='$1' style= 'max-width:100%' ></a>");
@@ -481,8 +485,9 @@ public class StringUtils {
                         + s1
                         + "' style= 'max-width:100%' >";
                 content = content.replace(s0, newImgBlock);
-                int t = s1.indexOf(HttpUtil.NGA_ATTACHMENT_HOST);
-                if (t != -1 && imageUrls != null) {
+                // 判断放宽为「是附件路径」而非「是某个特定主机」：主机名现在随设置变，
+                // 钉死任一主机都会让图集在换域名后漏收图。
+                if (s1.contains("attachments/") && imageUrls != null) {
                     imageUrls.add(s1);
                 }
             }
@@ -648,7 +653,7 @@ public class StringUtils {
             String audioUrl = matcher.group();
             audioUrl = audioUrl.substring(14, audioUrl.indexOf("[/flash]") - 1);
             // <audio src="http://img.ngacn.cc/attachments/mon_201802/25/-7Q5-ak1cKe.mp3?duration=3&filename=nga_audio.mp3" controls="controls"></audio>
-            audioUrl = "<audio src=\"http://img.ngacn.cc/attachments" + audioUrl + "&filename=nga_audio.mp3\" controls=\"controls\"></audio>";
+            audioUrl = "<audio src=\"" + NgaImageHost.attachmentsPrefix() + audioUrl + "&filename=nga_audio.mp3\" controls=\"controls\"></audio>";
             content = matcher.replaceFirst(audioUrl);
             matcher = pattern.matcher(content);
         }
@@ -662,7 +667,7 @@ public class StringUtils {
         while (matcher.find()) {
             String url = matcher.group();
             url = url.substring("[flash=video]".length() + 1, url.indexOf("[/flash]"));
-            url = "<video src=\"http://img.ngacn.cc/attachments" + url + "\" controls=\"controls\"></video>";
+            url = "<video src=\"" + NgaImageHost.attachmentsPrefix() + url + "\" controls=\"controls\"></video>";
             content = matcher.replaceFirst(url);
             matcher = pattern.matcher(content);
         }

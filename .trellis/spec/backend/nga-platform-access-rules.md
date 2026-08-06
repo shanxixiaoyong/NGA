@@ -62,6 +62,43 @@ client, the current fork, an anonymous challenge page, or a remembered session.
 - Original Web login follows and loads arbitrary WebView navigation. The
   generic forum WebView uses substring host tests, not an origin allowlist.
 - Parser-generated media URLs include `img*.nga.178.com` and `img.ngacn.cc`.
+  Both families are dead as of 2026-08-06: `img*.nga.178.com` DNS is withdrawn
+  (`img9` resolves to a `127.0.0.1` blackhole) and `img*.ngacn.cc` either fails
+  TLS or redirects to a dead domain.
+
+### Image Hosts Are Split By Path Family
+
+Measured 2026-08-06. This is the constraint that makes a blanket host rewrite
+wrong:
+
+| Path family | Serving host | Notes |
+| --- | --- | --- |
+| `/attachments/...` | `img.nga.cn` (http+https), `img9.nga.cn` (**http only**) | `img1`–`img8.nga.cn` all 404/403 |
+| `/ngabbs/post/smile/...` | `img4.nga.cn` | `img.nga.cn` 404s this path |
+| `/ngabbs/nga_classic/f/app/...` | `img4.nga.cn` | Board icons, fid-keyed |
+| `/proxy/cache_attach/ficon/...` | `img4.nga.cn` | Board icons, stid-keyed |
+
+Rules that follow from it:
+
+- Never collapse every legacy image host onto the attachment host. Doing so
+  turns non-attachment paths from "dead domain" into "404" — the same broken
+  image, one layer harder to diagnose.
+- Protocol is bound to the host, not global. `img9.nga.cn` over https returns
+  NGA's own gb2312 404 page (three re-tests agreed). Normalizing that option to
+  https makes it silently useless.
+- Anchor host-rewrite patterns on the `img` prefix. `nga.178.com` and
+  `bbs.ngacn.cc` without it are forum hosts and must not be rewritten.
+- Resolve attachment URLs through `NgaImageHost` (`lib_base_common`). It is the
+  single authority for the attachment base URL, the preference override, and
+  legacy-host normalization.
+- Glide-loaded URLs (board icons in `ApiConstants`) bypass the decoder chain, so
+  normalization never reaches them. They must carry a correct host literally.
+
+**Probing these paths**: use real identifiers. Board `stid` values are 8 digits
+(see `assets/board_list.json`); small integers 404 because the collection does
+not exist, not because the path is retired. A *constant* response size across
+different identifiers means you are hitting a generic error page — read it
+before concluding the path is gone.
 
 ### Migration Rule
 

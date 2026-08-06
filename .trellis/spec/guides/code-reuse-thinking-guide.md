@@ -58,6 +58,31 @@ grep -r "keyword" .
 
 **Good**: Single source of truth, import everywhere
 
+#### Java `public static final String` Inlines At Compile Time
+
+Turning a hard-coded constant into something configurable? A forwarding
+constant does **not** work:
+
+```java
+// BAD: javac copies the literal into every caller's class file.
+// Callers keep the old value until they are recompiled, so the new
+// setting appears to do nothing — and works fine in a clean build,
+// which is why this survives review.
+public static final String HOST = NgaImageHost.attachmentBaseUrl();
+```
+
+Delete the constant instead and let the compiler point at every reference.
+The error list is your coverage checklist; a green build means the module is
+fully migrated. This is how `HttpUtil.NGA_ATTACHMENT_HOST` was retired — and
+deleting it surfaced a call site that manual grepping had missed
+(`ArticleConvertFactory` → `AttachmentData.mAttachmentHost` →
+`HtmlAttachmentBuilder`, a field whose only job was carrying that constant
+across a module boundary).
+
+**Also check**: a constant declared but never read is not harmless. It reads as
+authoritative, so the next person updates it and expects behavior to change.
+Delete dead constants rather than refreshing their values.
+
 ### Pattern 4: Repeated Payload Field Extraction
 
 **Bad**: Multiple consumers cast the same JSON/event fields locally:

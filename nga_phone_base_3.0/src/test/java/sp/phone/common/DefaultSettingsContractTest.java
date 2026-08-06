@@ -26,6 +26,7 @@ public class DefaultSettingsContractTest {
                 .parse(new File("src/main/res/xml/settings.xml"));
 
         assertDefault(document, "nga_domain", "1");
+        assertDefault(document, "pref_image_domain", "0");
         assertDefault(document, "nightmode", "false");
         assertDefault(document, "key_night_mode_follow_system",
                 Boolean.toString(Constants.NIGHT_MODE_FOLLOW_SYSTEM_DEFAULT));
@@ -53,6 +54,21 @@ public class DefaultSettingsContractTest {
         assertMissingPreference(document, "bottom_tab");
     }
 
+    /**
+     * 自定义图片域名是「图片域名」选择页内的输入框，不是独立设置行。
+     *
+     * <p>初版把它做成紧邻的 {@code EditTextPreference}，于是它在未选「自定义」时白占一行、还得常灰着，
+     * 一个设置需求撑出两行界面。这条断言用来钉住那个方案不要被改回来。
+     */
+    @Test
+    public void customImageDomainIsNotItsOwnSettingsRow() throws Exception {
+        Document document = DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(new File("src/main/res/xml/settings.xml"));
+
+        assertMissingPreference(document, "pref_image_domain_custom");
+    }
+
     @Test
     public void settingsAreGroupedByPurpose() throws Exception {
         Document document = DocumentBuilderFactory.newInstance()
@@ -70,7 +86,7 @@ public class DefaultSettingsContractTest {
                 "PreferenceCategory:发帖设置",
                 "PreferenceScreen:实验室");
         assertCategory(preferenceScreen, "域名与账号",
-                "nga_domain", "pref_user_compose");
+                "nga_domain", "pref_image_domain", "pref_user_compose");
         assertCategory(preferenceScreen, "外观设置",
                 "nightmode", "key_night_mode_follow_system", "use_solid_color_bg",
                 "material_theme", "adjust_size");

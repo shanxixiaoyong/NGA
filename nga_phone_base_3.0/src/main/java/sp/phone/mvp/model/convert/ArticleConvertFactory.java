@@ -25,7 +25,6 @@ import sp.phone.http.bean.ThreadRowInfo;
 import sp.phone.mvp.model.entity.ThreadPageInfo;
 import sp.phone.theme.ThemeManager;
 import sp.phone.util.FunctionUtils;
-import sp.phone.util.HttpUtil;
 import sp.phone.util.StringUtils;
 
 /**
@@ -160,7 +159,6 @@ public class ArticleConvertFactory {
                 AttachmentData data = new AttachmentData();
                 data.setAttachUrl(entry.getValue().getAttachurl());
                 data.setThumb(entry.getValue().getThumb());
-                data.setAttachmentHost(HttpUtil.NGA_ATTACHMENT_HOST);
                 attachments.add(data);
             }
             htmlData.setAttachmentList(attachments);

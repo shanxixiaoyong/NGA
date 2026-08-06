@@ -1,0 +1,7 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/nga-platform-access-rules.md", "reason": "改动直接触及 NGA 媒体主机访问；需遵守其证据标签与 fail-closed 政策，图床实测结论属 authorized-live-verified"}
+{"file": ".trellis/spec/backend/network-foundation-contract.md", "reason": "界定 upload/media host 的既有契约，确认本次只动显示路径、不碰上传与传输签名"}
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "新增 NgaImageHost 工具类与偏好项需符合本项目 Android 代码规范"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "改动横跨 lib_base_common / lib_core / lib_bu_message / nga_phone_base_3.0 四个模块，属典型跨层变更"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "本次核心动作是把散落 11 处的域名常量收敛到单一权威来源，含两份重复的 MessageConvertFactory"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "settings.xml 新增图床域名设置项需沿用既有 Preference 样式约定"}
