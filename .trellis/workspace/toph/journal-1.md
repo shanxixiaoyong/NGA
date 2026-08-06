@@ -634,12 +634,20 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 | Hash | Message |
 |------|---------|
 | `fb88ef64` | fix: point the image host at img.nga.cn and make it overridable |
+| `6c40781d` | fix: present the custom image domain as a single-row input |
+| `27779950` | docs(trellis): record the 5.3.1 style fix |
 
-Tag `5.3.0` 已推送并触发发布工作流。
+发布：`5.3.0`（初版布局）→ `5.3.1`（样式修正）。`5.3.0` 的 tag 未动。
+
+### 5.3.1 样式修正（真机查看后）
+
+用户对设置弹窗的第三项不满意：原实现是「自定义」标签摞在输入框上方，成两行。改为**单选圈与输入框同处一横行**，去掉标签，hint 改为可照抄的 `https://img.nga.cn`，输入框常开（点击/聚焦即自动选中自定义）。
+
+实现代价：布局不能用 `RadioGroup`（它只对直接子节点做互斥，第三项的圈嵌进横向容器后就出了其管辖范围，三项会变成可同时选中），互斥改由 `ImageDomainDialogFragment` 手工维护。布局与代码里都留了注释挡住「整理回 RadioGroup」。
 
 ### Status
 
-[..] **代码完成，待真机验收**（Step 7，AC1–AC11）
+[OK] **Completed**（真机验收通过，用户指示归档）
 
-未修（既有、非本次引入）：`lib_core` `testQuote` 红；`URL_BOARD_ICON_STID` 已修但合集板块图标需真机确认。
+未修（既有、非本次引入）：`lib_core` `testQuote` 红（`compileOnly` classpath 问题）。
 `./gradlew test` / `testDebugUnitTest` 本机跑不通（release 签名变量缺失；`lib_base_ui`、`lib_bu_statistics` 缺 junit 依赖），改按模块点名。
