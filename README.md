@@ -59,6 +59,10 @@
 - [NgaLite](https://github.com/fhyxz001/NgaLite)
 - [open-nga](https://github.com/mlzzen/open-nga)
 
+**AI相关**
+- [LINUX DO 社区](https://linux.do/)
+- 给 AI 立规矩的开源框架：[trellis](https://github.com/mindfold-ai/Trellis)
+
 ## 风险说明
 
 本项目基于原项目进行 AI 辅助的 vibe coding，可能存在尚未发现的缺陷、安全或兼容性问题。安装与使用前请自行审查并评估风险，风险自负。欢迎审查代码、提交问题与改进，并在遵守许可证与来源声明的前提下继续二次开发。
