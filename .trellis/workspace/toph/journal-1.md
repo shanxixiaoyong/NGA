@@ -610,7 +610,7 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 
 ---
 
-## Session 28: 图床域名迁移至 img.nga.cn
+## Session 28: 图床域名迁移至 img.nga.cn 并发布 5.3.1
 
 **Date**: 2026-08-06
 **Task**: `.trellis/tasks/08-06-image-host-migration/`
@@ -624,6 +624,18 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 
 删除 `HttpUtil.NGA_ATTACHMENT_HOST` 而非留转发常量（`public static final String` 会被 javac 内联，设置会静默失效），编译错误当覆盖度清单，当场抓出 grep 找不到的一条链：`AttachmentData.mAttachmentHost` 只为把该常量跨模块搬进 `HtmlAttachmentBuilder`（附件区渲染），已整条拆除。`ApiConstants` 的板块图标同因损坏且经 Glide 加载、不过解码链，一并修好。
 
+### Main Changes
+
+- lib_base_common 新增 NgaImageHost，收敛所有附件地址并支持偏好覆盖
+- 设置「图片域名」单行入口 + 自绘对话框，自定义项单行样式（圈+输入框同行）
+- 删除 HttpUtil.NGA_ATTACHMENT_HOST 常量，全部调用点改走 attachmentsPrefix()
+
+### 5.3.1 样式修正（真机查看后）
+
+用户对设置弹窗的第三项不满意：原实现是「自定义」标签摞在输入框上方，成两行。改为**单选圈与输入框同处一横行**，去掉标签，hint 改为可照抄的 `https://img.nga.cn`，输入框常开（点击/聚焦即自动选中自定义）。
+
+实现代价：布局不能用 `RadioGroup`（它只对直接子节点做互斥，第三项的圈嵌进横向容器后就出了其管辖范围，三项会变成可同时选中），互斥改由 `ImageDomainDialogFragment` 手工维护。布局与代码里都留了注释挡住「整理回 RadioGroup」。
+
 ### 两处自己踩的坑
 
 - **假标识符探测**：用 stid=1/2/100 curl `/proxy/cache_attach/ficon/`，全 404，误判成「服务端下掉了该路径，换域名无意义」并准备放弃。真实 stid 是 8 位数（`assets/board_list.json`），换真实值后五个全部 200。**返回体大小完全一致**是「打到通用错误页」的信号，当时没警觉。
@@ -635,15 +647,12 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 |------|---------|
 | `fb88ef64` | fix: point the image host at img.nga.cn and make it overridable |
 | `6c40781d` | fix: present the custom image domain as a single-row input |
-| `27779950` | docs(trellis): record the 5.3.1 style fix |
 
 发布：`5.3.0`（初版布局）→ `5.3.1`（样式修正）。`5.3.0` 的 tag 未动。
 
-### 5.3.1 样式修正（真机查看后）
+### Testing
 
-用户对设置弹窗的第三项不满意：原实现是「自定义」标签摞在输入框上方，成两行。改为**单选圈与输入框同处一横行**，去掉标签，hint 改为可照抄的 `https://img.nga.cn`，输入框常开（点击/聚焦即自动选中自定义）。
-
-实现代价：布局不能用 `RadioGroup`（它只对直接子节点做互斥，第三项的圈嵌进横向容器后就出了其管辖范围，三项会变成可同时选中），互斥改由 `ImageDomainDialogFragment` 手工维护。布局与代码里都留了注释挡住「整理回 RadioGroup」。
+- [OK] lib_base_common / nga_phone_base_3.0 / lib_bu_message 单测全绿；lib_core 仅基线 testQuote 失败
 
 ### Status
 
@@ -651,3 +660,7 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 
 未修（既有、非本次引入）：`lib_core` `testQuote` 红（`compileOnly` classpath 问题）。
 `./gradlew test` / `testDebugUnitTest` 本机跑不通（release 签名变量缺失；`lib_base_ui`、`lib_bu_statistics` 缺 junit 依赖），改按模块点名。
+
+### Next Steps
+
+- 无（真机验收通过，任务已归档）

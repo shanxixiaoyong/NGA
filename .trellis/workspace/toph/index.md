@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 27
-- **Last Active**: 2026-07-29
+- **Total Sessions**: 28
+- **Last Active**: 2026-08-06
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~609 | Active |
+| `journal-1.md` | ~689 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 28 | 2026-08-06 | 图床域名迁移至 img.nga.cn 并发布 5.3.1 | `fb88ef64`, `6c40781d` | `main` |
 | 27 | 2026-07-29 | 表情分类内拖拽排序 | `e436b07f`, `8e0e0231`, `7abdf594`, `c2861d93`, `82caca77` | `feat/emoticon-reorder` |
 | 26 | 2026-07-28 | WebView 正文选词菜单接管 | `3c68dc86`, `a24efb70` | `main` |
 | 25 | 2026-07-28 | Merge release workflow Gradle invocations and settle parallel execution | `8035f7ec`, `a5f51180` | `main` |
