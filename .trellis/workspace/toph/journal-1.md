@@ -607,3 +607,39 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 ### Status
 
 [OK] **Completed**
+
+---
+
+## Session 28: 图床域名迁移至 img.nga.cn
+
+**Date**: 2026-08-06
+**Task**: `.trellis/tasks/08-06-image-host-migration/`
+**Branch**: `main`
+
+### Summary
+
+帖子图片全线加载失败，根因是附件主机硬编码在已被撤销 DNS 的 `img.nga.178.com`。新增 `NgaImageHost`（`lib_base_common`）作为唯一权威：从偏好解析 base url、无 Android 环境时静默回退 `https://img.nga.cn`、并在解码阶段按**路径族**归一化旧主机——`/attachments/` 落当前主机，其余路径保留编号（表情只有 `img4.nga.cn` 有，一刀切会把「域名已死」变成「404」）。协议与主机绑定，`img9.nga.cn` 的 https 稳定返回 NGA 自己的 404 页，故该选项走 http。
+
+设置形态经用户复审后改过一次：初版做成「图片域名」下拉 + 紧邻的 `EditTextPreference`，被否——自定义框在未选「自定义」时白占一行且常灰着。改为单行入口 + 自绘对话框（`ImageDomainDialogFragment`），三单选项与输入框同页；`pref_image_domain_custom` 不进 `settings.xml`，并加 `customImageDomainIsNotItsOwnSettingsRow` 钉住不许退回两行。
+
+删除 `HttpUtil.NGA_ATTACHMENT_HOST` 而非留转发常量（`public static final String` 会被 javac 内联，设置会静默失效），编译错误当覆盖度清单，当场抓出 grep 找不到的一条链：`AttachmentData.mAttachmentHost` 只为把该常量跨模块搬进 `HtmlAttachmentBuilder`（附件区渲染），已整条拆除。`ApiConstants` 的板块图标同因损坏且经 Glide 加载、不过解码链，一并修好。
+
+### 两处自己踩的坑
+
+- **假标识符探测**：用 stid=1/2/100 curl `/proxy/cache_attach/ficon/`，全 404，误判成「服务端下掉了该路径，换域名无意义」并准备放弃。真实 stid 是 8 位数（`assets/board_list.json`），换真实值后五个全部 200。**返回体大小完全一致**是「打到通用错误页」的信号，当时没警觉。
+- **design §1.3 的验证机制想错了**：以为 `lib_core` 的 `ExampleUnitTest.testQuote` 会检验无 Android 兜底。实际它在 `main` 上本来就红——`lib_base_common` 是 `compileOnly`，不在单测 classpath 上。补 `testImplementation` 也修不好（`StringUtils` 静态初始化要读 Android 资源），已撤回。兜底实际由 `NgaImageHostContractTest` 覆盖。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fb88ef64` | fix: point the image host at img.nga.cn and make it overridable |
+
+Tag `5.3.0` 已推送并触发发布工作流。
+
+### Status
+
+[..] **代码完成，待真机验收**（Step 7，AC1–AC11）
+
+未修（既有、非本次引入）：`lib_core` `testQuote` 红；`URL_BOARD_ICON_STID` 已修但合集板块图标需真机确认。
+`./gradlew test` / `testDebugUnitTest` 本机跑不通（release 签名变量缺失；`lib_base_ui`、`lib_bu_statistics` 缺 junit 依赖），改按模块点名。
