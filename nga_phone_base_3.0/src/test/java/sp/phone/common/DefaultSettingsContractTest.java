@@ -17,6 +17,8 @@ import java.util.List;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import gov.anzong.androidnga.common.util.NgaImageHost;
+
 public class DefaultSettingsContractTest {
 
     @Test
@@ -67,6 +69,37 @@ public class DefaultSettingsContractTest {
                 .parse(new File("src/main/res/xml/settings.xml"));
 
         assertMissingPreference(document, "pref_image_domain_custom");
+    }
+
+    @Test
+    public void imageDomainModesAndDialogOrderStayAligned() throws Exception {
+        assertEquals(0, NgaImageHost.MODE_AUTO);
+        assertEquals(1, NgaImageHost.MODE_DEFAULT);
+        assertEquals(2, NgaImageHost.MODE_IMG9);
+        assertEquals(3, NgaImageHost.MODE_CUSTOM);
+
+        Document arrays = DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(new File("../lib_base_common/src/main/res/values/arrays.xml"));
+        assertEquals(Arrays.asList(
+                        "自动", "https://img.nga.cn", "http://img9.nga.cn", "自定义"),
+                readStringArray(arrays, "image_domain"));
+        assertEquals(Arrays.asList("0", "1", "2", "3"),
+                readStringArray(arrays, "image_domain_value"));
+
+        Document layout = DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(new File("src/main/res/layout/dialog_image_domain.xml"));
+        NodeList radioButtons = layout.getElementsByTagName("RadioButton");
+        List<String> ids = new ArrayList<>();
+        for (int i = 0; i < radioButtons.getLength(); i++) {
+            ids.add(((Element) radioButtons.item(i)).getAttribute("android:id"));
+        }
+        assertEquals(Arrays.asList(
+                "@+id/rb_image_domain_auto",
+                "@+id/rb_image_domain_default",
+                "@+id/rb_image_domain_alt",
+                "@+id/rb_image_domain_custom"), ids);
     }
 
     @Test
@@ -144,6 +177,27 @@ public class DefaultSettingsContractTest {
             }
         }
         throw new AssertionError("Missing preference key: " + key);
+    }
+
+    private static List<String> readStringArray(Document document, String name) {
+        NodeList arrays = document.getElementsByTagName("string-array");
+        for (int i = 0; i < arrays.getLength(); i++) {
+            Element array = (Element) arrays.item(i);
+            if (!name.equals(array.getAttribute("name"))) {
+                continue;
+            }
+            List<String> items = new ArrayList<>();
+            NodeList children = array.getChildNodes();
+            for (int j = 0; j < children.getLength(); j++) {
+                Node child = children.item(j);
+                if (child.getNodeType() == Node.ELEMENT_NODE
+                        && "item".equals(child.getNodeName())) {
+                    items.add(child.getTextContent().trim());
+                }
+            }
+            return items;
+        }
+        throw new AssertionError("Missing string-array: " + name);
     }
 
     private static void assertMissingPreference(Document document, String key) {

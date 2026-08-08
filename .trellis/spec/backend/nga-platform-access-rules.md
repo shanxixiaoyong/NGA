@@ -120,6 +120,102 @@ before concluding the path is gone.
 Do not copy cleartext NGA URLs, substring-based host checks, unrestricted
 `loadUrl`, third-party Cookie access, or external avatar staging into new code.
 
+## THREAD.PAGE Page-Scoped Attachment Host
+
+The `THREAD.PAGE` response may provide a page-level attachment base in
+`data.__GLOBAL._ATTACH_BASE_VIEW`. This is a rendering input for one response,
+not a new global image-host preference. Keep this contract separate from the
+upload host and from the non-attachment `img4.nga.cn` path families.
+
+### 1. Scope / Trigger
+
+- Trigger: adding or changing image-host selection, `read.php`/`THREAD.PAGE`
+  rendering, or any decoder/builder that expands a relative attachment URL.
+- Operation: `THREAD.PAGE` only. Other operations without this response
+  context use the no-context `NgaImageHost` result.
+
+### 2. Signatures
+
+- `NgaImageHost.attachmentsPrefix(@Nullable String serverAttachmentBaseView)`
+  returns a complete, slash-free `/attachments` prefix.
+- `ArticleConvertFactory.resolveAttachmentsPrefix(JSONObject data)` reads the
+  field once per page and passes the result through the page's `HtmlData`.
+- `HtmlData.setAttachmentsPrefix(String)` supplies the immutable rendering
+  context to decoders, comments, signatures, attachments, and image URL lists.
+
+### 3. Contracts
+
+- Preference modes are `0 = auto`, `1 = https://img.nga.cn`,
+  `2 = http://img9.nga.cn`, and `3 = custom`.
+- Only mode `0` considers `_ATTACH_BASE_VIEW`; modes `1`–`3` ignore it.
+- Accepted server forms are a bare host, an HTTP/HTTPS URL, or a
+  protocol-relative URL with no path, `/`, or `/attachments[/]`. Normalize to
+  `scheme://host/attachments`, preserving an explicit HTTP scheme.
+- Missing, blank, non-string, unsupported-scheme, userinfo, query/fragment,
+  placeholder (`null`/`undefined`), or other-path values resolve to the fixed
+  `https://img.nga.cn/attachments` fallback.
+- The raw server value and its derived prefix must remain local to the current
+  response. Do not put them in a static URL cache, preference, or
+  `ThreadRowInfo`; page A and page B must be able to render concurrently.
+- Legacy `/attachments/` URLs may be replaced with the page prefix, while
+  legacy non-attachment paths retain their `img` number and migrate only to
+  `.nga.cn`. Board icons continue to use their literal `img4.nga.cn` URLs.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required result |
+| --- | --- |
+| Auto mode + valid server value | Use that response's normalized prefix |
+| Auto mode + missing/invalid server value | Use the fixed default prefix; never emit `null/...` |
+| Manual mode + any server value | Ignore the field and use the selected preference |
+| No `THREAD.PAGE` context | Use the no-context resolver (manual preference or fixed auto fallback) |
+| Legacy attachment URL | Replace only its legacy attachment prefix; preserve path, query, and quality suffix |
+| Legacy non-attachment URL | Preserve its `img` number and switch only the domain suffix |
+
+### 5. Good / Base / Bad Cases
+
+- Good: page A and page B pass different valid prefixes to separate `HtmlData`
+  instances and every relative image in each page stays on its own prefix.
+- Base: a page omits `__GLOBAL` and all relative media uses
+  `https://img.nga.cn/attachments` without aborting JSON parsing.
+- Bad: copying the last page's host into a static field, using
+  `data.split("/")[0]`, or concatenating a missing field into
+  `http://null/...`.
+
+### 6. Tests Required
+
+- JVM contract tests for all accepted/invalid server forms, mode precedence,
+  fixed fallback, placeholder hosts, and two non-cached page values.
+- `THREAD.PAGE` parser tests for present, missing, malformed, and non-string
+  `__GLOBAL._ATTACH_BASE_VIEW` values.
+- Cross-layer tests/assertions that the same `HtmlData` prefix reaches body
+  images, audio/video, vote images, attachments, comments, signatures, and
+  collected image URLs.
+- Settings migration tests for old `0/1/2 -> 0/2/3` and the one-time marker.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```java
+String host = global.getString("_ATTACH_BASE_VIEW").split("/")[0];
+static String lastAttachmentHost = host;
+```
+
+This loses the scheme, crashes when `__GLOBAL` is absent, and lets one page
+overwrite another.
+
+#### Correct
+
+```java
+String prefix = NgaImageHost.attachmentsPrefix(rawServerValue);
+HtmlData htmlData = new HtmlData(row.getContent());
+htmlData.setAttachmentsPrefix(prefix);
+```
+
+The parser normalizes or safely falls back once, and the transient `HtmlData`
+context carries the result through the complete page rendering chain.
+
 ## Identity, Cookies, And Account Selection
 
 ### Original Behavior

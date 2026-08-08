@@ -2,6 +2,8 @@ package gov.anzong.androidnga.core.data;
 
 import java.util.List;
 
+import gov.anzong.androidnga.common.util.NgaImageHost;
+
 public class HtmlData implements Cloneable {
 
     public String uid;
@@ -33,6 +35,8 @@ public class HtmlData implements Cloneable {
     private String mSignature;
 
     private String mNGAHost;
+
+    private String mAttachmentsPrefix;
 
     private List<CommentData> mCommentList;
 
@@ -149,6 +153,19 @@ public class HtmlData implements Cloneable {
 
     public void setNGAHost(String NGAHost) {
         mNGAHost = NGAHost;
+    }
+
+    /**
+     * 当前渲染上下文的完整附件前缀。未显式设置时走无页面上下文的安全解析结果。
+     */
+    public String getAttachmentsPrefix() {
+        return mAttachmentsPrefix == null || mAttachmentsPrefix.isEmpty()
+                ? NgaImageHost.attachmentsPrefix()
+                : mAttachmentsPrefix;
+    }
+
+    public void setAttachmentsPrefix(String attachmentsPrefix) {
+        mAttachmentsPrefix = attachmentsPrefix;
     }
 
     public static HtmlData create(String rawData, String host) {

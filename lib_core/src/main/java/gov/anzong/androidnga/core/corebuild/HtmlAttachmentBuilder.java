@@ -2,7 +2,6 @@ package gov.anzong.androidnga.core.corebuild;
 
 import java.util.List;
 
-import gov.anzong.androidnga.common.util.NgaImageHost;
 import gov.anzong.androidnga.core.data.AttachmentData;
 import gov.anzong.androidnga.core.data.HtmlData;
 
@@ -12,10 +11,11 @@ import gov.anzong.androidnga.core.data.HtmlData;
 public class HtmlAttachmentBuilder implements IHtmlBuild {
 
 
-    private static StringBuilder buildAudioAttachment(StringBuilder ret, AttachmentData attachment) {
+    private static StringBuilder buildAudioAttachment(
+            StringBuilder ret, AttachmentData attachment, String attachmentsPrefix) {
         String url = attachment.getAttachUrl();
         ret.append("<tr><td><a href='")
-                .append(NgaImageHost.attachmentsPrefix())
+                .append(attachmentsPrefix)
                 .append("/")
                 .append(url)
                 .append("'>")
@@ -24,10 +24,11 @@ public class HtmlAttachmentBuilder implements IHtmlBuild {
         return ret;
     }
 
-    private static StringBuilder buildVideoAttachment(StringBuilder ret, AttachmentData attachment) {
+    private static StringBuilder buildVideoAttachment(
+            StringBuilder ret, AttachmentData attachment, String attachmentsPrefix) {
         String url = attachment.getAttachUrl();
         ret.append("<tr><td><a href='")
-                .append(NgaImageHost.attachmentsPrefix())
+                .append(attachmentsPrefix)
                 .append("/")
                 .append(url)
                 .append("'>")
@@ -36,9 +37,14 @@ public class HtmlAttachmentBuilder implements IHtmlBuild {
         return ret;
     }
 
-    private static StringBuilder buildImageAttachment(StringBuilder ret, AttachmentData attachment, int index, List<String> imageUrls) {
+    private static StringBuilder buildImageAttachment(
+            StringBuilder ret,
+            AttachmentData attachment,
+            int index,
+            List<String> imageUrls,
+            String attachmentsPrefix) {
 
-        String attachUrl = NgaImageHost.attachmentsPrefix() + "/" + attachment.getAttachUrl();
+        String attachUrl = attachmentsPrefix + "/" + attachment.getAttachUrl();
         String attachUrlThumb = attachUrl;
         String indexStr = String.valueOf(index);
         if ("1".equals(attachment.getThumb())) {
@@ -71,16 +77,18 @@ public class HtmlAttachmentBuilder implements IHtmlBuild {
         ret.append("<tbody>");
         int attachmentCount = 0;
         int imageAttachmentCount = 0;
+        String attachmentsPrefix = htmlData.getAttachmentsPrefix();
 
         for (AttachmentData attach : htmlData.getAttachmentList()) {
             String attachUrl = attach.getAttachUrl();
             if (attachUrl.contains("mp3")) {
-                ret = buildAudioAttachment(ret, attach);
+                ret = buildAudioAttachment(ret, attach, attachmentsPrefix);
             } else if (attachUrl.contains("mp4")) {
-                ret = buildVideoAttachment(ret,attach);
+                ret = buildVideoAttachment(ret, attach, attachmentsPrefix);
             } else {
                 imageAttachmentCount++;
-                buildImageAttachment(ret, attach, imageAttachmentCount, images);
+                buildImageAttachment(
+                        ret, attach, imageAttachmentCount, images, attachmentsPrefix);
             }
             attachmentCount++;
         }

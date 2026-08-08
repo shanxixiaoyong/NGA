@@ -16,6 +16,9 @@ public class ForumVoteDecoder implements IForumDecoder {
     @Override
     public String decode(String content, @Nullable HtmlData htmlData) {
         try {
+            String attachmentsPrefix = htmlData == null
+                    ? NgaImageHost.attachmentsPrefix()
+                    : htmlData.getAttachmentsPrefix();
             if (content.contains("game_")) {
 
                 // 游戏评分
@@ -61,7 +64,7 @@ public class ForumVoteDecoder implements IForumDecoder {
 
                 content = StringUtils.replaceAll(content, "\\[style color #444 margin 0 1 1 1 float left clear both]", "<div style=\"display:inline-block;color:#444;margin:0em 1em 1em 1em;float:left;clear:both;\">");
 
-                content = StringUtils.replaceAll(content, "\\[comment game_title_image]\\[style border-radius 0.3 width 50 src .", "<img src=\"" + NgaImageHost.attachmentsPrefix());
+                content = StringUtils.replaceAll(content, "\\[comment game_title_image]\\[style border-radius 0.3 width 50 src .", "<img src=\"" + attachmentsPrefix);
 
                 content = StringUtils.replaceAll(content, "]\\[/style]\\[/comment game_title_image]", "\" style=\"display:inline-block;border-radius:0.3em;width:50em;\">");
 

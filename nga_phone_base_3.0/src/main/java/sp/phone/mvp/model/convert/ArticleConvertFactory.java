@@ -11,6 +11,7 @@ import java.util.Map;
 
 import gov.anzong.androidnga.Utils;
 import gov.anzong.androidnga.base.logger.Logger;
+import gov.anzong.androidnga.common.util.NgaImageHost;
 import gov.anzong.androidnga.core.HtmlConvertFactory;
 import gov.anzong.androidnga.common.util.NLog;
 import gov.anzong.androidnga.core.data.AttachmentData;
@@ -95,11 +96,30 @@ public class ArticleConvertFactory {
         if (subObj == null) {
             return new ArrayList<>();
         }
-        return convertJsObjToList(subObj, rows, userInfoMap);
+        String attachmentsPrefix = resolveAttachmentsPrefix(obj);
+        return convertJsObjToList(subObj, rows, userInfoMap, attachmentsPrefix);
     }
 
+    /** 从当前 THREAD.PAGE 的 data 中提取并解析页面级附件前缀。 */
+    static String resolveAttachmentsPrefix(JSONObject data) {
+        String serverAttachmentBaseView = null;
+        if (data != null) {
+            Object globalValue = data.get("__GLOBAL");
+            if (globalValue instanceof JSONObject) {
+                Object rawValue = ((JSONObject) globalValue).get("_ATTACH_BASE_VIEW");
+                if (rawValue instanceof String) {
+                    serverAttachmentBaseView = (String) rawValue;
+                }
+            }
+        }
+        return NgaImageHost.attachmentsPrefix(serverAttachmentBaseView);
+    }
 
-    private static List<ThreadRowInfo> convertJsObjToList(JSONObject rowMap, int count, JSONObject userInfoMap) {
+    private static List<ThreadRowInfo> convertJsObjToList(
+            JSONObject rowMap,
+            int count,
+            JSONObject userInfoMap,
+            String attachmentsPrefix) {
         List<ThreadRowInfo> rowList = new ArrayList<>();
         NLog.d("ArticleUtil", "convertJsObjToList");
         for (int i = 0; i < count; i++) {
@@ -112,17 +132,17 @@ public class ArticleConvertFactory {
             }
             ThreadRowInfo row = JSONObject.toJavaObject(rowObj, ThreadRowInfo.class);
             buildRowHotReplay(row, rowObj);
-            buildRowComment(row, rowObj, userInfoMap);
+            buildRowComment(row, rowObj, userInfoMap, attachmentsPrefix);
             buildRowClientInfo(row, rowObj);
             buildRowUserInfo(row, userInfoMap);
             buildRowVote(row, rowObj);
-            buildRowContent(row);
+            buildRowContent(row, attachmentsPrefix);
             rowList.add(row);
         }
         return rowList;
     }
 
-    private static void buildRowContent(ThreadRowInfo row) {
+    private static void buildRowContent(ThreadRowInfo row, String attachmentsPrefix) {
         if (row.getContent() == null) {
             row.setContent(row.getSubject());
             row.setSubject(null);
@@ -133,13 +153,15 @@ public class ArticleConvertFactory {
             row.setContent(StringUtils.unescape(row.getContent()));
         }
         List<String> imageUrls = new ArrayList<>();
-        String ngaHtml = HtmlConvertFactory.convert(buildHtmlData(row), imageUrls);
+        String ngaHtml = HtmlConvertFactory.convert(
+                buildHtmlData(row, attachmentsPrefix), imageUrls);
         row.getImageUrls().addAll(imageUrls);
         row.setFormattedHtmlData(ngaHtml);
     }
 
-    private static HtmlData buildHtmlData(ThreadRowInfo row) {
+    private static HtmlData buildHtmlData(ThreadRowInfo row, String attachmentsPrefix) {
         HtmlData htmlData = new HtmlData(row.getContent());
+        htmlData.setAttachmentsPrefix(attachmentsPrefix);
         htmlData.setAlertInfo(row.getAlterinfo());
         htmlData.setDarkMode(ThemeManager.getInstance().isNightMode());
         htmlData.setInBackList(row.get_isInBlackList());
@@ -201,10 +223,15 @@ public class ArticleConvertFactory {
     }
 
     //解析贴条
-    private static void buildRowComment(ThreadRowInfo row, JSONObject rowObj, JSONObject userInfoMap) {
+    private static void buildRowComment(
+            ThreadRowInfo row,
+            JSONObject rowObj,
+            JSONObject userInfoMap,
+            String attachmentsPrefix) {
         JSONObject commObj = (JSONObject) rowObj.get("comment");
         if (commObj != null) {
-            row.setComments(convertJsObjToList(commObj, commObj.size(), userInfoMap));
+            row.setComments(convertJsObjToList(
+                    commObj, commObj.size(), userInfoMap, attachmentsPrefix));
         }
     }
 
@@ -297,4 +324,3 @@ public class ArticleConvertFactory {
     }
 
 }
-

@@ -41,11 +41,14 @@ public class ForumImageDecoder implements IForumDecoder {
 
     @Override
     public String decode(String content, HtmlData htmlData) {
+        String attachmentsPrefix = htmlData == null
+                ? NgaImageHost.attachmentsPrefix()
+                : htmlData.getAttachmentsPrefix();
         // 老帖子正文里写死的旧图床地址，切常量救不回来，只能在这儿重写主机名。
         // 放在链的这一步是因为此时 [img] 的完整 URL 形式已定型，且表情已被上一步换成本地 asset。
-        content = NgaImageHost.normalizeLegacyHosts(content);
+        content = NgaImageHost.normalizeLegacyHosts(content, attachmentsPrefix);
 
-        String replace = String.format(REPLACE_IMG_NO_HTTP, NgaImageHost.attachmentsPrefix(), "$1");
+        String replace = String.format(REPLACE_IMG_NO_HTTP, attachmentsPrefix, "$1");
         content = StringUtils.replaceAll(content, REGEX_IMG_NO_HTTP, replace);
         content = StringUtils.replaceAll(content, REGEX_IMG_WITH_HTTP, REPLACE_IMG_WITH_HTTP);
         content = StringUtils.replaceAll(content, "(http\\S+).gif.(thumb_s|medium|thumb|thumb_ss).jpg", "$1.gif");

@@ -23,6 +23,10 @@ public class ForumBasicDecoder implements IForumDecoder {
         if (StringUtils.isEmpty(content)) {
             return "";
         }
+        // 旧的无上下文入口也要得到固定安全前缀；THREAD.PAGE 会在 HtmlData 上设置页面值。
+        String attachmentsPrefix = htmlData == null
+                ? NgaImageHost.attachmentsPrefix()
+                : htmlData.getAttachmentsPrefix();
         // s = StringUtils.unEscapeHtml(s);
 
         String quoteStyle = STYLE_QUOTE;
@@ -231,10 +235,10 @@ public class ForumBasicDecoder implements IForumDecoder {
         content = StringUtils.replaceAll(content, "\\[collapse](.*?)\\[/collapse]", "<div><button onclick='toggleCollapse(this)'>点击显示内容</button><div name='collapse' class='collapse'style='display:none' >$1</div></div>");
 
         // [flash=video]/flash]
-        content = StringUtils.replaceAll(content, "\\[flash=video].(.*?)\\[/flash]", "<video src='" + NgaImageHost.attachmentsPrefix() + "$1' controls='controls'></video>");
+        content = StringUtils.replaceAll(content, "\\[flash=video].(.*?)\\[/flash]", "<video src='" + attachmentsPrefix + "$1' controls='controls'></video>");
 
         // [flash=audio][/flash]"
-        content = StringUtils.replaceAll(content, "\\[flash=audio].(.*?)\\[/flash]", "<audio src='" + NgaImageHost.attachmentsPrefix() + "$1&filename=nga_audio.mp3' controls='controls'></audio>");
+        content = StringUtils.replaceAll(content, "\\[flash=audio].(.*?)\\[/flash]", "<audio src='" + attachmentsPrefix + "$1&filename=nga_audio.mp3' controls='controls'></audio>");
 
         return content;
     }
