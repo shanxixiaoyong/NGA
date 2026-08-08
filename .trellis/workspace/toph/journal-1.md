@@ -664,3 +664,25 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 ### Next Steps
 
 - 无（真机验收通过，任务已归档）
+
+
+## Session 29: 图片域名自动模式与页面级服务端图床
+
+**Date**: 2026-08-08
+**Task**: 图片域名自动模式与页面级服务端图床
+**Branch**: `main`
+
+### Summary
+
+完成图片域名四选项与一次性旧值迁移：自动=0、默认=1、img9=2、自定义=3；THREAD.PAGE 逐页解析 __GLOBAL._ATTACH_BASE_VIEW，非法或缺失固定回退 https://img.nga.cn/attachments，不跨页面缓存。页面前缀贯穿正文、评论、签名、投票、音视频、附件和图片列表；补充 null/undefined 及损坏偏好兜底。通过聚焦单测、app Debug 编译和相关 lint 检查，保留既有基线失败。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f4c47f3d` | (see git log) |
+| `da84fb0c` | (see git log) |
+
+### Status
+
+[OK] **Completed**
