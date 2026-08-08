@@ -686,3 +686,32 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 ### Status
 
 [OK] **Completed**
+
+
+## Session 30: 5.3.2 图片域名自动模式发布收尾
+
+**Date**: 2026-08-08
+**Task**: 5.3.2 图片域名自动模式发布收尾
+**Branch**: `main`
+
+### Summary
+
+完成图片域名自动模式的 5.3.2 修复版本收尾：补充并校验发布说明，使用 tophtab 账号推送 main 与 annotated tag 5.3.2；远程 refs 已核对。其他并行任务的工作树改动保留未动。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6fc543ba` | (see git log) |
+
+### Testing
+
+- [OK] release-notes/5.3.2.md 通过 validate_release_notes.py
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无（等待 GitHub Actions 按 5.3.2 tag 自动构建正式 Release）
