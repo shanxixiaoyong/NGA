@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "执行相关模块 JVM 测试、Debug 编译、lint 报告检查，并正确区分仓库既有无关基线"}
+{"file": ".trellis/spec/backend/nga-platform-access-rules.md", "reason": "检查附件与非附件路径族未混用、img9 协议未改变、验证过程没有未授权 NGA/ADB 操作"}
+{"file": ".trellis/spec/backend/nga-platform-operation-registry.md", "reason": "核对 THREAD.PAGE 的新增 __GLOBAL 提取没有扩散到其他未经证实的操作或改变请求契约"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "沿 server field → resolver → HtmlData → decoders/builders/UI/fallback 全链路验证同值传递与缺失场景"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "确认服务端字段解析和 fallback 只有 NgaImageHost 一份实现，没有重复常量、局部 URL 拼接或静态页面状态"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "复核四选项顺序、UI index 与持久化值映射、自定义输入行为和设置主界面结构契约"}

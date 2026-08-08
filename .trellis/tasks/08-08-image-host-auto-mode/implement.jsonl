@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/nga-platform-access-rules.md", "reason": "自动模式读取 THREAD.PAGE 返回的媒体主机并生成 WebView 图片 URL；需遵守图床路径族、离线验证和不追加未授权线上探测的规则"}
+{"file": ".trellis/spec/backend/nga-platform-operation-registry.md", "reason": "服务端字段来自 THREAD.PAGE；实现需维持该操作的既有解析边界并把新增字段限定为页面级读取上下文"}
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "跨 Android 多模块改动需遵守聚焦单测、编译、lint 基线与无新授权不运行 ADB/设备操作的质量门"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "附件前缀跨 ArticleConvertFactory、HtmlData、多个 decoder/builder、设置 UI 和消息 fallback，需按完整数据流检查半接入问题"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "NgaImageHost 必须继续作为唯一解析权威，避免各消费者重复解析服务端字段或重新引入散落域名常量"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "图片域名设置弹窗要保持现有单行入口、自定义输入交互、Preference summary 与 DefaultSettingsContractTest 约束"}
