@@ -715,3 +715,32 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 ### Next Steps
 
 - 无（等待 GitHub Actions 按 5.3.2 tag 自动构建正式 Release）
+
+
+## Session 31: Trellis 日志清理收尾
+
+**Date**: 2026-08-08
+**Task**: Trellis 日志清理收尾
+**Branch**: `main`
+
+### Summary
+
+清理 5.3.2 发布收尾日志中的多余账号说明，保留既有公开历史信息；修正提交已推送，5.3.2 tag 保持不变。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `53496c91` | (see git log) |
+
+### Testing
+
+- [OK] 确认 .trellis 中不再出现该账号说明
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无

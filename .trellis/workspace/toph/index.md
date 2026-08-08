@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 30
+- **Total Sessions**: 31
 - **Last Active**: 2026-08-08
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~717 | Active |
+| `journal-1.md` | ~746 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 31 | 2026-08-08 | Trellis 日志清理收尾 | `53496c91` | `main` |
 | 30 | 2026-08-08 | 5.3.2 图片域名自动模式发布收尾 | `6fc543ba` | `main` |
 | 29 | 2026-08-08 | 图片域名自动模式与页面级服务端图床 | `f4c47f3d`, `da84fb0c` | `main` |
 | 28 | 2026-08-06 | 图床域名迁移至 img.nga.cn 并发布 5.3.1 | `fb88ef64`, `6c40781d` | `main` |
