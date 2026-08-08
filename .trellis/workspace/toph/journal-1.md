@@ -696,7 +696,7 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 
 ### Summary
 
-完成图片域名自动模式的 5.3.2 修复版本收尾：补充并校验发布说明，使用 tophtab 账号推送 main 与 annotated tag 5.3.2；远程 refs 已核对。其他并行任务的工作树改动保留未动。
+完成图片域名自动模式的 5.3.2 修复版本收尾：补充并校验发布说明，推送 main 与 annotated tag 5.3.2；远程 refs 已核对。其他并行任务的工作树改动保留未动。
 
 ### Git Commits
 
