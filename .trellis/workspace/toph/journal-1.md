@@ -954,3 +954,24 @@ Replaced ConfirmDialog context!! with requireContext(), verified all 13 Android 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 41: Optimize Android checkout and versionCode
+
+**Date**: 2026-08-11
+**Task**: Optimize Android checkout and versionCode
+**Branch**: `main`
+
+### Summary
+
+Optimized Android workflow checkout with tag shallow clones and blobless partial clones, introduced tested semantic versionCode derivation with preview build slots, updated release contracts, and completed local quality gates.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f4da118d` | (see git log) |
+
+### Status
+
+[OK] **Completed**
