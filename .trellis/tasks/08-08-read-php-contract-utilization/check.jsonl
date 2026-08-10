@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"执行受影响模块的 JVM/unit、lint、构建和 diff/secret 检查，并区分并发任务的既有基线。"}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"复核只改 THREAD.PAGE，字段证据等级和请求契约没有越界。"}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"验证错误 taxonomy、账号 scope、raw body 隐私和编码边界没有回归。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查搜索/深链参数、解析 DTO、缓存 key 和 UI fallback 的端到端传递。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查没有重复 URL 拼接、字段解析、图床 resolver 或缓存架构。"}
+{"file":".trellis/tasks/08-08-read-php-contract-utilization/research/read-php-evidence.md","reason":"以脱敏证据账本逐项核对 fixture、HAR 边界和未证实字段，不把网页 HTML 当 JSON 契约。"}

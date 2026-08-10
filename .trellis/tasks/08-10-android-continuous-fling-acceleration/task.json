@@ -1,0 +1,30 @@
+{
+  "id": "android-continuous-fling-acceleration",
+  "name": "android-continuous-fling-acceleration",
+  "title": "Android 连续 Fling 速度累积评估",
+  "description": "",
+  "status": "planning",
+  "dev_type": null,
+  "scope": "shared continuous-fling policy for RecyclerViewEx and Compose private-message LazyColumnEx",
+  "package": null,
+  "priority": "P2",
+  "creator": "toph",
+  "assignee": "toph",
+  "createdAt": "2026-08-10",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "implementation_deferred": "true",
+    "deferred_at": "2026-08-10",
+    "requires_fresh_implementation_approval": "true"
+  }
+}

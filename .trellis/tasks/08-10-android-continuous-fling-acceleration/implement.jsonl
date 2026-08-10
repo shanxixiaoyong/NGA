@@ -1,0 +1,7 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Routes implementation to the active Android UI and migration contracts."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Defines project gesture ownership, non-consuming pointer arbitration, accessibility, regression, and physical-device expectations."}
+{"file":".trellis/spec/frontend/android-migration-architecture.md","reason":"Constrains Kotlin/Compose placement, the bounded Java interoperability exception, incremental scope, release gates, and rollback shape."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Requires one shared policy/constants source instead of duplicated RecyclerView and Compose decision logic."}
+{"file":".trellis/tasks/08-10-android-continuous-fling-acceleration/research/project-scroll-scope.md","reason":"Documents affected RecyclerView and Compose surfaces, module dependency direction, exclusions, and build/device constraints."}
+{"file":".trellis/tasks/08-10-android-continuous-fling-acceleration/research/recyclerview-fling-internals.md","reason":"Documents verified RecyclerView 1.1.0 stop ordering, OverScroller handoff, reflection boundary, nested-fling preservation, and R8 risks."}
+{"file":".trellis/tasks/08-10-android-continuous-fling-acceleration/research/compose-fling-handoff.md","reason":"Documents Compose 1.7 public FlingBehavior cancellation residuals, pointer-generation coordination, shared-policy feasibility, and scope."}

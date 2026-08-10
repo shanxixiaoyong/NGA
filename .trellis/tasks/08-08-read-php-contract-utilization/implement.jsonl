@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"THREAD.PAGE 的固定操作 ID、read.php 请求字段和原始 parser/错误边界；实现时不得扩散到其他 NGA 操作。"}
+{"file":".trellis/spec/backend/network-foundation-contract.md","reason":"复用 raw response、账号会话、编码、host policy 和错误分类；禁止创建第二套网络/缓存栈。"}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"约束 live evidence 等级、Cookie/日志/fixture 隐私和未知字段的 fail-safe 行为。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"沿 deep link → request → parser → model → cache/UI 的跨层数据流检查，避免字段在边界丢失。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"确保 canonical request builder、数值兼容读取和缓存 key 只有单一实现，复用 foundation/image-host 既有边界。"}
+{"file":".trellis/tasks/08-08-read-php-contract-utilization/research/read-php-evidence.md","reason":"本任务脱敏代码/HAR 证据、当前缺口、字段清单和依赖边界。"}

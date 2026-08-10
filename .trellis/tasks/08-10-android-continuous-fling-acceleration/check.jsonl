@@ -1,0 +1,7 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Routes review to the relevant frontend contracts."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Review must verify gesture ownership, non-consuming arbitration, accessibility, regressions, and device gates."}
+{"file":".trellis/spec/frontend/android-migration-architecture.md","reason":"Review must verify scoped Kotlin/Java interoperability, affected-module and minified-release validation, and rollback safety."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Review must reject duplicated tuning/state logic between RecyclerView and Compose adapters."}
+{"file":".trellis/tasks/08-10-android-continuous-fling-acceleration/research/project-scroll-scope.md","reason":"Review needs the authoritative included/excluded surfaces, module boundaries, and build/test scope."}
+{"file":".trellis/tasks/08-10-android-continuous-fling-acceleration/research/recyclerview-fling-internals.md","reason":"Review needs the verified AndroidX member, ordering, fallback, nested-scroll, and R8 evidence."}
+{"file":".trellis/tasks/08-10-android-continuous-fling-acceleration/research/compose-fling-handoff.md","reason":"Review needs the Compose public-API, cancellation residual, generation-safety, and pointer-observer evidence."}

@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Identify the active Android quality contract and avoid unrelated backend specifications."}
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "Apply the repository's zero Error/Fatal lint gate, local-suppression policy, JVM fixture exclusions, and no-device default."}
+{"file": ".trellis/tasks/08-10-clear-repository-lint-errors/research/repository-lint-audit.md", "reason": "Use the complete 13-module audit, sole blocking finding, warning boundary, and provenance evidence."}

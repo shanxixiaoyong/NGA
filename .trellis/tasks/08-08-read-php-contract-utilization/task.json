@@ -1,0 +1,33 @@
+{
+  "id": "read-php-contract-utilization",
+  "name": "read-php-contract-utilization",
+  "title": "完整利用 NGA read.php 响应契约",
+  "description": "为 NGA THREAD.PAGE/read.php 建立可测试的响应契约，修复 searchpost/楼层定位请求语义，并隔离分页缓存；P1 展示能力另行规划。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": "P0：parser/envelope contract、请求与深链定位、缓存 key 边界；不含图床自动模式和 P1 UI 能力",
+  "package": null,
+  "priority": "P2",
+  "creator": "toph",
+  "assignee": "toph",
+  "createdAt": "2026-08-08",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "nga_phone_base_3.0/src/main/java/sp/phone/mvp/model/ArticleListModel.java",
+    "nga_phone_base_3.0/src/main/java/sp/phone/mvp/model/convert/ArticleConvertFactory.java",
+    "nga_phone_base_3.0/src/main/java/sp/phone/http/bean/ThreadData.java",
+    "nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/ArticleListFragment.java",
+    "nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/TopicSearchFragment.java",
+    "nga_phone_base_3.0/src/main/java/gov/anzong/androidnga/activity/ArticleListActivity.java"
+  ],
+  "notes": "",
+  "meta": {}
+}
