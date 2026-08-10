@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 32
+- **Total Sessions**: 33
 - **Last Active**: 2026-08-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~768 | Active |
+| `journal-1.md` | ~789 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 33 | 2026-08-10 | 首页栏次顺序与自定义排序 | `3fa36a8b` | `main` |
 | 32 | 2026-08-10 | Restore minSdk 29 compatibility | `11694d3c`, `3623cbf2` | `main` |
 | 31 | 2026-08-08 | Trellis 日志清理收尾 | `53496c91` | `main` |
 | 30 | 2026-08-08 | 5.3.2 图片域名自动模式发布收尾 | `6fc543ba` | `main` |

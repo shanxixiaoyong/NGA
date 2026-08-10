@@ -766,3 +766,24 @@ Restored Android 10/API 29 installation support while keeping compile/target SDK
 ### Status
 
 [OK] **Completed**
+
+
+## Session 33: 首页栏次顺序与自定义排序
+
+**Date**: 2026-08-10
+**Task**: 首页栏次顺序与自定义排序
+**Branch**: `main`
+
+### Summary
+
+完成首页默认栏次顺序、稳定 ID 长按拖动、全局持久化、TalkBack 排序、Pager 状态保持及完整 JVM/构建/lint 验证。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3fa36a8b` | (see git log) |
+
+### Status
+
+[OK] **Completed**
