@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 36
+- **Total Sessions**: 37
 - **Last Active**: 2026-08-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~853 | Active |
+| `journal-1.md` | ~884 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 37 | 2026-08-10 | Move article refresh to page long press | `6ac8c79e` | `main` |
 | 36 | 2026-08-10 | Clear inherited Android lint errors | `6cfc5fa7`, `8a2f5d87` | `main` |
 | 35 | 2026-08-10 | 完成主题页预读取与父任务集成 | `59a32710` | `main` |
 | 34 | 2026-08-10 | 主题与板块页固定 FAB 与主题刷新 | `f348d985` | `main` |

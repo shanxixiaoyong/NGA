@@ -851,3 +851,34 @@ Cleared the 11 inherited app lint errors without changing runtime WebView layout
 ### Status
 
 [OK] **Completed**
+
+
+## Session 37: Move article refresh to page long press
+
+**Date**: 2026-08-10
+**Task**: Move article refresh to page long press
+**Branch**: `main`
+
+### Summary
+
+Removed the article overflow refresh item and added guarded periodic refresh while the selected page tab remains pressed; kept the post/reply FAB single-purpose.
+
+### Main Changes
+
+- Long press refreshes immediately and repeats every 3 seconds while pressed.
+- Release, page changes, recycling, detachment, and fragment teardown prevent further refreshes.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6ac8c79e` | (see git log) |
+
+### Testing
+
+- [OK] lib_base_common and nga_phone_base_3.0 debug unit tests passed.
+- [OK] nga_phone_base_3.0 lintDebug passed; lib_base_common lint remains blocked by the pre-existing ConfirmDialog.kt:22 error.
+
+### Status
+
+[OK] **Completed**
