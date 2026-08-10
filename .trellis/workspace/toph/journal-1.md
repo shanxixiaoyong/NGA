@@ -933,3 +933,24 @@ Replaced ConfirmDialog context!! with requireContext(), verified all 13 Android 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 40: Release 5.5.0
+
+**Date**: 2026-08-10
+**Task**: Release 5.5.0
+**Branch**: `main`
+
+### Summary
+
+完成 5.5.0 中文发布说明、发布前校验与独立审查；推送 main 及 annotated tag 5.5.0，稳定版构建交由 GitHub Actions，按发布合同未轮询 CI。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6e7217ab` | (see git log) |
+
+### Status
+
+[OK] **Completed**
