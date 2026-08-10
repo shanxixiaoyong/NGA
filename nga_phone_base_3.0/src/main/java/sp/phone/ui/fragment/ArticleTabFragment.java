@@ -71,7 +71,7 @@ public class ArticleTabFragment extends BaseRxFragment {
 
     private static final String GOTO_TAG = "goto";
 
-    private static final long CURRENT_PAGE_REFRESH_REPEAT_INTERVAL_MS = 3_000L;
+    private static final long CURRENT_PAGE_REFRESH_REPEAT_INTERVAL_MS = 5_000L;
 
     @BindView(R.id.fab_post)
     public FloatingActionButton mFab;

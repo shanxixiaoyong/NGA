@@ -344,7 +344,7 @@ reorderableTabRange = 1..tabs.lastIndex
   `scrollCurrentPageToTop()`.
 - Long-pressing the selected page tab refreshes the current page once when the
   platform long-press threshold is reached. While the same tab remains pressed,
-  repeat the refresh attempt every 3 seconds. Losing the pressed state through
+  repeat the refresh attempt every 5 seconds. Losing the pressed state through
   release or cancellation, changing pages, tab recycling, view detachment, or
   fragment view destruction must prevent any further refresh.
 - Each refresh attempt resolves `mPagerAdapter.getCurrentFragment()` at call

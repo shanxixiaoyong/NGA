@@ -89,10 +89,10 @@ class ArticlePageRefreshContractTest {
     }
 
     @Test
-    fun selectedPageLongPressRefreshesImmediatelyAndEveryThreeSeconds() {
+    fun selectedPageLongPressRefreshesImmediatelyAndEveryFiveSeconds() {
         assertTrue(
             articleTabSource.contains(
-                "private static final long CURRENT_PAGE_REFRESH_REPEAT_INTERVAL_MS = 3_000L;",
+                "private static final long CURRENT_PAGE_REFRESH_REPEAT_INTERVAL_MS = 5_000L;",
             ),
         )
         assertTrue(articleTabSource.contains("mTabLayout.setOnCurrentTabLongPressListener("))
