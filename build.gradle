@@ -118,7 +118,7 @@ tasks.register('verifyReleaseTag') {
 }
 
 project.ext {
-    minSdkVersion = 30
+    minSdkVersion = 29
     targetSdkVersion = 35
     compileSdkVersion = 35
     appVersionName = effectiveAppVersionName

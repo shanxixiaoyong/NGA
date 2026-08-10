@@ -25,6 +25,9 @@ endorsed by NGA or the upstream author.
   requests use the neutral fork identifier `nga-just-works`.
 - Upstream PSD design files are excluded from this fork; their branding rights
   are not established and they are not needed to build the application.
+- The pinned upstream commit declares `minSdk 30`. This fork restores the
+  installation floor to `minSdk 29` while keeping `compileSdk 35`,
+  `targetSdk 35`, and the existing single `arm64-v8a` APK strategy.
 
 No credentials, cookies, keystores, local Android SDKs, build output, or user
 content are part of the imported source.

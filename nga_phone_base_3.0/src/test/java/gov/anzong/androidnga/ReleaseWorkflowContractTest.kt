@@ -42,6 +42,35 @@ class ReleaseWorkflowContractTest {
     }
 
     @Test
+    fun sharedSdkAndPublishedApkChecksStayPinnedToApi29And35() {
+        val rootGradle = File(repositoryRoot, "build.gradle").readText()
+        val appGradle = File(repositoryRoot, "nga_phone_base_3.0/build.gradle").readText()
+        val workflow = File(repositoryRoot, ".github/workflows/build.yml").readText()
+        val staging = stepBody(workflow, "Verify and stage APK", "Create GitHub Release")
+
+        assertTrue(rootGradle.contains("minSdkVersion = 29"))
+        assertTrue(rootGradle.contains("targetSdkVersion = 35"))
+        assertTrue(rootGradle.contains("compileSdkVersion = 35"))
+        assertTrue(appGradle.contains("minSdkVersion project.minSdkVersion"))
+        assertTrue(appGradle.contains("targetSdkVersion project.targetSdkVersion"))
+        assertTrue(appGradle.contains("compileSdk project.compileSdkVersion"))
+        assertTrue(appGradle.contains("abiFilters 'arm64-v8a'"))
+        val androidModuleGradles = requireNotNull(repositoryRoot.listFiles())
+            .map { File(it, "build.gradle") }
+            .filter { it.isFile && it.readText().contains("com.android.") }
+        assertTrue(androidModuleGradles.isNotEmpty())
+        androidModuleGradles.forEach { moduleGradle ->
+            assertTrue(
+                "${moduleGradle.parentFile?.name ?: moduleGradle.path} must inherit the shared minSdk",
+                Regex("minSdk(?:Version)?\\s+project\\.minSdkVersion")
+                    .containsMatchIn(moduleGradle.readText()),
+            )
+        }
+        assertTrue(staging.contains("test \"\$(apkanalyzer manifest min-sdk \"\$release_apk\")\" = \"29\""))
+        assertTrue(staging.contains("test \"\$(apkanalyzer manifest target-sdk \"\$release_apk\")\" = \"35\""))
+    }
+
+    @Test
     fun mainPublishesDebugNamedPrereleaseAndTagsPublishStableRelease() {
         val workflow = File(repositoryRoot, ".github/workflows/build.yml").readText()
 
