@@ -2,6 +2,7 @@ package gov.anzong.androidnga.base.widget;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.viewpager.widget.ViewPager;
@@ -11,6 +12,33 @@ import com.nshmura.recyclertablayout.RecyclerTabLayout;
 public class TabLayoutEx extends RecyclerTabLayout {
 
     private OnTabReselectedListener mOnTabReselectedListener;
+
+    private OnCurrentTabLongPressListener mOnCurrentTabLongPressListener;
+
+    private long mCurrentTabLongPressRepeatIntervalMillis;
+
+    private View mLongPressedTabView;
+
+    private int mLongPressedTabPosition = NO_POSITION;
+
+    private final Runnable mRepeatCurrentTabLongPressRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mLongPressedTabView == null
+                    || !mLongPressedTabView.isAttachedToWindow()
+                    || !mLongPressedTabView.isPressed()
+                    || mViewPager == null
+                    || mLongPressedTabPosition != mViewPager.getCurrentItem()
+                    || mOnCurrentTabLongPressListener == null) {
+                stopCurrentTabLongPress();
+                return;
+            }
+
+            mOnCurrentTabLongPressListener.onCurrentTabLongPress(mLongPressedTabPosition);
+            mLongPressedTabView.postDelayed(
+                    this, mCurrentTabLongPressRepeatIntervalMillis);
+        }
+    };
 
     public TabLayoutEx(Context context) {
         super(context);
@@ -49,8 +77,56 @@ public class TabLayoutEx extends RecyclerTabLayout {
         mOnTabReselectedListener = listener;
     }
 
+    public void setOnCurrentTabLongPressListener(
+            OnCurrentTabLongPressListener listener, long repeatIntervalMillis) {
+        if (listener != null && repeatIntervalMillis <= 0) {
+            throw new IllegalArgumentException("repeatIntervalMillis must be positive");
+        }
+        stopCurrentTabLongPress();
+        mOnCurrentTabLongPressListener = listener;
+        mCurrentTabLongPressRepeatIntervalMillis = repeatIntervalMillis;
+    }
+
     public interface OnTabReselectedListener {
         void onTabReselected(int position);
+    }
+
+    public interface OnCurrentTabLongPressListener {
+        void onCurrentTabLongPress(int position);
+    }
+
+    private boolean startCurrentTabLongPress(View tabView, int position) {
+        if (mOnCurrentTabLongPressListener == null
+                || position == NO_POSITION
+                || mViewPager == null
+                || position != mViewPager.getCurrentItem()) {
+            return false;
+        }
+
+        stopCurrentTabLongPress();
+        mLongPressedTabView = tabView;
+        mLongPressedTabPosition = position;
+        mOnCurrentTabLongPressListener.onCurrentTabLongPress(position);
+        if (tabView.isAttachedToWindow() && tabView.isPressed()) {
+            tabView.postDelayed(
+                    mRepeatCurrentTabLongPressRunnable,
+                    mCurrentTabLongPressRepeatIntervalMillis);
+        }
+        return true;
+    }
+
+    private void stopCurrentTabLongPress() {
+        if (mLongPressedTabView != null) {
+            mLongPressedTabView.removeCallbacks(mRepeatCurrentTabLongPressRunnable);
+        }
+        mLongPressedTabView = null;
+        mLongPressedTabPosition = NO_POSITION;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        stopCurrentTabLongPress();
+        super.onDetachedFromWindow();
     }
 
     private class TabAdapter extends DefaultAdapter {
@@ -74,7 +150,17 @@ public class TabLayoutEx extends RecyclerTabLayout {
                     }
                 }
             });
+            holder.itemView.setOnLongClickListener(v ->
+                    startCurrentTabLongPress(v, holder.getAdapterPosition()));
             return holder;
+        }
+
+        @Override
+        public void onViewRecycled(ViewHolder holder) {
+            if (holder.itemView == mLongPressedTabView) {
+                stopCurrentTabLongPress();
+            }
+            super.onViewRecycled(holder);
         }
 
         @Override

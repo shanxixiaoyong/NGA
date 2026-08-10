@@ -9,10 +9,10 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
- * Pins the persistent direct-action FABs and the first article overflow refresh item. The module
- * has no Robolectric, so the Android-facing wiring is verified from source and XML resources.
+ * Pins the persistent direct-action FABs and selected-page long-press refresh wiring. The module
+ * has no Robolectric, so the Android-facing behavior is verified from source and XML resources.
  */
-class ArticleFabRefreshContractTest {
+class ArticlePageRefreshContractTest {
 
     private val projectRoot = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) {
         it.parentFile
@@ -30,6 +30,8 @@ class ArticleFabRefreshContractTest {
         source("nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/ArticleListFragment.java")
     private val articleTabSource =
         source("nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/ArticleTabFragment.java")
+    private val tabLayoutSource =
+        source("lib_base_common/src/main/java/gov/anzong/androidnga/base/widget/TabLayoutEx.java")
     private val topicListSource =
         source("nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/TopicListFragment.java")
     private val cacheActivitySource =
@@ -46,6 +48,7 @@ class ArticleFabRefreshContractTest {
         assertTrue(topicListSource.contains("public void startPostActivity()"))
         assertTrue(articleTabSource.contains("@OnClick(R.id.fab_post)"))
         assertTrue(articleTabSource.contains("public void reply()"))
+        assertFalse(articleTabSource.contains("@OnLongClick(R.id.fab_post)"))
         assertTrue(cacheActivitySource.contains("findViewById(R.id.fab_post).setVisibility(View.GONE);"))
     }
 
@@ -69,34 +72,63 @@ class ArticleFabRefreshContractTest {
     }
 
     @Test
-    fun refreshIsTheFirstArticleOverflowItemAndUsesTheExistingLabel() {
+    fun articleOverflowDoesNotExposeRefresh() {
         val document = DocumentBuilderFactory.newInstance()
             .newDocumentBuilder()
             .parse(file("nga_phone_base_3.0/src/main/res/menu/article_list_option_menu.xml"))
         val items = document.getElementsByTagName("item")
         val firstItem = items.item(0) as Element
 
-        assertEquals("@+id/item_refresh", firstItem.getAttribute("android:id"))
-        assertEquals("@string/refresh", firstItem.getAttribute("android:title"))
-        assertEquals("never", firstItem.getAttribute("androidnga:showAsAction"))
+        assertEquals("@+id/menu_goto_floor", firstItem.getAttribute("android:id"))
+        assertTrue(
+            (0 until items.length).none { index ->
+                (items.item(index) as Element).getAttribute("android:id") == "@+id/item_refresh"
+            },
+        )
+        assertFalse(articleTabSource.contains("case R.id.item_refresh:"))
     }
 
     @Test
-    fun refreshTargetsOnlyTheCurrentPageWithoutChangingTabReselection() {
-        val refreshCase = articleTabSource
-            .substringAfter("case R.id.item_refresh:")
-            .substringBefore("case R.id.menu_add_bookmark:")
-        assertTrue(refreshCase.contains("mPagerAdapter.getCurrentFragment()"))
-        assertTrue(refreshCase.contains("!fragment.isRefreshing()"))
-        assertTrue(refreshCase.contains("fragment.loadPage();"))
-        assertFalse(refreshCase.contains("scrollCurrentPageToTop"))
-        assertFalse(refreshCase.contains("setCurrentItem"))
-        assertFalse(refreshCase.contains("reply()"))
+    fun selectedPageLongPressRefreshesImmediatelyAndEveryThreeSeconds() {
+        assertTrue(
+            articleTabSource.contains(
+                "private static final long CURRENT_PAGE_REFRESH_REPEAT_INTERVAL_MS = 3_000L;",
+            ),
+        )
+        assertTrue(articleTabSource.contains("mTabLayout.setOnCurrentTabLongPressListener("))
+        assertTrue(articleTabSource.contains("position -> refreshCurrentPage()"))
+        assertTrue(articleTabSource.contains("CURRENT_PAGE_REFRESH_REPEAT_INTERVAL_MS);"))
+
+        val refreshMethod = articleTabSource
+            .substringAfter("private void refreshCurrentPage()")
+            .substringBefore("@Override\n    public void onResume()")
+        assertTrue(refreshMethod.contains("mPagerAdapter.getCurrentFragment()"))
+        assertTrue(refreshMethod.contains("!fragment.isRefreshing()"))
+        assertTrue(refreshMethod.contains("fragment.loadPage();"))
+        assertFalse(refreshMethod.contains("scrollCurrentPageToTop"))
+        assertFalse(refreshMethod.contains("setCurrentItem"))
+        assertFalse(refreshMethod.contains("reply()"))
 
         assertTrue(
             articleTabSource.contains(
                 "mTabLayout.setOnTabReselectedListener(position -> scrollCurrentPageToTop());",
             ),
         )
+        assertTrue(
+            articleTabSource.contains(
+                "mTabLayout.setOnCurrentTabLongPressListener(null, 0L);",
+            ),
+        )
+    }
+
+    @Test
+    fun tabLongPressRepeatsOnlyWhileTheSelectedTabRemainsPressed() {
+        assertTrue(tabLayoutSource.contains("position != mViewPager.getCurrentItem()"))
+        assertTrue(tabLayoutSource.contains("mOnCurrentTabLongPressListener.onCurrentTabLongPress(position);"))
+        assertTrue(tabLayoutSource.contains("mLongPressedTabView.isPressed()"))
+        assertTrue(tabLayoutSource.contains("postDelayed("))
+        assertTrue(tabLayoutSource.contains("removeCallbacks(mRepeatCurrentTabLongPressRunnable)"))
+        assertTrue(tabLayoutSource.contains("protected void onDetachedFromWindow()"))
+        assertTrue(tabLayoutSource.contains("public void onViewRecycled(ViewHolder holder)"))
     }
 }

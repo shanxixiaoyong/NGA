@@ -71,6 +71,8 @@ public class ArticleTabFragment extends BaseRxFragment {
 
     private static final String GOTO_TAG = "goto";
 
+    private static final long CURRENT_PAGE_REFRESH_REPEAT_INTERVAL_MS = 3_000L;
+
     @BindView(R.id.fab_post)
     public FloatingActionButton mFab;
 
@@ -127,6 +129,9 @@ public class ArticleTabFragment extends BaseRxFragment {
         mTabLayout.setTabOnScreenLimit(1);
         mTabLayout.setUpWithViewPager(mViewPager);
         mTabLayout.setOnTabReselectedListener(position -> scrollCurrentPageToTop());
+        mTabLayout.setOnCurrentTabLongPressListener(
+                position -> refreshCurrentPage(),
+                CURRENT_PAGE_REFRESH_REPEAT_INTERVAL_MS);
         publishPrefetchPages();
         super.onViewCreated(view, savedInstanceState);
     }
@@ -143,6 +148,13 @@ public class ArticleTabFragment extends BaseRxFragment {
         ArticleListFragment fragment = mPagerAdapter.getCurrentFragment();
         if (fragment != null) {
             fragment.scrollToTop();
+        }
+    }
+
+    private void refreshCurrentPage() {
+        ArticleListFragment fragment = mPagerAdapter.getCurrentFragment();
+        if (fragment != null && !fragment.isRefreshing()) {
+            fragment.loadPage();
         }
     }
 
@@ -171,13 +183,6 @@ public class ArticleTabFragment extends BaseRxFragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.item_refresh: {
-                ArticleListFragment fragment = mPagerAdapter.getCurrentFragment();
-                if (fragment != null && !fragment.isRefreshing()) {
-                    fragment.loadPage();
-                }
-                break;
-            }
             case R.id.menu_add_bookmark:
                 BookmarkTask.execute(mRequestParam.tid);
                 break;
@@ -211,6 +216,12 @@ public class ArticleTabFragment extends BaseRxFragment {
                 return super.onOptionsItemSelected(item);
         }
         return true;
+    }
+
+    @Override
+    public void onDestroyView() {
+        mTabLayout.setOnCurrentTabLongPressListener(null, 0L);
+        super.onDestroyView();
     }
 
     private ArticleShareViewModel getActivityViewModel() {

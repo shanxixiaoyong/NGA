@@ -338,20 +338,24 @@ reorderableTabRange = 1..tabs.lastIndex
 
 ## Article current-page refresh
 
-- `article_list_option_menu.xml` places `item_refresh` first in document/menu
-  order. Its visible title is the existing `@string/refresh`, exactly `刷新`,
-  and `showAsAction="never"` keeps it in the top-right overflow menu.
-- `ArticleTabFragment.onOptionsItemSelected()` resolves
-  `mPagerAdapter.getCurrentFragment()`, ignores the action while that fragment
-  is already refreshing, and otherwise calls its existing `loadPage()` path.
-  The action must not change the selected page, scroll to the top, or invoke
-  reply composition.
-- Reselecting the current page tab remains bound only to
-  `scrollCurrentPageToTop()`. Do not add refresh, long-press, or second-tap
-  semantics to the page tabs as part of the overflow action.
-- This menu entry inherits the existing article loading, error, fallback, and
-  reading-position behavior. Changes such as retaining stale content on
-  failure or restoring by `pid` plus pixel offset require a separate task.
+- Do not expose refresh in `article_list_option_menu.xml`; the article overflow
+  starts with the existing go-to-floor action.
+- A short reselect of the current page tab remains bound only to
+  `scrollCurrentPageToTop()`.
+- Long-pressing the selected page tab refreshes the current page once when the
+  platform long-press threshold is reached. While the same tab remains pressed,
+  repeat the refresh attempt every 3 seconds. Losing the pressed state through
+  release or cancellation, changing pages, tab recycling, view detachment, or
+  fragment view destruction must prevent any further refresh.
+- Each refresh attempt resolves `mPagerAdapter.getCurrentFragment()` at call
+  time, skips while that fragment is already refreshing, and otherwise reuses
+  its existing `loadPage()` path. Do not change the selected page, scroll to the
+  top, or invoke reply composition.
+- Keep the post/reply FAB single-purpose. Do not attach refresh to its click or
+  long-press behavior.
+- The gesture inherits the existing article loading, error, fallback, and
+  reading-position behavior. Changes such as retaining stale content on failure
+  or restoring by `pid` plus pixel offset require a separate task.
 
 ## Topic list title tap
 
@@ -512,8 +516,11 @@ rg -n "FloatingActionsMenu|fab_refresh|ScrollAwareFamBehavior|floatingactionmenu
   nga_phone_base_3.0
 rg -n 'layout_behavior=.*ScrollAwareFabBehavior' \
   nga_phone_base_3.0/src/main/res
-rg -n "fab_post|SwipeRefreshLayout|article_list_reply_fab_clearance|item_refresh" \
+rg -n "fab_post|SwipeRefreshLayout|article_list_reply_fab_clearance|setOnCurrentTabLongPressListener" \
   nga_phone_base_3.0/src/main
+rg -n "item_refresh" \
+  nga_phone_base_3.0/src/main/res/menu/article_list_option_menu.xml \
+  nga_phone_base_3.0/src/main/java/sp/phone/ui/fragment/ArticleTabFragment.java
 rg -n "left_hand|bottom_tab|isLeftHandMode|isShowBottomTab|fragment_article_tab_bottom" \
   lib_base_common nga_phone_base_3.0/src/main
 rg -n "EMOTICON_URL|EMOTICON_LABEL" lib_base_common nga_phone_base_3.0/src/main
@@ -524,8 +531,8 @@ The first scan must have no active matches. The second scan must have no
 matches; the unused `ScrollAwareFabBehavior` class itself may remain while no
 layout attaches it. The third scan should show one direct action per relevant
 layout, retained pull-to-refresh wiring, article-only clearance, and the
-current-page overflow refresh wiring. The fourth scan must have no matches.
-The fifth scan must show reads only — no assignment into the emoticon tables
-outside `EmoticonUtils` itself. The sixth scan must show one binding per
-topic-list toolbar and the matching handler, and no listener attached to a
-`Toolbar` rather than its title view.
+current-page long-press refresh wiring. The fourth scan must have no matches.
+The fifth scan must have no matches. The sixth scan must show reads only — no
+assignment into the emoticon tables outside `EmoticonUtils` itself. The seventh
+scan must show one binding per topic-list toolbar and the matching handler, and
+no listener attached to a `Toolbar` rather than its title view.

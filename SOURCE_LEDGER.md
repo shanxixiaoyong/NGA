@@ -18,7 +18,8 @@ endorsed by NGA or the upstream author.
   global, persistent order that can be changed by direct long-press drag.
 - Topic lists expose one direct post action and article views expose one direct
   reply action. The expandable floating menu and its refresh action are
-  removed; pull-to-refresh remains available.
+  removed; pull-to-refresh remains available, and holding the selected article
+  page number refreshes that page periodically until release.
 - Embedded release keystore paths and passwords are removed. Signing material
   must be supplied outside version control.
 - The legacy official-client user-agent claim and identity header are removed;
