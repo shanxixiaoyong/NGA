@@ -1,0 +1,6 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Routes the applicable Android quality contract for review."}
+{"file": ".trellis/spec/backend/android-quality-guidelines.md", "reason": "Defines the required build, unit-test, lint-report, repository diagnostic, and device-policy checks."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Routes the active UI compatibility guidance for review."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Review must verify no layout or topic-list behavior drift while errors are cleared."}
+{"file": ".trellis/tasks/08-10-fix-upstream-lint-errors/research/lint-error-remediation.md", "reason": "Reviewer must verify the eight-file scope, local-only WebView suppressions, observer replay order, and parsed lint error count."}
