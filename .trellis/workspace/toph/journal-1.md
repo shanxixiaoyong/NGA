@@ -911,3 +911,25 @@ Changed the selected-page long-press repeat interval from 3 seconds to 5 seconds
 ### Status
 
 [OK] **Completed**
+
+
+## Session 39: Clear repository Android lint errors
+
+**Date**: 2026-08-10
+**Task**: Clear repository Android lint errors
+**Branch**: `main`
+
+### Summary
+
+Replaced ConfirmDialog context!! with requireContext(), verified all 13 Android module lint reports at zero Error/Fatal, and documented the repository-wide lint gate.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7c4cc7df` | (see git log) |
+| `05deca70` | (see git log) |
+
+### Status
+
+[OK] **Completed**
