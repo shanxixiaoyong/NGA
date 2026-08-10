@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Constrain prefetch to the existing read-only NGA operation and prohibit unauthorized live verification."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Preserve the THREAD.PAGE URL fields, parser, Cookie override, and normal foreground failure contract."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Keep article pages in the existing top-tab layout and preserve pull-to-refresh/FAB behavior."}
+{"file":".trellis/tasks/08-10-topic-page-prefetch/research/evidence.md","reason":"Provide the exact ViewPager, Fragment, presenter, model, cache, and search boundaries for implementation."}

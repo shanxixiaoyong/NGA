@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Run the Android application unit-test, build, lint-report, and no-device validation gate."}
+{"file":".trellis/spec/backend/nga-platform-operation-registry.md","reason":"Verify no THREAD.PAGE wire, parser, Cookie, or foreground retry regression."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Verify prefetch failure handling and testing stay within read-only, offline evidence boundaries."}
+{"file":".trellis/tasks/08-10-topic-page-prefetch/research/evidence.md","reason":"Review last-page exclusion, lifecycle cancellation, silent failure, and cache/search scope against located code."}
