@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>   
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"   
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"   
     android:layout_height="fill_parent"   
     android:orientation="vertical" >   
@@ -9,11 +10,12 @@
         android:layout_height="wrap_content"   
         android:gravity="center" >   
 
+        <!-- The wrap_content ancestor intentionally preserves content-driven dialog height from the pinned layout. -->
     	<WebView
     	    android:id="@+id/votewebview"
     	    android:layout_width="match_parent"
-    	    android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            tools:ignore="WebViewLayout" />
 
 	</LinearLayout>
 </LinearLayout>
-   

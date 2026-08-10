@@ -162,7 +162,7 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
 
         super.onViewCreated(view, savedInstanceState);
 
-        mPresenter.getFirstTopicList().observe(this, topicListInfo -> {
+        mPresenter.getFirstTopicList().observe(getViewLifecycleOwner(), topicListInfo -> {
             scrollTo(0);
             clearData();
             if (topicListInfo != null) {
@@ -170,14 +170,14 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
             }
         });
 
-        mPresenter.getNextTopicList().observe(this, this::setData);
+        mPresenter.getNextTopicList().observe(getViewLifecycleOwner(), this::setData);
 
-        mPresenter.getErrorMsg().observe(this, res -> {
+        mPresenter.getErrorMsg().observe(getViewLifecycleOwner(), res -> {
             showToast(res);
             setNextPageEnabled(false);
         });
 
-        mPresenter.isRefreshing().observe(this, aBoolean -> {
+        mPresenter.isRefreshing().observe(getViewLifecycleOwner(), aBoolean -> {
             setRefreshing(aBoolean);
             if (!aBoolean) {
                 hideLoadingView();

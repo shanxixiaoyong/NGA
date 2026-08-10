@@ -396,6 +396,7 @@ public class ProfileActivity extends BaseActivity implements OnHttpCallBack<Prof
             mSignWebView.requestLayout();
             //  handleAvatar(avatarImage, mProfileData);
         }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void handleSignWebView(WebViewEx contentTV, ProfileData ret) {
