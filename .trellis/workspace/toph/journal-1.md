@@ -829,3 +829,25 @@ Restored Android 10/API 29 installation support while keeping compile/target SDK
 ### Status
 
 [OK] **Completed**
+
+
+## Session 36: Clear inherited Android lint errors
+
+**Date**: 2026-08-10
+**Task**: Clear inherited Android lint errors
+**Branch**: `main`
+
+### Summary
+
+Cleared the 11 inherited app lint errors without changing runtime WebView layout behavior, moved Fragment observers to the view lifecycle, restored Activity result delegation, and established a zero Error/Fatal lint-report contract.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6cfc5fa7` | (see git log) |
+| `8a2f5d87` | (see git log) |
+
+### Status
+
+[OK] **Completed**
