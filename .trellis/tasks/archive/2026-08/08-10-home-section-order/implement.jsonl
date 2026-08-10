@@ -1,0 +1,4 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Preserve the existing home Pager, drawer boundary, direct long-press reorder, and accessibility behavior."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Reuse app-wide stable-order, snapshot, persistence, and rollback contracts without changing favorite membership."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Avoid duplicating order resolution and shared Pager extension patterns while keeping the scope narrow."}
+{"file":".trellis/tasks/08-10-home-section-order/research/evidence.md","reason":"Provide exact source and spec anchors for the default order, version cache, model, ViewModel, and Compose UI boundaries."}

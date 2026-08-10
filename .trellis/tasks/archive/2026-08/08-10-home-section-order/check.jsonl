@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Apply the Android app/library test, build, lint-report, and no-device gate."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Verify drawer, Pager, favorite reorder, article UI, and optional shared-component compatibility."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Verify stable IDs, complete-order resolution, transaction rollback, account independence, and TalkBack equivalence."}
+{"file":".trellis/tasks/08-10-home-section-order/research/evidence.md","reason":"Check all affected boundaries and hard-coded favorite-to-next-page assumptions."}
