@@ -42,11 +42,11 @@
 
 ## Acceptance Criteria
 
-- [ ] 所有 Android 模块的最新 debug Lint 报告均为 `0 Error / 0 Fatal`。
-- [ ] 仓库级模块 Lint 命令不再因历史错误失败。
-- [ ] `ConfirmDialog` 的正常确认/取消行为和 Fragment 前置条件保持不变。
-- [ ] `:lib_base_common:testDebugUnitTest`、`:lib_base_common:lintDebug` 和
+- [x] 所有 Android 模块的最新 debug Lint 报告均为 `0 Error / 0 Fatal`。
+- [x] 仓库级模块 Lint 命令不再因历史错误失败。
+- [x] `ConfirmDialog` 的正常确认/取消行为和 Fragment 前置条件保持不变。
+- [x] `:lib_base_common:testDebugUnitTest`、`:lib_base_common:lintDebug` 和
   `git diff --check` 通过。
-- [ ] 仓库级 `lintDebug --continue` 完成后，13 个 Android 模块的 XML 报告均经
+- [x] 仓库级 `lintDebug --continue` 完成后，13 个 Android 模块的 XML 报告均经
   解析确认没有 `Error` 或 `Fatal`。
-- [ ] 未新增全局/模块级 Lint 错误豁免。
+- [x] 未新增全局/模块级 Lint 错误豁免。
