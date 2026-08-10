@@ -257,6 +257,7 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         mListView.setItemViewCacheSize(20);
         mListView.setAdapter(mArticleAdapter);
         mListView.setEmptyView(view.findViewById(R.id.empty_view));
+        applyReplyFabClearance();
         if (PhoneConfiguration.getInstance().useSolidColorBackground()) {
             mListView.addItemDecoration(new DividerItemDecoration(view.getContext(), DividerItemDecoration.VERTICAL));
         }
@@ -268,6 +269,20 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
             }
         });
         super.onViewCreated(view, savedInstanceState);
+    }
+
+    private void applyReplyFabClearance() {
+        if (mRequestParam.loadCache) {
+            return;
+        }
+        int bottomPadding = mListView.getPaddingBottom()
+                + getResources().getDimensionPixelSize(R.dimen.article_list_reply_fab_clearance);
+        mListView.setPadding(
+                mListView.getPaddingLeft(),
+                mListView.getPaddingTop(),
+                mListView.getPaddingRight(),
+                bottomPadding);
+        mListView.setClipToPadding(false);
     }
 
     public void loadPage() {

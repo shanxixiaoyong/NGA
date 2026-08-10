@@ -147,6 +147,13 @@ public class ArticleTabFragment extends BaseRxFragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.item_refresh: {
+                ArticleListFragment fragment = mPagerAdapter.getCurrentFragment();
+                if (fragment != null && !fragment.isRefreshing()) {
+                    fragment.loadPage();
+                }
+                break;
+            }
             case R.id.menu_add_bookmark:
                 BookmarkTask.execute(mRequestParam.tid);
                 break;

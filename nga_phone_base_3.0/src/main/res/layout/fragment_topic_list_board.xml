@@ -51,7 +51,6 @@
         android:layout_gravity="end|bottom"
         android:layout_margin="@dimen/fab_margin"
         android:contentDescription="@string/new_thread"
-        app:layout_behavior="sp.phone.view.behavior.ScrollAwareFabBehavior"
         app:srcCompat="@drawable/btn_ic_create"
         tools:ignore="VectorDrawableCompat" />
 

@@ -313,18 +313,45 @@ reorderableTabRange = 1..tabs.lastIndex
 ## Contextual floating action buttons
 
 - A topic list contains one Material `FloatingActionButton` that directly
-  opens new-topic composition.
+  opens new-topic composition. It remains visible while scrolling and never
+  changes icon, label, or click behavior based on scroll direction.
 - An article view contains one Material `FloatingActionButton` that directly
-  opens reply composition. The cached article activity hides that button.
+  opens reply composition. It also remains visible while scrolling and never
+  changes semantics. The cached article activity hides that button.
 - Do not restore `FloatingActionsMenu`, `fab_refresh`,
   `ScrollAwareFamBehavior`, or the bundled `floatingactionmenu.aar`.
+- Do not attach `ScrollAwareFabBehavior` or another nested-scroll hide/show or
+  action-swapping behavior to either direct-action FAB. The legacy behavior
+  class may remain unused while other callers are audited.
 - Topic-list and article floating action buttons use their layout-default
   `end|bottom` placement. Do not add a handedness preference or runtime
   gravity override.
+- Live article lists add `article_list_reply_fab_clearance` (80dp) to their
+  existing bottom padding and set `clipToPadding=false`, allowing the final
+  floor's controls to scroll above the persistent reply FAB. Apply this in
+  `ArticleListFragment` only when `loadCache` is false. Do not add matching
+  clearance to topic lists, and do not turn the clearance into a list item or
+  include it in floor/page calculations.
 - Article pages always use `fragment_article_tab`, with the page tabs at the
   top. Do not add a bottom-tab preference or a second bottom-tab layout.
-- Retain pull-to-refresh and `ScrollAwareFabBehavior` scroll hide/show
-  behavior.
+- Retain the existing pull-to-refresh behavior.
+
+## Article current-page refresh
+
+- `article_list_option_menu.xml` places `item_refresh` first in document/menu
+  order. Its visible title is the existing `@string/refresh`, exactly `刷新`,
+  and `showAsAction="never"` keeps it in the top-right overflow menu.
+- `ArticleTabFragment.onOptionsItemSelected()` resolves
+  `mPagerAdapter.getCurrentFragment()`, ignores the action while that fragment
+  is already refreshing, and otherwise calls its existing `loadPage()` path.
+  The action must not change the selected page, scroll to the top, or invoke
+  reply composition.
+- Reselecting the current page tab remains bound only to
+  `scrollCurrentPageToTop()`. Do not add refresh, long-press, or second-tap
+  semantics to the page tabs as part of the overflow action.
+- This menu entry inherits the existing article loading, error, fallback, and
+  reading-position behavior. Changes such as retaining stale content on
+  failure or restoring by `pid` plus pixel offset require a separate task.
 
 ## Topic list title tap
 
@@ -483,7 +510,9 @@ emoticon tables, or the order preference.
 ```bash
 rg -n "FloatingActionsMenu|fab_refresh|ScrollAwareFamBehavior|floatingactionmenu" \
   nga_phone_base_3.0
-rg -n "fab_post|SwipeRefreshLayout|ScrollAwareFabBehavior" \
+rg -n 'layout_behavior=.*ScrollAwareFabBehavior' \
+  nga_phone_base_3.0/src/main/res
+rg -n "fab_post|SwipeRefreshLayout|article_list_reply_fab_clearance|item_refresh" \
   nga_phone_base_3.0/src/main
 rg -n "left_hand|bottom_tab|isLeftHandMode|isShowBottomTab|fragment_article_tab_bottom" \
   lib_base_common nga_phone_base_3.0/src/main
@@ -491,9 +520,12 @@ rg -n "EMOTICON_URL|EMOTICON_LABEL" lib_base_common nga_phone_base_3.0/src/main
 rg -n "setOnTitleClickListener|onTitleClick" nga_phone_base_3.0/src/main
 ```
 
-The first scan must have no active matches. The second scan should show one
-direct action per relevant layout and the retained refresh/scroll wiring. The
-third scan must have no matches. The fourth scan must show reads only — no
-assignment into the emoticon tables outside `EmoticonUtils` itself. The fifth
-scan must show one binding per topic-list toolbar and the matching handler, and
-no listener attached to a `Toolbar` rather than its title view.
+The first scan must have no active matches. The second scan must have no
+matches; the unused `ScrollAwareFabBehavior` class itself may remain while no
+layout attaches it. The third scan should show one direct action per relevant
+layout, retained pull-to-refresh wiring, article-only clearance, and the
+current-page overflow refresh wiring. The fourth scan must have no matches.
+The fifth scan must show reads only — no assignment into the emoticon tables
+outside `EmoticonUtils` itself. The sixth scan must show one binding per
+topic-list toolbar and the matching handler, and no listener attached to a
+`Toolbar` rather than its title view.
