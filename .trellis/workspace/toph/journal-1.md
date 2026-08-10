@@ -744,3 +744,25 @@ Collapsed each publication job to one Gradle invocation: stable now resolves ver
 ### Next Steps
 
 - 无
+
+
+## Session 32: Restore minSdk 29 compatibility
+
+**Date**: 2026-08-10
+**Task**: Restore minSdk 29 compatibility
+**Branch**: `main`
+
+### Summary
+
+Restored Android 10/API 29 installation support while keeping compile/target SDK 35 and one arm64 APK; added release artifact checks and synchronized active Android specifications and plans. README remained unchanged.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `11694d3c` | (see git log) |
+| `3623cbf2` | (see git log) |
+
+### Status
+
+[OK] **Completed**
