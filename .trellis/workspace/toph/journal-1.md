@@ -882,3 +882,32 @@ Removed the article overflow refresh item and added guarded periodic refresh whi
 ### Status
 
 [OK] **Completed**
+
+
+## Session 38: Tune article long-press refresh interval
+
+**Date**: 2026-08-10
+**Task**: Tune article long-press refresh interval
+**Branch**: `main`
+
+### Summary
+
+Changed the selected-page long-press repeat interval from 3 seconds to 5 seconds without altering the immediate first refresh or in-flight guard.
+
+### Main Changes
+
+- Updated the runtime constant, frontend contract, and source contract test to 5 seconds.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `19943019` | (see git log) |
+
+### Testing
+
+- [OK] ArticlePageRefreshContractTest and nga_phone_base_3.0 lintDebug passed.
+
+### Status
+
+[OK] **Completed**
