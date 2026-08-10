@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/index.md","reason":"核对本次 Android/构建改动遵循适用规范及开发检查清单。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"验证 API 29 安装下限、API 35 编译/目标基线、Lint 与 APK 产物检查均符合项目契约。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"执行项目通用测试、构建和静态质量审查。"}
+{"file":".trellis/tasks/07-25-nga-android-foundation-access/research/compatibility-revert.md","reason":"对照既有 SDK 语义与上游历史，确保只恢复安装范围而不误降 target/compile SDK 或扩张 ABI。"}

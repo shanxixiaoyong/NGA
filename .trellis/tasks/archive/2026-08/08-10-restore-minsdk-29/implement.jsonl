@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/index.md","reason":"加载 Android/构建配置工作适用的后端规范索引与开发前检查要求。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"遵守当前 Android SDK、Lint、构建和设备验证契约，并将发布下限准确更新为 API 29。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"遵守项目通用构建、测试、静态检查与交付质量门。"}
+{"file":".trellis/tasks/07-25-nga-android-foundation-access/research/compatibility-revert.md","reason":"保留 minSdk/compileSdk/targetSdk 语义、上游变更历史及兼容性验证依据；其中 minSdk 30 产品决策已被本任务取代。"}
