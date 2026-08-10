@@ -4,7 +4,7 @@
 
 1. 确认 Justwen 固定 commit 已迁移到根目录，旧 clean-room 工程已可恢复归档，原始 UI/导航/主题 smoke 与 GPL source ledger 已建立。
 2. 确认 foundation、reading-favorites 和 interactions 的 account/session/raw-response/parser/mutation/upload contracts 已通过；没有这些 owner 时不得自建第二套网络、存储或错误逻辑。
-3. 锁定 `minSdk 30`、`compile/target 35`、Android 15/API 35 主验证环境和允许的外部 provider/host 测试范围；API 30/36 仅作为有匹配实体设备时的可选验证层，未授权站点/AI 数据不得用于测试。
+3. 锁定 `minSdk 29`、`compile/target 35`、Android 15/API 35 主验证环境和允许的外部 provider/host 测试范围；API 29/36 仅作为有匹配实体设备时的可选验证层，未授权站点/AI 数据不得用于测试。
 
 ## Ordered implementation
 
@@ -19,7 +19,7 @@
    - 在 `menu_user_profile.xml`/`ProfileActivity` 增加“用户行为分析”，仅在 profile 已加载时可见并冻结 `mProfileData.uid`；只请求目标 UID 的主题第 1 页和回复第 1 页且不自动翻页，本地生成事实型活动样本，移除正文 URL 后预览并发送。
    - 用户行为分析的预览、加载态和结果页统一标注“基于近期公开活动样本（主题第 1 页 + 回复第 1 页）”，主题/回复计数只显示为本次样本数。
    - 两个 scenario 共用 preview/wire DTO、provider-category consent、可取消流式结果和继续追问状态；不新增独立 AI 首页作为场景主入口。
-8. 完成 Android 15/API 35 媒体/AI/TTS 生命周期和性能优化；有匹配实体设备时补充 API 30 最低 smoke 与 API 36 上 `targetSdk 35` 前向验证，不启动模拟器，`targetSdk 36` 升级另立任务。
+8. 完成 Android 15/API 35 媒体/AI/TTS 生命周期和性能优化；有匹配实体设备时补充 API 29 最低 smoke 与 API 36 上 `targetSdk 35` 前向验证，不启动模拟器，`targetSdk 36` 升级另立任务。
 9. 更新来源台账、第三方 license/NOTICE、原创资源和 provider trademark/隐私说明；移除无许可证或权属不明代码/资产。
 
 ## Validation commands and evidence
@@ -37,11 +37,11 @@ ANDROID_SERIAL=<api35-serial> ./gradlew :benchmark:connectedCheck
 
 ```bash
 ANDROID_SERIAL=<api35-serial> ./gradlew connectedDebugAndroidTest
-ANDROID_SERIAL=<api30-serial> ./gradlew connectedDebugAndroidTest
+ANDROID_SERIAL=<api29-serial> ./gradlew connectedDebugAndroidTest
 ANDROID_SERIAL=<api36-serial> ./gradlew connectedDebugAndroidTest
 ```
 
-不得启动模拟器补齐 API 30/36，缺少这两类可选设备不阻塞；API 36 仍验证 `targetSdk 35`。
+不得启动模拟器补齐 API 29/36，缺少这两类可选设备不阻塞；API 36 仍验证 `targetSdk 35`。
 
 必须保存以下证据：
 
@@ -54,7 +54,7 @@ ANDROID_SERIAL=<api36-serial> ./gradlew connectedDebugAndroidTest
 - 两种楼层菜单都出现“AI 总结”，且 payload 只属于被点楼层；用户资料菜单“用户行为分析”始终绑定页面目标 UID，只请求主题/回复第 1 页、不自动翻页，并覆盖本人/他人资料、数据未加载和刷新状态；
 - 用户行为分析各状态的采样范围文案和样本计数准确，不把第一页结果描述为全部历史；
 - preview/wire payload equality，以及旋转、返回、列表/资料刷新、进程恢复、账号/provider 切换、新请求覆盖旧请求时的 cancel/stale-result/object-binding 行为；
-- Android 15/API 35 macrobenchmark/stability，以及可用时的 API 30 最低 smoke 与 API 36 target-35 前向报告；
+- Android 15/API 35 macrobenchmark/stability，以及可用时的 API 29 最低 smoke 与 API 36 target-35 前向报告；
 - GPL/第三方 notice、来源 ledger 和资产权利清单。
 
 ## Rollback and containment
@@ -64,5 +64,5 @@ ANDROID_SERIAL=<api36-serial> ./gradlew connectedDebugAndroidTest
 - 签到/域名接口失效：显示 `UnsupportedContract`/外部阻塞，保留手动刷新；不加自动轮询或规避逻辑。
 - AI provider 故障只禁用该配置；Key/consent 审计失败时全局关闭 AI、清除内存 secret 并阻止 release，不影响论坛核心流程。
 - AI scenario 对象身份或采样状态不一致时取消该请求并丢弃过期结果，回退到原论坛界面；不得把结果显示给另一楼层/用户，也不得静默改用当前登录 UID。
-- 任一已支持 API 上缺少安全能力时在 capability matrix 禁用对应高级能力并提交发布决策；不得弱化安全检查。`minSdk 30` 与 `compile/target 35` 的升级须另立任务。
+- 任一已支持 API 上缺少安全能力时在 capability matrix 禁用对应高级能力并提交发布决策；不得弱化安全检查。`minSdk 29` 与 `compile/target 35` 的后续升级须另立任务。
 - 来源/许可证不闭合时移除相应代码/资源并阻止发布，直到对应源码、notice 和权利审查完成。

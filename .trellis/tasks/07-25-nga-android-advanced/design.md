@@ -7,7 +7,7 @@
 执行顺序固定为：
 
 1. root-fork archive/manifest、Justwen 原始 build + UI smoke、GPL source ledger；
-2. foundation session/host/codec/raw-response contracts 与 API 30/API 35/API 36 platform matrix；
+2. foundation session/host/codec/raw-response contracts 与 API 29/API 35/API 36 platform matrix；
 3. reading parser/Room/account scope；
 4. interactions mutation/upload/outcome contracts；
 5. 本任务的过滤、媒体、TTS、签到和 AI adapter；
@@ -87,9 +87,9 @@ profile menu -> capture mProfileData.uid + profile identity
 - payload preview 与 wire body 共用同一个不可变 scenario request DTO。consent 确认后，provider、对象标识、payload hash 和 request generation 一并冻结；任何列表/资料刷新、旋转恢复、返回、账号/provider 切换或新请求都通过 generation/object key 丢弃过期回调并取消底层 `OkHttp Call`。
 - 结果界面是对象上下文动作的详情状态，而不是两个场景的独立 AI 首页。它可以流式展示、停止、重试和在保留原始 scenario context 的前提下继续追问。
 
-## API 30 / API 35 / API 36 compatibility
+## API 29 / API 35 / API 36 compatibility
 
-The fork keeps `minSdk 30` and `compile/target 35`. Android 15/API 35 is the required primary path for media decoder, WebView, TTS, SSE cancellation, edge-to-edge and performance. API 30 is only a minimum-install/core-smoke layer, while API 36 is only a forward-runtime layer for the current target-35 artifact. Run either optional layer only on a matching user-provided physical device; do not start an emulator or require the user to currently own either device. A `targetSdk 36` upgrade is a separate task, and security policy never weakens across the matrix.
+The fork keeps `minSdk 29` and `compile/target 35`. Android 15/API 35 is the required primary path for media decoder, WebView, TTS, SSE cancellation, edge-to-edge and performance. API 29 is only a minimum-install/core-smoke layer, while API 36 is only a forward-runtime layer for the current target-35 artifact. Run either optional layer only on a matching user-provided physical device; do not start an emulator or require the user to currently own either device. A `targetSdk 36` upgrade is a separate task, and security policy never weakens across the matrix.
 
 ## Licensing/source boundary
 
@@ -99,5 +99,5 @@ The source ledger records retained/modified Justwen files and full commit `5d807
 
 - Unit: filter truth-table/account isolation, URL normalization/redirect blocking, key-vault lifecycle, consent/redaction, provider JSON/SSE framing, TTS segmentation and capability matrix.
 - Integration/MockWebServer: safe/unsafe media hosts, MIME mismatch, oversized/decompression-bomb responses, WebView redirect policy, domain/throttle behavior, check-in outcomes, provider error/stream cancellation and key deletion.
-- Compose/View/instrumentation: filter consistency across list/detail, settings/account switch, media rotation/background, TTS cancel, AI consent gating, model/test/delete flows, both floor-menu variants, profile target-UID binding, preview/wire equality, stale-result suppression, and Android 15/API 35 lifecycle; optional API 30 minimum and API 36 target-35-forward smoke when devices exist.
+- Compose/View/instrumentation: filter consistency across list/detail, settings/account switch, media rotation/background, TTS cancel, AI consent gating, model/test/delete flows, both floor-menu variants, profile target-UID binding, preview/wire equality, stale-result suppression, and Android 15/API 35 lifecycle; optional API 29 minimum and API 36 target-35-forward smoke when devices exist.
 - Authorized low-frequency E2E: each check-in/domain/media/provider contract only after permission; save redacted evidence and never provider keys or forum/private content.

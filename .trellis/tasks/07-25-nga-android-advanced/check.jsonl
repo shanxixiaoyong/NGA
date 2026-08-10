@@ -1,6 +1,6 @@
 {"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查 filter→model→UI、URL→media/WebView、provider→consent→key→stream 数据链路。"}
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查共享过滤、host policy、provider adapter、redaction 和 throttling 没有分叉。"}
-{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"检查 API 35 主 runner、API 30/36 可选设备报告、启动失败和零测试分类。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"检查 API 35 主 runner、API 29/36 可选设备报告、启动失败和零测试分类。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"逐项核对过滤、媒体、TTS、签到、限流和 AI，没有静默缺项。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-source-audit.md","reason":"专项检查 Key/日志/WebView/host/媒体和请求控制安全缺陷未回归。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"检查 Justwen 遗留 WebView、全局会话、遥测和 minSdk 风险已隔离。"}

@@ -14,7 +14,7 @@
 4. 实现 `content://` streaming upload：metadata/magic/MIME/size/dimension 校验、可选压缩与 EXIF 位置清理、分块 RequestBody、进度、取消、目标绑定 token 和用户触发重试；加入内存/资源压力测试。
 5. 实现主题收藏/取消、投票、通知已读和系统分享；使用 pending marker + before snapshot 做可回滚状态，严禁触碰 reading-favorites 的版面排序 owner。
 6. 改造 `lib_bu_message` 为 account/conversation-scoped Paging：列表、详情、发送、未读和通知中心；移除 singleton recipient/title、全量响应日志和跨账号缓存。
-7. 保持 `minSdk 30`、`compile/target 35`，完成 Android 15/API 35 主设备上的生命周期、后台取消、窗口切换和性能优化；API 30 最低 smoke 与 API 36 上 `targetSdk 35` 前向验证仅在已有匹配实体设备时补充。
+7. 保持 `minSdk 29`、`compile/target 35`，完成 Android 15/API 35 主设备上的生命周期、后台取消、窗口切换和性能优化；API 29 最低 smoke 与 API 36 上 `targetSdk 35` 前向验证仅在已有匹配实体设备时补充。
 8. 建立 GPL/来源台账：记录保留/修改的 Justwen 文件、完整 commit、第三方 license/NOTICE、原创资产和排除清单；不得带入参考仓库签名材料、品牌素材或真实内容。
 
 ## Validation commands and evidence
@@ -28,12 +28,12 @@ ANDROID_SERIAL=<api35-serial> ./gradlew :benchmark:connectedCheck
 ./scripts/secret-scan.sh
 ```
 
-设备验证必须显式指定序列号。API 35 是主门；API 30/36 仅在用户提供匹配实体设备时保存可选报告，不启动模拟器且缺失不阻塞：
+设备验证必须显式指定序列号。API 35 是主门；API 29/36 仅在用户提供匹配实体设备时保存可选报告，不启动模拟器且缺失不阻塞：
 
 ```bash
 ANDROID_SERIAL=<api35-serial> ./gradlew connectedDebugAndroidTest
 # Optional, only when matching user-provided physical devices exist:
-ANDROID_SERIAL=<api30-serial> ./gradlew connectedDebugAndroidTest
+ANDROID_SERIAL=<api29-serial> ./gradlew connectedDebugAndroidTest
 ANDROID_SERIAL=<api36-serial> ./gradlew connectedDebugAndroidTest
 ```
 
@@ -45,7 +45,7 @@ ANDROID_SERIAL=<api36-serial> ./gradlew connectedDebugAndroidTest
 - vote/topic-favorite/share 业务拒绝回滚及外部分享脱敏；
 - message paging、未读、账号切换/注销、隐私日志/备份扫描；
 - 每种 mutation 至少一次授权低频端到端结果（仅脱敏摘要）；
-- Android 15/API 35 编辑/上传/消息全流程与 macrobenchmark 无 ANR/OOM；可用时附 API 30 最低 smoke 和 API 36 target-35 前向报告；
+- Android 15/API 35 编辑/上传/消息全流程与 macrobenchmark 无 ANR/OOM；可用时附 API 29 最低 smoke 和 API 36 target-35 前向报告；
 - 来源台账、GPL-2.0-only/NOTICE 和发布树差异审查。
 
 ## Rollback and containment

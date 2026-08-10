@@ -14,8 +14,9 @@
 - 来源：`references/nga-clients/NGA-CLIENT-VER-OPEN-SOURCE-Justwen`，完整提交
   `5d807617f8058950f7ea81dda405e38fb0cc37ec`（2025-11-07）。
 - 上游根为 `nga_phone_base_3.0` 加 12 个 `lib_*` 模块；上游 `minSdk=30`、
-  `compileSdk/targetSdk=35`。最终分叉恢复这一基线，不再承担 Android 8/API 26
-  的额外兼容层，并以 Android 15/API 35 为首要构建和真机验证目标。
+  `compileSdk/targetSdk=35`。当前分叉在保留该来源事实的同时将安装下限恢复为
+  `minSdk=29`，不再承担 Android 8/API 26 的额外兼容层，并以 Android 15/API 35
+  为首要构建和真机验证目标。
 - 根目录没有父 Git；导入前必须保存带 SHA-256 清单的可恢复快照。快照和
   staging 目录不得覆盖 `.trellis/`、`.agents/`、`.codex/`、`.claude/`、
   `references/`、研究文档或任务运行状态。
@@ -38,7 +39,7 @@
    `X-User-Agent`、全局 Cookie、全量 payload 日志、宽松 WebView、全局
    cleartext、root-path FileProvider、隐式备份、自动签到/网络预热和统计遥测。
    这些清理必须有扫描和回归证据。
-6. 保持上游 `minSdk=30` 与当前 `compileSdk/targetSdk=35`。删除 API 26 的发布
+6. 使用当前分叉 `minSdk=29` 与 `compileSdk/targetSdk=35`。删除 API 26 的发布
    承诺和阻断门，不为 Android 8 增加版本分支；Android 16/API 36 先作为前向
    兼容审查，SDK、AGP 和依赖验证成熟后再通过独立任务升级 compile/target。
 7. 建立 account-scoped session/transport/classifier 边界：保留 raw status、
@@ -61,7 +62,7 @@
       旧绿地离线 `assemble/lint/test/secret-scan` 可重跑。
 - [ ] 活动根的 `settings.gradle` 只列出 Justwen 13 个模块，Groovy 根构建和
       UI 可构建；不存在并行的旧 `:app`/`:core:*` 活动依赖。
-- [ ] 活动配置为 `minSdk=30`、`compileSdk=35`、`targetSdk=35`；API 35 是本轮
+- [ ] 活动配置为 `minSdk=29`、`compileSdk=35`、`targetSdk=35`；API 35 是本轮
       运行时主门禁，不再要求 API 26 回归。每个 library test APK 使用 AndroidX
       runner；API 36 compile/target 升级不混入本轮。
 - [ ] 仓库扫描不到硬编码签名口令/路径、Cookie、密码、API/AI key、真实内容；

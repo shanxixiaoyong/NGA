@@ -21,7 +21,7 @@ current root (no parent .git)
   -> secret/license/asset scan
   -> explicit collision merge
   -> active Groovy root (13 Justwen modules)
-  -> security overlay + upstream minSdk 30 baseline
+  -> security overlay + upstream minSdk 30 history + fork minSdk 29 delta
   -> new root Git + source ledger
 ```
 
@@ -107,14 +107,14 @@ FAB，帖子详情使用“回帖” FAB。两者复用公开的单按钮滚动 
 ## Android version strategy
 
 版本标准分成三个独立维度：`minSdk` 控制最低安装版本，`targetSdk` 选择系统行为
-契约，`compileSdk` 控制可编译 API。本分叉恢复 Justwen 上游的
-`minSdk=30`，保持 `compileSdk/targetSdk=35`：
+契约，`compileSdk` 控制可编译 API。本分叉保留 Justwen 上游 `minSdk=30` 的
+来源记录，但将活动安装下限恢复为 `minSdk=29`，并保持 `compileSdk/targetSdk=35`：
 
 1. API 35/Android 15 是本轮主运行时门禁，重点验证 exported、窗口/边到边、
    pending intent、存储、通知、WebView 和后台行为。
 2. 不再为了 API 26 添加 capability/version 分支，也不保留 API 26 设备失败作为
    发布阻断；历史 API 26 报告只作为已撤销方案的记录。
-3. Android 11/API 30 是安装下限，不是本轮必须由用户真机覆盖的单独产品目标；
+3. Android 10/API 29 是安装下限，不是本轮必须由用户真机覆盖的单独产品目标；
    所有模块从根 `project.minSdkVersion` 继承同一数值。
 4. Android 16/API 36 与 API 35 的普通业务逻辑大体连续，但系统行为不能假定
    完全相同。当前环境只有 API 35 SDK，API 36 的 SDK/AGP/依赖升级和运行时验证

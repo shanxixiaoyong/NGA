@@ -9,7 +9,7 @@
 - Justwen 固定 commit `5d807617f8058950f7ea81dda405e38fb0cc37ec` 的 tracked Gradle/module tree 可从源码重建；`.trellis/` 等项目管理与研究目录保留在其外层。
 - 原始 Justwen UI、导航、主题、applicationId/intent 入口有 baseline screenshot/interaction smoke 证据；新增功能沿用其组件和路由。
 - 所有跨模块请求通过 foundation transport/session/codec/classifier，所有缓存/草稿/收藏/消息/AI 数据按 account scope；没有旧 clean-room `:core:*` 第二套产品网络栈。
-- `minSdk = 30`、`compileSdk = 35`、`targetSdk = 35` 和 Android 15/API 35 主验证写入 build/release manifest；API 30 最低 smoke 与 API 36 target-35 前向验证是有匹配实体设备时的可选证据，不启动模拟器，`targetSdk 36` 升级另立任务。
+- `minSdk = 29`、`compileSdk = 35`、`targetSdk = 35` 和 Android 15/API 35 主验证写入 build/release manifest；API 29 最低 smoke 与 API 36 target-35 前向验证是有匹配实体设备时的可选证据，不启动模拟器，`targetSdk 36` 升级另立任务。
 
 ## Feature matrix evidence
 
@@ -28,14 +28,14 @@ feature -> Justwen module/owner -> contract/fixture -> unit/integration/UI/E2E t
 
 1. **Build and baseline**：clean debug/release build、原始 UI smoke、lint、secret scan、dependency/SBOM 检查。
 2. **Behavior**：unit/integration/MockWebServer、Compose/View、instrumentation、授权低频 E2E；包括 unknown mutation outcome、Room migration、账号隔离、收藏排序和草稿恢复。
-3. **Platform**：Android 15/API 35 完整主路径；macrobenchmark/baseline profile（若模块存在）、长列表/富文本/媒体/上传/TTS/SSE 稳定性；实体设备序列号显式记录。API 30 最低 smoke 与 API 36 target-35 前向 smoke 仅在匹配设备可用时补充。
+3. **Platform**：Android 15/API 35 完整主路径；macrobenchmark/baseline profile（若模块存在）、长列表/富文本/媒体/上传/TTS/SSE 稳定性；实体设备序列号显式记录。API 29 最低 smoke 与 API 36 target-35 前向 smoke 仅在匹配设备可用时补充。
 4. **Security/privacy**：Keystore/session/AI key、WebView origin/redirect/file policy、network/host/Cookie、backup、日志/诊断/遥测、URI/media、依赖和 APK 内容审计。
 5. **License/source**：Justwen upstream/commit/修改台账、GPL-2.0-only LICENSE/NOTICE、第三方 SPDX/SBOM、原创/品牌/素材权利、无许可证排除清单和对应源码可得性。
 6. **Release artifact**：外置正式签名、versionCode/versionName、mapping、SHA-256、源码 tag、安装/升级/注销清理和隐私文档。
 
 ## Android 15/API 35-first platform plan
 
-Android 15/API 35 是性能和交互真相：在其上验证 edge-to-edge、pane/responsive state、Media3/Coil、Photo Picker、WebView restrictions、TTS lifecycle、upload streaming 和 AI SSE cancellation。产品保持 Justwen `minSdk 30` 与 `compile/target 35`，不承担低于上游最低版本的 fallback。API 30 仅做最低安装/核心 smoke，API 36 仅做当前 target-35 产物的前向运行时验证；两者仅在用户提供匹配实体设备时运行，缺失不阻塞且不得启动模拟器。`targetSdk 36` 升级和相应行为审计必须另立任务。
+Android 15/API 35 是性能和交互真相：在其上验证 edge-to-edge、pane/responsive state、Media3/Coil、Photo Picker、WebView restrictions、TTS lifecycle、upload streaming 和 AI SSE cancellation。产品保持当前分叉 `minSdk 29` 与 `compile/target 35`；上游固定提交的 `minSdk 30` 仅作为来源历史。API 29 仅做最低安装/核心 smoke，API 36 仅做当前 target-35 产物的前向运行时验证；两者仅在用户提供匹配实体设备时运行，缺失不阻塞且不得启动模拟器。`targetSdk 36` 升级和相应行为审计必须另立任务。
 
 ## License and source ledger design
 

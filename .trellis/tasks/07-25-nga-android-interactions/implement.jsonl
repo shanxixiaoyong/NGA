@@ -1,6 +1,6 @@
 {"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"mutation request→raw response→classifier→domain result→Room/UI 回滚跨层契约。"}
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"codec、parser、account scope、错误和 upload policy 必须由单一 owner 提供。"}
-{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"API 35 主门、API 30/36 可选实体设备、AndroidX runner 和 instrumentation 质量门禁。"}
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"API 35 主门、API 29/36 可选实体设备、AndroidX runner 和 instrumentation 质量门禁。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-feature-matrix.md","reason":"写作、上传、主题收藏、投票、消息和通知的完整范围及接口门槛。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/nga-harmony-source-audit.md","reason":"识别 nga_harmony 的草稿、mutation、附件、日志和状态缺陷，避免照搬。"}
 {"file":".trellis/tasks/07-25-nga-android-app-research/research/justwen-current-android-audit.md","reason":"Justwen 根 fork 的当前 Android 请求字段、GBK、发帖/上传、私信路径及必须修复的安全缺陷。"}

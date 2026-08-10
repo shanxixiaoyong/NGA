@@ -135,7 +135,7 @@ User action
 - 视觉语言、布局、主题、断点、导航和信息密度以 Justwen 当前实现为准；不得用 `nga_harmony` 的 ArkUI 结构或视觉资源替换它。
 - 新增功能必须使用 Justwen 已有的 Activity/Fragment/Compose/View 组件、颜色、排版、手势和路由模式；只增加必要的入口、状态和可访问性语义。
 - 任何窗口尺寸变化只沿用 Justwen 现有状态恢复行为，不创建第二套 UI 树或重置当前内容。
-- Android 15/API 35 使用 Justwen 现有平台路径并作为主验证门；API 30 仅在现有匹配实体设备上做最低安装/核心 smoke，API 36 仅在现有匹配实体设备上做 `targetSdk 35` 前向验证，不启动模拟器、不要求用户当前提供这两类设备，也不在本任务升级 `targetSdk 36`。
+- Android 15/API 35 使用 Justwen 现有平台路径并作为主验证门；API 29 仅在现有匹配实体设备上做最低安装/核心 smoke，API 36 仅在现有匹配实体设备上做 `targetSdk 35` 前向验证，不启动模拟器、不要求用户当前提供这两类设备，也不在本任务升级 `targetSdk 36`。
 - 所有新增拖动、折叠、媒体和列表操作沿用 Justwen 组件语义，并提供 TalkBack、键盘/指针支持及足够触控目标。
 
 ## 10. Favorite-board ordering
@@ -176,7 +176,7 @@ User action
 
 ## 13. Performance and compatibility
 
-保持 Justwen `minSdk = 30`、`compileSdk = 35`、`targetSdk = 35`；Android 15/API 35 是主性能与发布平台。Release 构建在用户 Android 15 主力实体设备上的初始门槛：
+保持当前分叉 `minSdk = 29`、`compileSdk = 35`、`targetSdk = 35`；Justwen 上游 `minSdk = 30` 仅作为来源基线。Android 15/API 35 是主性能与发布平台。Release 构建在用户 Android 15 主力实体设备上的初始门槛：
 
 - Macrobenchmark 冷启动 TTID 中位数不高于 1.5 秒，热启动中位数不高于 0.7 秒（各至少 10 次，排除首次安装编译）。
 - 代表性 200 条主题和 300 楼帖子 fixture 的持续滚动 jank frame 比例不高于 5%，无主线程网络/数据库/大文本解析。

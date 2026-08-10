@@ -62,9 +62,9 @@ The application uses the identical fully-qualified runner name.
 - JUnit 4 tests are discovered from the Android test APK and report their
   actual count; a zero-test result caused by a runner startup failure is not a
   pass.
-- The release declarations are `minSdk 30`, `compileSdk 35`, and
+- The release declarations are `minSdk 29`, `compileSdk 35`, and
   `targetSdk 35`. For explicitly authorized device validation, API 35 is the
-  primary runtime gate. API 30 is the declared installation-floor smoke
+  primary runtime gate. API 29 is the declared installation-floor smoke
   target; API 36 may run the target-35 APK as a separately labelled
   forward-compatibility check.
 - For explicitly authorized local device verification, prefer the physical
@@ -82,7 +82,7 @@ explicitly authorized the corresponding operation.
 | UTP reports `android.test.InstrumentationTestRunner` | Treat as configuration failure |
 | Process crashes/ANRs before test discovery | Inspect logcat and fail the quality gate |
 | API 35 primary test fails | Fix or explicitly document an external blocker; never mask/skip it |
-| API 30 floor smoke fails | Fix before claiming Android 11 support, or explicitly narrow the published installation floor |
+| API 29 floor smoke fails | Fix before claiming Android 10 support, or explicitly narrow the published installation floor |
 | Target-35 APK fails on API 36 | Record a forward-compatibility finding; do not claim target-36 certification |
 | Test report has zero tests unexpectedly | Investigate runner/package wiring |
 | A physical device disappears during install or test | Classify the run as an ADB/environment blocker, preserve the partial report, and stop without waiting for or requesting reconnection; do not relabel it as a product pass |
@@ -90,7 +90,7 @@ explicitly authorized the corresponding operation.
 ### 5. Good/Base/Bad Cases
 
 - **Good**: every test APK uses `AndroidJUnitRunner`. In an explicitly
-  authorized device matrix, API 35 reports the full expected suite, API 30
+  authorized device matrix, API 35 reports the full expected suite, API 29
   completes the minimum install/core-flow smoke, and an API 36 run is labelled
   `target35-on-api36`.
 - **Base**: A module without `src/androidTest` may omit the runner until it
@@ -107,7 +107,7 @@ explicitly authorized the corresponding operation.
   run it against the exact authorized serial and assert every module reports a
   finished test count with zero failures. Follow the Windows ADB rules below;
   do not assume a Gradle `connected*AndroidTest` task is an allowed transport.
-- When the maintainer explicitly includes API 30 release-device validation,
+- When the maintainer explicitly includes API 29 release-device validation,
   run a focused install and core-flow smoke there. This replaces the abandoned
   API 26 matrix; a release event by itself does not authorize the run.
 - When the maintainer explicitly includes API 36 forward-compatibility
@@ -129,7 +129,7 @@ explicitly authorized the corresponding operation.
 ```kotlin
 android {
     defaultConfig {
-        minSdk = 30
+        minSdk = 29
         // No runner: the library test APK falls back to android.test.*
     }
 }
@@ -140,7 +140,7 @@ android {
 ```kotlin
 android {
     defaultConfig {
-        minSdk = 30
+        minSdk = 29
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 }
@@ -154,7 +154,7 @@ Before handing off an Android product change, run:
 ./gradlew :nga_phone_base_3.0:assembleDebug
 ./gradlew :nga_phone_base_3.0:testDebugUnitTest
 ./gradlew :nga_phone_base_3.0:lintDebug
-./gradlew test
+./gradlew testDebugUnitTest --continue
 ```
 
 The app restores upstream `abortOnError false` and disables
@@ -163,8 +163,11 @@ inspect the generated lint report for errors. The pinned upstream tree has 11
 existing app lint errors outside the favorite/FAB delta; record them separately
 and do not expand a compatibility-restoration task into unrelated cleanup.
 
-The repository-wide `test --continue` task is a diagnostic baseline rather
-than the feature gate while these pinned-upstream fixtures remain unchanged:
+Use the repository-wide `testDebugUnitTest --continue` task as the diagnostic
+baseline rather than the aggregate `test` task: the latter enters
+release/preview unit-test task graphs and trips the release-signing guard even
+though no local signed APK packaging is authorized. The debug-only diagnostic
+is not the feature gate while these pinned-upstream fixtures remain unchanged:
 
 - `lib_base_ui` and `lib_bu_statistics` example tests compile without a JUnit
   dependency and fail at `compile*UnitTestJavaWithJavac`;
@@ -183,7 +186,7 @@ instrumentation, or another device gate. Record these checks as not run per
 project policy; they do not block handoff and are not a maintainer follow-up.
 If the maintainer explicitly authorizes a device operation for the current
 task, use the exact serial and Windows ADB transport, avoid real NGA traffic,
-and keep API 30 floor and API 36 forward checks separately labelled.
+and keep API 29 floor and API 36 forward checks separately labelled.
 
 ## Scenario: Windows ADB From WSL
 

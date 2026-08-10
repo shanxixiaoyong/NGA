@@ -10,7 +10,7 @@
 
 - 必须先完成 `07-25-nga-android-foundation-access` 的 Justwen root-fork、会话/host policy、raw response、codec、账号作用域和安全审计；不得在旧 clean-room `:core:*` 工程另建媒体或 AI 网络栈。
 - 必须完成 `07-25-nga-android-reading-favorites` 的帖子 AST/renderer、Room schema、导航和账号隔离；复用 `07-25-nga-android-interactions` 的 mutation、错误、上传和 outcome contract。
-- Root-fork 未完成、Justwen 原始 UI smoke test 失败、`minSdk 30` 构建未通过、或 Android 15/API 35 主设备基线没有建立时，本任务只可产出设计/fixture，不可实现产品功能。
+- Root-fork 未完成、Justwen 原始 UI smoke test 失败、`minSdk 29` 构建未通过、或 Android 15/API 35 主设备基线没有建立时，本任务只可产出设计/fixture，不可实现产品功能。
 
 ## Product scope
 
@@ -22,7 +22,7 @@
 6. AI 采用 BYOK：预设服务商 metadata、自定义 OpenAI-compatible provider、模型列表、连接测试、流式对话、中断、当前楼层总结、用户公开活动分析和场景提示词。两个场景都是被操作对象的上下文入口，不新增独立 AI 首页作为它们的主入口；结果页可以流式展示并继续追问。项目不运营代理后端、不提供公共 Key/额度。
 7. AI Key 使用 Android Keystore 保护的独立加密存储；provider + 数据类别记录明确 consent。首次把楼层/用户活动内容发往每个 provider 前展示准确 payload preview、范围、目的、保留/费用提示并取得同意；预览与实际 wire request 必须来自同一 request DTO。consent 可撤销，可删除配置和清除本地会话。
 8. 直接保留/修改 Justwen GPL-2.0 代码要进入来源台账（完整 commit、文件、修改和 notice）；NgaLite/MNGA/无许可证资源只作观察。不得移植弱随机数、明文秘密、过度日志、宽松 WebView 或签名材料。
-9. 保持 Justwen `minSdk = 30`、`compileSdk = 35`、`targetSdk = 35`；Android 15/API 35 是媒体生命周期、WebView policy、TTS、AI SSE 和性能主门。API 30 最低安装/核心 smoke 与 API 36 上 `targetSdk 35` 前向验证仅在用户提供匹配实体设备时补充；不启动模拟器、不要求用户当前必须有这些设备，`targetSdk 36` 升级另立任务。
+9. 保持当前分叉 `minSdk = 29`、`compileSdk = 35`、`targetSdk = 35`；Android 15/API 35 是媒体生命周期、WebView policy、TTS、AI SSE 和性能主门。API 29 最低安装/核心 smoke 与 API 36 上 `targetSdk 35` 前向验证仅在用户提供匹配实体设备时补充；不启动模拟器、不要求用户当前必须有这些设备，`targetSdk 36` 升级另立任务。
 
 ## AI object-scoped MVP
 
@@ -45,7 +45,7 @@
 - [ ] AI Key 不出现在普通 Room/DataStore、日志、备份、导出、crash report、APK 资源或网络诊断；删除后密文和 provider metadata 按策略清理。
 - [ ] AI provider adapter、SSE 分帧/取消、consent/redaction、URL policy、媒体生命周期、TTS、过滤一致性和关键 Compose/View UI 均有自动化测试，并通过 Android 15/API 35 主门。
 - [ ] 至少一次授权低频真实验证覆盖每个签到/域名/媒体或 provider contract；未验证能力显示 `UnsupportedContract`，不伪造成功。
-- [ ] Android 15/API 35 性能与稳定性门槛通过；可用时附 API 30 最低阅读/设置/安全 smoke 与 API 36 target-35 前向报告。
+- [ ] Android 15/API 35 性能与稳定性门槛通过；可用时附 API 29 最低阅读/设置/安全 smoke 与 API 36 target-35 前向报告。
 
 ## Out of scope
 

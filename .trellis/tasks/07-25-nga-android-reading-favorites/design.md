@@ -32,4 +32,4 @@ Justwen 的现有版面/主题/帖子 UI、导航、主题和信息密度是唯�
 
 ## Validation
 
-golden/fuzz parser、Room merge/migration、Paging/page-store、window resize/state restore、Compose semantics/drag tests，以及 Android 15/API 35 macrobenchmark。设备测试保持 `minSdk 30`、`compile/target 35`：API 35 为必需主门；API 30 最低安装/核心 smoke 与 API 36 上 `targetSdk 35` 前向 smoke 仅在用户提供匹配实体设备时运行，不启动模拟器，缺失不阻塞；`targetSdk 36` 升级另立任务。
+golden/fuzz parser、Room merge/migration、Paging/page-store、window resize/state restore、Compose semantics/drag tests，以及 Android 15/API 35 macrobenchmark。设备测试保持 `minSdk 29`、`compile/target 35`：API 35 为必需主门；API 29 最低安装/核心 smoke 与 API 36 上 `targetSdk 35` 前向 smoke 仅在用户提供匹配实体设备时运行，不启动模拟器，缺失不阻塞；`targetSdk 36` 升级另立任务。

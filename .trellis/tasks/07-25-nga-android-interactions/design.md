@@ -7,7 +7,7 @@
 进入本任务前按以下顺序建立可回滚基线：
 
 1. foundation 将 Justwen 固定 commit 的 tracked tree 迁移到根目录，归档当前工程并保存文件清单、upstream/commit 和 GPL 来源台账。
-2. foundation 在根目录用原有 applicationId/导航入口完成原始 build、安装和 UI/主题 smoke test；同时锁定 `minSdk = 30`、`compile/target = 35` 和 Android 15/API 35 主设备门。
+2. foundation 在根目录用原有 applicationId/导航入口完成原始 build、安装和 UI/主题 smoke test；同时锁定 `minSdk = 29`、`compile/target = 35` 和 Android 15/API 35 主设备门。
 3. foundation 暴露 account-scoped session/cookie、raw response/classifier、codec、typed failure 和 repository contract；reading-favorites 暴露帖子模型、AST renderer、目标导航和 Room account scope。
 4. 本任务先在 MockWebServer/脱敏 fixture 上验证 mutation 状态机，再逐项做授权低频真实账号实验；任何一项接口未验证都只能呈现不可用/外部阻塞，不得用假响应推进下游。
 
@@ -75,10 +75,10 @@ content:// Uri
 - 通知先做应用内分页中心；OS notification/background refresh 只有在用户设置、站点规则和系统调度都允许时启用，默认关闭高频轮询。
 - release 日志、Bug report、crash metadata、backup/export 统一 redact 正文、参与者、Cookie、token、附件 URL 和 AI/账号秘密。
 
-## API 30 / API 35 / API 36 strategy
+## API 29 / API 35 / API 36 strategy
 
 - Android 15/API 35 是必须通过的主路径：用当前 Compose/View 互操作、可取消协程、流式 I/O 和 macrobenchmark 验证编辑/上传/消息分页。
-- API 30 仅验证最低安装和核心写作/草稿 smoke；API 36 仅验证当前 `targetSdk 35` 产物的前向运行时行为。两者只在用户提供匹配实体设备时运行，缺失不阻塞，不启动模拟器；`targetSdk 36` 升级与行为变更另立任务。
+- API 29 仅验证最低安装和核心写作/草稿 smoke；API 36 仅验证当前 `targetSdk 35` 产物的前向运行时行为。两者只在用户提供匹配实体设备时运行，缺失不阻塞，不启动模拟器；`targetSdk 36` 升级与行为变更另立任务。
 - 每个 API 差异进入 `CapabilityMatrix` 和 instrumentation fixture；禁止以版本判断跳过安全校验或将未知结果视为成功。
 
 ## Validation design
@@ -86,7 +86,7 @@ content:// Uri
 - Unit: codec round-trip, request serialization, state machine, draft migration, attachment metadata/stream limits, redaction and account keys.
 - MockWebServer/integration: success/reject/auth/challenge/rate-limit/site-message/timeout/lost-response/malformed GBK/JSON, duplicate risk and reconciliation.
 - Compose/View tests: draft restore, preview parity, validation errors, upload progress/cancel/retry, unknown-outcome dialog, vote/favorite rollback, share redaction and message paging/account switch.
-- Required instrumentation on API 35: process death, Room migration, URI stream pressure, WebView host policy (login only), notification behavior and logout cleanup. Repeat a minimum/core subset on API 30 and a target-35 forward subset on API 36 only when matching user-provided physical devices exist.
+- Required instrumentation on API 35: process death, Room migration, URI stream pressure, WebView host policy (login only), notification behavior and logout cleanup. Repeat a minimum/core subset on API 29 and a target-35 forward subset on API 36 only when matching user-provided physical devices exist.
 - Authorized E2E: each mutation once at low frequency in a permitted account/test target; record sanitized request/result classification, not private content or credentials.
 
 ## Licensing and source evidence

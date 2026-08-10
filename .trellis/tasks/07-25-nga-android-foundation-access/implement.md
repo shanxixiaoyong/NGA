@@ -38,7 +38,8 @@ Checkpoint S：staging 与 pinned tree 可追溯；不存在秘密或未说明�
    - 将旧 `app/`、`core/`、`settings.gradle.kts`、`build.gradle.kts` 从活动根移动
      到 R0 归档，不双轨保留；
    - 合并上游 13 模块和 Justwen UI，但不覆盖治理/研究白名单。
-8. 保持上游统一 `minSdk=30` 与 `compileSdk/targetSdk=35`；优先尝试当前
+8. 使用当前分叉统一 `minSdk=29` 与 `compileSdk/targetSdk=35`，保留上游
+   `minSdk=30` 的来源历史；优先尝试当前
    AGP 8.7.3/Kotlin 2.0.21/Gradle 8.9，只有有证据才改变工具链。所有 library
    `androidTest` 显式配置 AndroidX runner，lint 不能 `abortOnError false` 掩盖错误。
 9. 初始化新的根 Git（不吸收 `references/**/.git`），提交/记录首个 imported
@@ -71,7 +72,7 @@ Checkpoint R2：安全/秘密/许可证扫描和离线 tests 全部通过；任�
 
 14. 先在 API 35/Android 15 安装并启动 app，验证 exported、WebView、TLS、存储、
     通知、备份、账号切换、注销和 release logging；记录精确设备/serial/report。
-15. 在用户提供的 Android 11+ 真机上运行 instrumentation，始终使用精确 serial；
+15. 在用户提供的 Android 10+ 真机上运行 instrumentation，始终使用精确 serial；
     不启动模拟器补齐 API 26。任何 library zero-test/runner fallback 都按配置失败
     处理。Android 16/API 36 工具链与运行时验证作为独立后续任务。
 16. JVM/MockWebServer 覆盖 GB18030/GBK/UTF-8、HTML/JSON/site-message、403、
@@ -111,7 +112,7 @@ ANDROID_SERIAL=<api35-serial> ./gradlew connectedDebugAndroidTest
   从 R0 归档恢复旧根并核对 SHA-256；治理/研究目录不动。
 - R2 失败：保留 import/source ledger 作为证据，但不启用网络或发布；修复后重跑
   全部 hardening gate，不能跳过阻断项。
-- 设备失败：保持 target/compile 35 和上游 minSdk 30，记录外部 blocker；不以
+- 设备失败：保持 target/compile 35 和当前分叉 minSdk 29，记录外部 blocker；不以
   模拟器或历史 API 26 报告伪造当前真机通过。
 - 授权读取失败：保留 R2 离线分叉，关闭下游访问承诺；不得实现挑战规避或官方
   身份伪装。

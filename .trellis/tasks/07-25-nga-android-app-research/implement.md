@@ -23,7 +23,7 @@
 - [ ] 在 Justwen `lib_base_network`/相关模块建立 raw response、codec、classifier、account-scoped Cookie/session vault 适配层，不再维护第二套 `:core:*` 产品网络栈。
 - [ ] 保留 Justwen 登录入口和 UI，迁移到 Keystore、host/origin allowlist、账号隔离和安全导入/导出。
 - [ ] 使用脱敏 fixture 和低频授权实验验证 board/topic/thread read；记录不支持契约。
-- [ ] 在不改变 Justwen UI 的前提下保持 `minSdk 30`、`compile/target 35`，完成 Android 15/API 35 主门、登录安全和 secret/log/backup 检查；API 30/36 仅在有匹配实体设备时补充，不启动模拟器。
+- [ ] 在不改变 Justwen UI 的前提下保持 `minSdk 29`、`compile/target 35`，完成 Android 15/API 35 主门、登录安全和 secret/log/backup 检查；API 29/36 仅在有匹配实体设备时补充，不启动模拟器。
 
 Gate：没有稳定、合规的授权读取能力时，不进入后续产品功能；向用户提交外部阻塞证据。
 
@@ -60,7 +60,7 @@ Gate：`nga-harmony-feature-matrix.md` 除发布项外没有静默缺失功能�
 ### Step 5 — Full integration and public release (`07-25-nga-android-release-integration`)
 
 - [ ] 逐项核对父 PRD、功能矩阵和五个子任务验收。
-- [ ] 完整 Android 15/API 35 主回归、macrobenchmark 和 baseline profile；有匹配实体设备时补充 API 30 最低安装/核心 smoke 与 API 36 上 `targetSdk 35` 的前向回归，`targetSdk 36` 升级另立任务。
+- [ ] 完整 Android 15/API 35 主回归、macrobenchmark 和 baseline profile；有匹配实体设备时补充 API 29 最低安装/核心 smoke 与 API 36 上 `targetSdk 35` 的前向回归，`targetSdk 36` 升级另立任务。
 - [ ] Room migration、升级签名、账号/收藏/草稿兼容检查。
 - [ ] 安全、隐私、WebView、依赖、secret、日志、备份和 APK 审计。
 - [ ] GPL/第三方来源、原创资产和非官方声明审查。
@@ -93,7 +93,7 @@ sha256sum app/build/outputs/apk/release/*.apk
 apksigner verify --verbose app/build/outputs/apk/release/*.apk
 ```
 
-授权端到端实验必须手动低频触发，不纳入无账号的公共 CI；结果只保存脱敏 contract fixture 和结论。API 30/36 仅在用户已提供匹配实体设备时分别运行 `ANDROID_SERIAL=<api30-serial>` / `<api36-serial>` 的 connected tests；不得启动模拟器补齐，也不得因缺少这两类可选设备阻塞当前任务。API 36 仍验证 `targetSdk 35`。
+授权端到端实验必须手动低频触发，不纳入无账号的公共 CI；结果只保存脱敏 contract fixture 和结论。API 29/36 仅在用户已提供匹配实体设备时分别运行 `ANDROID_SERIAL=<api29-serial>` / `<api36-serial>` 的 connected tests；不得启动模拟器补齐，也不得因缺少这两类可选设备阻塞当前任务。API 36 仍验证 `targetSdk 35`。
 
 ## 4. High-risk boundaries and rollback points
 
@@ -123,5 +123,5 @@ apksigner verify --verbose app/build/outputs/apk/release/*.apk
 
 - 五个子任务各自通过 `trellis-check` 和验收。
 - 完整功能矩阵无静默缺项；外部无法实现项必须有用户确认的处置。
-- Android 15/API 35 主门、安全、隐私、许可证和公开发布检查全部通过；可用时附 API 30 最低 smoke 与 API 36 前向验证报告。
+- Android 15/API 35 主门、安全、隐私、许可证和公开发布检查全部通过；可用时附 API 29 最低 smoke 与 API 36 前向验证报告。
 - 发布页包含签名 APK、对应源码、GPL/第三方声明、隐私说明、SHA-256 和安装/升级说明。

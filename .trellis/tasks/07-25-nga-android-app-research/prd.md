@@ -14,7 +14,7 @@
 - UI：完全沿用 Justwen 的 UI、布局、主题、导航和交互；不得为了对齐 `nga_harmony` 重做视觉层。`nga_harmony`、MNGA 等仅用于发现功能缺口和行为细节。
 - 收藏版面：直接长按“我的收藏”网格中的版面卡片/按钮即可拖动、自定义排序并持久化；不增加独立的页面级排序入口，也不把版面页菜单里的“添加至我的收藏”作为排序触发器。这是对 `nga_harmony` 的新增能力。
 - 许可证：项目按保守的 `GPL-2.0-only` 边界开源；兼容 GPL-2.0 的代码可在履行来源、版权和源码义务后改写。
-- 平台：沿用 Justwen 上游 `minSdk = 30`、`compileSdk = 35`、`targetSdk = 35`；Android 15/API 35 是必须通过的主要功能、性能和实体设备门禁。API 30 仅在用户提供匹配实体设备时做最低安装/核心 smoke，API 36 仅在用户提供匹配实体设备时做 `targetSdk 35` 前向验证；两者当前都不是用户设备前置条件，不启动模拟器补齐。`targetSdk 36` 升级另立任务。
+- 平台：当前分叉使用 `minSdk = 29`、`compileSdk = 35`、`targetSdk = 35`；Justwen 上游 `minSdk = 30` 保留为来源事实。Android 15/API 35 是必须通过的主要功能、性能和实体设备门禁。API 29 仅在用户提供匹配实体设备时做最低安装/核心 smoke，API 36 仅在用户提供匹配实体设备时做 `targetSdk 35` 前向验证；两者当前都不是用户设备前置条件，不启动模拟器补齐。`targetSdk 36` 升级另立任务。
 - 发布：面向公众提供签名 APK、对应源码、许可证、隐私说明、变更记录和 SHA-256；首发不承诺商业应用商店审核。
 - AI：BYOK。项目不运营 AI 后端、不提供公共 Key 或额度；用户设备直接请求服务商。
 - 登录：默认复现 `nga_harmony` 的 RSA 用户名/密码、验证码、受控 Web 登录、凭证导入/导出和多账号，但不复制其已审计出的不安全实现。
@@ -22,7 +22,7 @@
 ## Evidence and Constraints
 
 - 14 个固定提交的参考仓库已浅克隆到 `references/`；来源、commit、研究用途和许可证见 `references/README.md`。其中 Justwen 不是只读参考，而是将被迁移到当前工作目录根部作为 Android 源码基线；其他克隆仍只作研究。
-- Justwen 固定于完整 commit `5d807617f8058950f7ea81dda405e38fb0cc37ec`（v4.2.1、minSdk 30、target/compile 35），作为代码、安卓兼容和现有 UI 基线；迁移保持该平台基线，不再承担低于上游最低版本的降级适配。
+- Justwen 固定于完整 commit `5d807617f8058950f7ea81dda405e38fb0cc37ec`（v4.2.1、minSdk 30、target/compile 35），作为代码、安卓兼容和现有 UI 的来源基线；当前分叉只将安装下限恢复为 minSdk 29，不降低 target/compile 35，也不重新承担 API 28 及以下的兼容层。
 - 当前根目录已有独立 foundation 工程；迁移时保留 `.trellis/`、`.agents/`、`references/`、`docs/`、`fixtures/`、`scripts/` 和项目说明，将现有 `app/`、`core/` 与 Gradle 源树归档后由 Justwen 的模块树接管，避免不可恢复覆盖。
 - `nga_harmony` 源码覆盖浏览、搜索、登录、写作、上传、私信、通知、投票、收藏、过滤、备注、历史、自适应 UI、媒体、TTS、签到、请求控制和 AI，但源码审计确认 README 对收藏排序、域名故障转移、完整 BBCode 和部分安全/错误行为有夸大或缺口。
 - `nga_harmony` 未实现用户要求的收藏拖动；`open-nga` 提供最接近的历史行为参考。Android 版必须独立实现 App-wide 共享的版面 membership/order 合并。
@@ -65,7 +65,7 @@
 5. BBCode/HTML parser 与 Compose renderer 分离，具备资源上限、golden/fuzz fixture 和安全降级。
 6. 写操作逐项验证；请求结果不确定时不自动重试，失败不丢草稿，服务端拒绝不伪造成功。
 7. 图片上传采用 `content://` streaming，验证类型/大小，支持进度、取消和可配置的压缩/EXIF 处理。
-8. Android 15/API 35 使用现代平台路径并作为主门；API 30 只验证最低安装/核心 smoke，API 36 只验证 `targetSdk 35` 前向行为，且两层均仅在已有匹配实体设备时运行。
+8. Android 15/API 35 使用现代平台路径并作为主门；API 29 只验证最低安装/核心 smoke，API 36 只验证 `targetSdk 35` 前向行为，且两层均仅在已有匹配实体设备时运行。
 9. AI Key 不进入普通 Room/DataStore、日志、备份、导出或崩溃报告；首次向每个服务商发送帖子/用户内容前取得明确同意。
 10. 发布版默认无远程遥测，不包含开发者账号、Cookie、AI Key、签名材料、调试响应或真实用户内容。
 11. 直接改写 Justwen GPL-2.0 代码时在来源台账记录 upstream、完整 commit、文件/模块来源和修改；发布包提供对应 GPL 文本、版权声明和可获得的对应源码。MNGA、NgaLite 及权属不明资源禁止复制。
@@ -73,7 +73,7 @@
 
 ## Acceptance Criteria
 
-- [ ] App 以 `minSdk 30`、`compile/target 35` 构建，并在 Android 15/API 35 完成全部功能、交互和性能验收；若有用户提供的 API 30/36 实体设备，分别补充最低安装/核心 smoke 与 `targetSdk 35` 前向验证，缺少这些可选设备不阻塞当前任务。
+- [ ] App 以 `minSdk 29`、`compile/target 35` 构建，并在 Android 15/API 35 完成全部功能、交互和性能验收；若有用户提供的 API 29/36 实体设备，分别补充最低安装/核心 smoke 与 `targetSdk 35` 前向验证，缺少这些可选设备不阻塞当前任务。
 - [ ] `research/nga-harmony-feature-matrix.md` 中的完整产品能力均有实现 owner、自动化测试和验收证据，没有静默缺项。
 - [ ] RSA/验证码、受控 Web 登录、凭证导入/导出、多账号和注销可用；密码/Cookie 不被明文持久化或泄漏。
 - [ ] 用户可完成版面 → 主题 → 帖子 → 搜索/跳页/图片的阅读流程，离线、登录过期、挑战、站点消息和解析失败状态明确。
@@ -84,7 +84,7 @@
 - [ ] 收藏排序满足事务保存、重启保持、服务端合并、失败回滚、空/重复处理和 TalkBack 等价操作契约。
 - [ ] compact/medium/expanded 切换不丢失当前选择、滚动锚点、帖子页或草稿；深色/浅色及 Android 15 平台交互正常。
 - [ ] 用户可新增、测试、编辑、删除 BYOK 配置并使用流式聊天、帖子总结和用户分析；未配置或未同意时不发送 AI 请求。
-- [ ] Android 15/API 35 release 构建达到 `design.md` 的启动、滚动、解析和收藏拖动性能门槛，无 ANR/OOM；没有保留低于 `minSdk 30` 的产品兼容分支。
+- [ ] Android 15/API 35 release 构建达到 `design.md` 的启动、滚动、解析和收藏拖动性能门槛，无 ANR/OOM；没有保留低于 `minSdk 29` 的产品兼容分支。
 - [ ] 自动化覆盖 codec/classifier/parser、Room migration、账号隔离、Paging、mutation、上传、AI consent、Compose adaptive/drag 和关键端到端流程。
 - [ ] 发布包通过 secret、日志、WebView、network、backup、dependency、APK、许可证和隐私审计。
 - [ ] 公开发布页包含签名 APK、对应源码、GPL/第三方声明、隐私说明、变更记录、安装要求和 SHA-256；升级签名连续。
