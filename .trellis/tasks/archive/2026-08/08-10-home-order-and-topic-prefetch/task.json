@@ -1,0 +1,29 @@
+{
+  "id": "home-order-and-topic-prefetch",
+  "name": "home-order-and-topic-prefetch",
+  "title": "首页排序与主题预读取优化",
+  "description": "",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "toph",
+  "assignee": "toph",
+  "createdAt": "2026-08-10",
+  "completedAt": "2026-08-10",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "08-10-home-section-order",
+    "08-10-topic-page-prefetch"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

@@ -1,0 +1,4 @@
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Preserve the home Pager, favorite reorder, drawer boundary, and article tab UI contracts across both child tasks."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Apply the existing app-wide order transaction, stable identity, and rollback conventions to home section ordering."}
+{"file":".trellis/spec/backend/nga-platform-access-rules.md","reason":"Keep THREAD.PAGE prefetch within the authorized read-only network and evidence boundaries."}
+{"file":".trellis/tasks/08-10-home-order-and-topic-prefetch/research/evidence.md","reason":"Provide the located home and topic pagination implementation boundaries for integration work."}

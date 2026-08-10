@@ -1,0 +1,3 @@
+{"file":".trellis/spec/backend/android-quality-guidelines.md","reason":"Run the required Android build, unit-test, lint-report, and no-device validation gate."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Review home drawer, favorite reorder, shared Pager, and article tab compatibility."}
+{"file":".trellis/tasks/08-10-home-order-and-topic-prefetch/research/evidence.md","reason":"Cross-check the final integration against the original code boundaries and operation contract."}
