@@ -119,6 +119,48 @@ object ForumBoardViewModel : ViewModel() {
         }
     }
 
+    fun beginHomeBoardReorder(): List<String> {
+        return forumBoardModel.homeBoardOrderSnapshot()
+    }
+
+    fun moveHomeBoard(from: Int, to: Int): Boolean {
+        val moved = forumBoardModel.moveHomeBoard(from, to)
+        if (moved) {
+            publishBoardData()
+        }
+        return moved
+    }
+
+    fun cancelHomeBoardReorder(snapshot: List<String>) {
+        forumBoardModel.restoreHomeBoardOrder(snapshot)
+        publishBoardData()
+    }
+
+    fun commitHomeBoardReorder(snapshot: List<String>) {
+        val candidate = forumBoardModel.homeBoardOrderSnapshot()
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = forumBoardModel.persistHomeBoardOrderIfCurrent(candidate)
+            withContext(Dispatchers.Main) {
+                if (result == HomeBoardOrderPersistResult.FAILED) {
+                    val restored = forumBoardModel.restoreHomeBoardOrderIfCurrent(
+                        candidate,
+                        snapshot,
+                    )
+                    if (restored) {
+                        publishBoardData()
+                    }
+                    ToastUtils.error(
+                        if (restored) {
+                            "首页栏次排序保存失败，已恢复原顺序"
+                        } else {
+                            "首页栏次排序保存失败，较新的操作未被覆盖"
+                        }
+                    )
+                }
+            }
+        }
+    }
+
     /** Reload the shared global bookmark list after an external data change. */
     fun refreshBookmarkBoards() {
         forumBoardModel.reloadBookmarkBoard()
@@ -133,6 +175,10 @@ object ForumBoardViewModel : ViewModel() {
 
     private fun publishBookmarkBoards() {
         bookmarkBoardsLiveData.value = forumBoardModel.bookmarkSnapshot()
+    }
+
+    private fun publishBoardData() {
+        boardLiveData.value = forumBoardModel.loadBoardData()
     }
 
     fun showTopicList(board: BoardEntity) {

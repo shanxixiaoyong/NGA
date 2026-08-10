@@ -33,6 +33,8 @@ public class PreferenceKey {
 
     public static final String BOOKMARK_BOARD = "bookmark_board";
 
+    public static final String KEY_HOME_BOARD_ORDER = "key_home_board_order";
+
     public static final String CHECK_IN_LAST_TIME = "check_in_last_time";
 
     public static final String USER_ACTIVE_INDEX = "user_active_index";

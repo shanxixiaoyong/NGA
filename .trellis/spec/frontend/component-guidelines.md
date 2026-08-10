@@ -134,7 +134,7 @@ label `打开侧边栏`.
 
 - **Good**: a rightward LTR drag from anywhere inside favorite content exposes
   the left sheet before release, then settles from the same offset.
-- **Base**: a leftward LTR drag still moves from favorites to `魔兽世界`; a
+- **Base**: a leftward LTR drag still moves from favorites to `网事杂谈`; a
   later page returns through normal Pager order before a new stream may open
   the drawer.
 - **Bad**: waiting for `UP` before showing the sheet, observing the entire home
@@ -191,6 +191,111 @@ produces continuous sheet and scrim progress while keeping content stationary.
 - Identify grid items by `fid + stid`, never by list index or historical `id`.
 - Provide TalkBack custom actions for move up, move down, move to top, and move
   to bottom. Pointer drag cannot be the only reorder mechanism.
+
+## Home board tab order
+
+### 1. Scope / Trigger
+
+Use this contract when changing the shared tab Pager API or the order of the
+home board sections after the fixed bookmark page.
+
+### 2. Signatures
+
+```kotlin
+TabLayoutWithPager(
+    tabKeys: List<String> = tabs,
+    reorderableTabRange: IntRange? = null,
+    onTabReorderStart: ((tabKey: String) -> Unit)? = null,
+    onTabReorderMove: ((fromIndex: Int, toIndex: Int) -> Boolean)? = null,
+    onTabReorderCommit: (() -> Unit)? = null,
+    onTabReorderCancel: (() -> Unit)? = null,
+    onTabReorderActiveChanged: (Boolean) -> Unit = {},
+)
+```
+
+### 3. Contracts
+
+- Reorder is disabled unless stable unique keys, a range, and the complete
+  start/move/commit/cancel callback set are supplied. Existing callers retain
+  ordinary `ScrollableTabRow` click and Pager behavior.
+- The home range starts at index `1`; `bookmark` at index `0` receives no drag
+  modifier or reorder accessibility actions.
+- A short press still calls `animateScrollToPage`. Long press activates drag,
+  performs haptic feedback, consumes later movement, and disables Pager input
+  until end, cancel, or disposal.
+- Resolve every move from the dragged stable key against a synchronous
+  gesture-local key order. Update that local order immediately after each
+  accepted move so consecutive events before recomposition use fresh indices
+  and cannot move a different board.
+- Resolve the pointer's target index from the currently rendered tab keys and
+  bounds as positional slots, then apply that index to the gesture-local order.
+  Never use gesture-local keys to look up bounds that may still reflect the
+  previous render, because that can move the tab back across the same slot.
+- Edge dwell moves one tab at a time and makes the dragged tab the scroll-row
+  target, allowing movement through off-screen tabs.
+- Retain the selected stable key while order changes. Both the indicator and
+  the Pager relocation use that key's new index. Key the Pager page content by
+  the same stable key so remembered grid/page state moves with the logical
+  board instead of staying attached to its former index.
+- TalkBack actions are `左移`, `右移`, `移到最前`, and `移到最后` within the
+  configured range.
+- Favorite-card and home-tab reorder states both gate Pager input, but only the
+  favorite-card state is forwarded to home drawer gesture arbitration.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required result |
+| --- | --- |
+| No reorder callbacks or invalid/duplicate keys | Existing click/Pager behavior; no reorder modifier |
+| Long press on bookmark tab | No reorder transaction |
+| Long press then horizontal drag on another tab | Candidate order publishes; Pager input is disabled |
+| Consecutive events before recomposition | Rendered bounds choose a positional target slot; the synchronous gesture-local order moves the same stable key with no stale index or bounce |
+| Edge dwell | Move one position repeatedly and keep the dragged tab visible |
+| End | Commit, clear active state, restore Pager |
+| Cancel or disposal | Restore snapshot, clear active state, restore Pager |
+| Persist failure for the current candidate | Model rolls back without overwriting newer state |
+
+### 5. Good/Base/Bad Cases
+
+- **Good**: drag `other` across two tabs; callbacks resolve `other` by key for
+  both moves, the selected logical board stays selected, and release persists.
+- **Base**: tap a non-bookmark tab and retain the existing animated page change.
+- **Bad**: reuse a pre-recomposition `fromIndex`, install drag on bookmark, or
+  forward home-tab reorder as `favoriteReorderActive` to the drawer.
+
+### 6. Tests Required
+
+- Unit-test consecutive stable-key moves without recomposition while the
+  rendered order/bounds remain at the previous frame.
+- Source-contract test optional defaults, long-press activation, terminal
+  cleanup, Pager gating, edge movement, stable selection and Pager page keys,
+  and all four accessibility actions.
+- App contract tests must pin the index-1 range, bookmark-relative model
+  indices, separate favorite/tab states, and `网事杂谈` as the page adjacent to
+  favorites.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```kotlin
+onMove(staleFromIndex, targetIndex)
+reorderableTabRange = 0..tabs.lastIndex
+```
+
+#### Correct
+
+```kotlin
+val targetIndex = resolveRenderedTabTargetIndex(
+    renderedOrder = renderedOrder,
+    tabBounds = tabBounds,
+    reorderableRange = allowedRange,
+    pointerX = pointerX,
+) ?: return
+val move = resolveStableTabMove(gestureOrder, draggedKey, targetIndex)
+onMove(move.fromIndex, move.toIndex)
+reorderableTabRange = 1..tabs.lastIndex
+```
 
 ## Home drawer terminology and placement
 

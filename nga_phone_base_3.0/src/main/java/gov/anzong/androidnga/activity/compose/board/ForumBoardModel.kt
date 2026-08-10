@@ -49,6 +49,12 @@ internal enum class BookmarkPersistResult {
     FAILED,
 }
 
+internal enum class HomeBoardOrderPersistResult {
+    SAVED,
+    SUPERSEDED,
+    FAILED,
+}
+
 class ForumBoardModel {
 
     private companion object {
@@ -77,7 +83,10 @@ class ForumBoardModel {
         bookmarkBoard = ForumBoardRepository.loadBookmarkBoardList(context)
         localBoardList = ForumBoardRepository.loadLocalBoardList(context)
         boardList.add(bookmarkBoard)
-        boardList.addAll(localBoardList)
+        val localBoardsById = localBoardList.associateBy { it.id }
+        HomeBoardOrderStore.load(defaultHomeBoardIds()).forEach { id ->
+            localBoardsById[id]?.let(boardList::add)
+        }
         boardList.forEach {
             initBoardMap(it, null)
         }
@@ -202,8 +211,65 @@ class ForumBoardModel {
     }
 
     @Synchronized
-    fun loadBoardData(): MutableList<BoardEntity> {
-        return boardList
+    fun loadBoardData(): List<BoardEntity> {
+        return boardList.toList()
+    }
+
+    @Synchronized
+    fun homeBoardOrderSnapshot(): List<String> {
+        return boardList.drop(1).map { it.id }
+    }
+
+    @Synchronized
+    fun moveHomeBoard(from: Int, to: Int): Boolean {
+        val order = homeBoardOrderSnapshot().toMutableList()
+        if (!HomeBoardOrderResolver.move(order, from, to)) {
+            return false
+        }
+        applyHomeBoardOrder(order)
+        return true
+    }
+
+    @Synchronized
+    fun restoreHomeBoardOrder(snapshot: List<String>) {
+        applyHomeBoardOrder(snapshot)
+    }
+
+    @Synchronized
+    fun restoreHomeBoardOrderIfCurrent(
+        expectedCurrent: List<String>,
+        snapshot: List<String>,
+    ): Boolean {
+        val currentOrder = homeBoardOrderSnapshot().toMutableList()
+        val restored = HomeBoardOrderResolver.restoreIfCurrent(
+            currentOrder,
+            expectedCurrent,
+            snapshot,
+        )
+        if (!restored) {
+            return false
+        }
+        applyHomeBoardOrder(currentOrder)
+        return true
+    }
+
+    @Synchronized
+    internal fun persistHomeBoardOrderIfCurrent(
+        order: List<String>,
+    ): HomeBoardOrderPersistResult {
+        if (!HomeBoardOrderResolver.hasSameOrder(homeBoardOrderSnapshot(), order)) {
+            return HomeBoardOrderPersistResult.SUPERSEDED
+        }
+        return try {
+            if (HomeBoardOrderStore.save(defaultHomeBoardIds(), order)) {
+                HomeBoardOrderPersistResult.SAVED
+            } else {
+                HomeBoardOrderPersistResult.FAILED
+            }
+        } catch (error: Exception) {
+            logError("Unable to persist home board order: ${error.message}")
+            HomeBoardOrderPersistResult.FAILED
+        }
     }
 
     @Synchronized
@@ -370,6 +436,15 @@ class ForumBoardModel {
     fun findBoard(fid: Int, stid: Int = 0): BoardEntity? {
         val id = generateBoardId(fid, stid)
         return boardMap[id]
+    }
+
+    private fun defaultHomeBoardIds(): List<String> = localBoardList.map { it.id }
+
+    private fun applyHomeBoardOrder(order: List<String>) {
+        val localBoardsById = localBoardList.associateBy { it.id }
+        val resolved = HomeBoardOrderResolver.resolve(defaultHomeBoardIds(), order)
+        boardList.subList(1, boardList.size).clear()
+        resolved.forEach { id -> localBoardsById[id]?.let(boardList::add) }
     }
 
 }

@@ -67,31 +67,59 @@ fun ForumBoardView(
     onFavoriteReorderActiveChanged: (Boolean) -> Unit = {},
 ) {
     val boardData by forumBoardViewModel.boardLiveData.observeAsState()
-    var reorderActive by remember { mutableStateOf(false) }
+    var favoriteReorderActive by remember { mutableStateOf(false) }
+    var tabReorderActive by remember { mutableStateOf(false) }
+    var homeOrderSnapshot by remember { mutableStateOf<List<String>?>(null) }
     val currentOnFavoriteReorderActiveChanged by
         rememberUpdatedState(onFavoriteReorderActiveChanged)
-    val tabs = arrayListOf<String>()
     DisposableEffect(Unit) {
         currentOnFavoriteReorderActiveChanged(false)
         onDispose {
-            reorderActive = false
+            homeOrderSnapshot?.let(forumBoardViewModel::cancelHomeBoardReorder)
+            homeOrderSnapshot = null
+            favoriteReorderActive = false
+            tabReorderActive = false
             currentOnFavoriteReorderActiveChanged(false)
         }
     }
-    boardData?.let {
-        it.forEach {
-            tabs.add(it.name)
-        }
+    boardData?.let { boards ->
+        val tabs = boards.map { it.name }
+        val tabKeys = boards.map { it.id }
         val initialPage = if (forumBoardViewModel.bookmarkSizeLiveData.value!! > 0) 0 else 1
         TabLayoutWithPager(
             tabs = tabs,
             initialPage = initialPage,
-            userScrollEnabled = pagerUserScrollEnabled && !reorderActive,
+            userScrollEnabled = pagerUserScrollEnabled &&
+                !favoriteReorderActive &&
+                !tabReorderActive,
             pagerModifier = pagerModifier,
             onPagerInteractionChanged = onPagerInteractionChanged,
-        ) {
-            ForumBoardContent(it, forumBoardViewModel) { active ->
-                reorderActive = active
+            tabKeys = tabKeys,
+            reorderableTabRange = if (boards.size > 1) 1..boards.lastIndex else null,
+            onTabReorderStart = { tabKey ->
+                if (tabKey != "bookmark") {
+                    homeOrderSnapshot = forumBoardViewModel.beginHomeBoardReorder()
+                }
+            },
+            onTabReorderMove = { fromIndex, toIndex ->
+                if (fromIndex <= 0 || toIndex <= 0) {
+                    false
+                } else {
+                    forumBoardViewModel.moveHomeBoard(fromIndex - 1, toIndex - 1)
+                }
+            },
+            onTabReorderCommit = {
+                homeOrderSnapshot?.let(forumBoardViewModel::commitHomeBoardReorder)
+                homeOrderSnapshot = null
+            },
+            onTabReorderCancel = {
+                homeOrderSnapshot?.let(forumBoardViewModel::cancelHomeBoardReorder)
+                homeOrderSnapshot = null
+            },
+            onTabReorderActiveChanged = { tabReorderActive = it },
+        ) { pageIndex ->
+            ForumBoardContent(pageIndex, forumBoardViewModel) { active ->
+                favoriteReorderActive = active
                 currentOnFavoriteReorderActiveChanged(active)
             }
         }

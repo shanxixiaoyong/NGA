@@ -69,12 +69,16 @@ class HomeNavigationDrawerContractTest {
     }
 
     @Test
-    fun pagerBoundsStateAndReorderAreForwardedWithoutRecompositionGate() {
+    fun pagerBoundsAndFavoriteReorderRemainTheOnlyDrawerInputs() {
         assertTrue(fragmentSource.contains("it.boundsInRoot()"))
         assertTrue(fragmentSource.contains("drawerGestureState.pagerSettled"))
         assertTrue(fragmentSource.contains("drawerGestureState.favoriteReorderActive = it"))
         assertTrue(boardSource.contains("pagerModifier = pagerModifier"))
         assertTrue(boardSource.contains("currentOnFavoriteReorderActiveChanged(active)"))
+        assertTrue(boardSource.contains("onTabReorderActiveChanged = { tabReorderActive = it }"))
+        assertTrue(boardSource.contains("!favoriteReorderActive"))
+        assertTrue(boardSource.contains("!tabReorderActive"))
+        assertFalse(fragmentSource.contains("tabReorderActive"))
         assertFalse(fragmentSource.contains("mutableStateOf<HomeDrawerGestureEligibility"))
     }
 
