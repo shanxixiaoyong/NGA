@@ -5,6 +5,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.ArrayMap;
 
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.OnLifecycleEvent;
+
 import com.justwen.androidnga.base.activity.ARouterConstants;
 
 import java.util.Map;
@@ -44,9 +47,12 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
 
     private final Map<String, String> mHeaderMap = new ArrayMap<>();
 
+    private final ArticlePageRequestState mPageRequestState = new ArticlePageRequestState();
+
     private class ArticleCallback implements OnHttpCallBack<ThreadData> {
         @Override
         public void onError(String text) {
+            mPageRequestState.failForegroundLoad(mThreadData != null);
             if (mBaseView != null) {
                 mBaseView.hideLoadingView();
                 mBaseView.setRefreshing(false);
@@ -64,8 +70,9 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
 
         @Override
         public void onSuccess(ThreadData data) {
+            mThreadData = data;
+            mPageRequestState.completeForegroundLoad();
             if (mBaseView != null) {
-                mThreadData = data;
                 mBaseView.setRefreshing(false);
                 mBaseView.setData(data);
                 RxUtils.postDelay(300, new BaseSubscriber<Long>() {
@@ -90,9 +97,37 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         }
     }
 
+    private class PrefetchCallback implements OnHttpCallBack<ThreadData> {
+
+        @Override
+        public void onError(String text) {
+            handlePrefetchFailure();
+        }
+
+        @Override
+        public void onError(String msg, Throwable t) {
+            handlePrefetchFailure();
+        }
+
+        @Override
+        public void onSuccess(ThreadData data) {
+            boolean wasPromoted = mPageRequestState.completePrefetch();
+            mThreadData = data;
+            if (mBaseView != null) {
+                if (wasPromoted) {
+                    mBaseView.setRefreshing(false);
+                }
+                mBaseView.setData(data);
+                mBaseView.hideLoadingView();
+            }
+        }
+    }
+
     private final OnHttpCallBack<ThreadData> mRetryCallback = new RetryCallback();
 
     private final OnHttpCallBack<ThreadData> mDataCallBack = new ArticleCallback();
+
+    private final OnHttpCallBack<ThreadData> mPrefetchCallback = new PrefetchCallback();
 
     @Override
     protected ArticleListModel onCreateModel() {
@@ -115,8 +150,49 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
 
     @Override
     public void loadPage(ArticleListParam param) {
-        mBaseView.setRefreshing(true);
-        mBaseModel.loadPage(param, mHeaderMap, mRetryCallback);
+        mRequestParam = param;
+        requestForegroundLoad(true);
+    }
+
+    @Override
+    public void prefetchPage() {
+        if (mBaseView == null
+                || mRequestParam == null
+                || mRequestParam.loadCache
+                || mThreadData != null
+                || !mPageRequestState.beginPrefetch()) {
+            return;
+        }
+        mBaseModel.loadPage(mRequestParam, mHeaderMap, mPrefetchCallback);
+    }
+
+    private void handlePrefetchFailure() {
+        boolean wasPromoted = mPageRequestState.failPrefetch();
+        if (wasPromoted) {
+            requestForegroundLoad(false);
+        }
+    }
+
+    private void requestForegroundLoad(boolean explicitRefresh) {
+        if (mBaseView == null || mRequestParam == null) {
+            return;
+        }
+        ArticlePageRequestState.ForegroundLoadDecision decision =
+                mPageRequestState.requestForegroundLoad(explicitRefresh);
+        if (decision == ArticlePageRequestState.ForegroundLoadDecision.WAIT_FOR_PREFETCH) {
+            mBaseView.setRefreshing(true);
+        } else if (decision == ArticlePageRequestState.ForegroundLoadDecision.START) {
+            mBaseView.setRefreshing(true);
+            mBaseModel.loadPage(mRequestParam, mHeaderMap, mRetryCallback);
+        }
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+    public void movePrefetchToBackground() {
+        boolean wasPromoted = mPageRequestState.movePrefetchToBackground();
+        if (wasPromoted && mBaseView != null) {
+            mBaseView.setRefreshing(false);
+        }
     }
 
     private void showWithWebView() {
@@ -310,8 +386,8 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
 
     @Override
     protected void onResume() {
-        if (mRequestParam != null && !mRequestParam.loadCache && mThreadData == null) {
-            loadPage(mRequestParam);
+        if (mRequestParam != null && !mRequestParam.loadCache) {
+            requestForegroundLoad(false);
         }
         super.onResume();
     }

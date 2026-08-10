@@ -35,6 +35,7 @@ import gov.anzong.androidnga.base.util.ShareUtils;
 import gov.anzong.androidnga.base.widget.TabLayoutEx;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.common.UserManagerImpl;
+import sp.phone.mvp.viewmodel.ArticlePagePrefetchPlanner;
 import sp.phone.mvp.viewmodel.ArticleShareViewModel;
 import sp.phone.param.ArticleListParam;
 import sp.phone.param.ParamKey;
@@ -75,6 +76,10 @@ public class ArticleTabFragment extends BaseRxFragment {
 
     private int mReplyCount;
 
+    private int mCurrentPage = 1;
+
+    private int mTotalPages = 1;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,11 +92,13 @@ public class ArticleTabFragment extends BaseRxFragment {
         viewModel.getReplyCount().observe(this, replyCount -> {
             mReplyCount = replyCount;
             int count = (int) Math.ceil(mReplyCount / 20.0f);
-            if (count != mPagerAdapter.getCount()) {
+            mTotalPages = count;
+            if (mPagerAdapter != null && count != mPagerAdapter.getCount()) {
                 mPagerAdapter.setCount(count);
                 mTabLayout.setTabOnScreenLimit(count <= 5 ? count : 0);
                 mTabLayout.notifyDataSetChanged();
             }
+            publishPrefetchPages();
         });
     }
 
@@ -107,11 +114,28 @@ public class ArticleTabFragment extends BaseRxFragment {
         ButterKnife.bind(this, view);
         mPagerAdapter = new ArticlePagerAdapter(getChildFragmentManager(), mRequestParam);
         mViewPager.setAdapter(mPagerAdapter);
+        mViewPager.setOffscreenPageLimit(2);
+        mCurrentPage = mViewPager.getCurrentItem() + 1;
+        mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                mCurrentPage = position + 1;
+                publishPrefetchPages();
+            }
+        });
 
         mTabLayout.setTabOnScreenLimit(1);
         mTabLayout.setUpWithViewPager(mViewPager);
         mTabLayout.setOnTabReselectedListener(position -> scrollCurrentPageToTop());
+        publishPrefetchPages();
         super.onViewCreated(view, savedInstanceState);
+    }
+
+    private void publishPrefetchPages() {
+        if (getActivity() != null) {
+            getActivityViewModel().setPrefetchPages(
+                    ArticlePagePrefetchPlanner.plan(mCurrentPage, mTotalPages));
+        }
     }
 
     private void scrollCurrentPageToTop() {

@@ -223,6 +223,20 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
                 mPresenter.cachePage();
             }
         });
+
+        if (isOnlineTopicPagerPage()) {
+            viewModel.getPrefetchPages().observe(this, pages -> {
+                if (pages != null && pages.contains(mRequestParam.page)) {
+                    mPresenter.prefetchPage();
+                }
+            });
+        }
+    }
+
+    private boolean isOnlineTopicPagerPage() {
+        return !mRequestParam.loadCache
+                && mRequestParam.searchPost == 0
+                && getParentFragment() instanceof ArticleTabFragment;
     }
 
     @Override

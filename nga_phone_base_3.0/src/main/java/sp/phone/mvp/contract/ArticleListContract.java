@@ -22,6 +22,8 @@ public interface ArticleListContract {
 
         void loadPage(ArticleListParam param);
 
+        void prefetchPage();
+
         void banThisSB(ThreadRowInfo row);
 
         void postComment(ArticleListParam param, ThreadRowInfo row);
