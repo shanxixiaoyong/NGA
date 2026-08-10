@@ -808,3 +808,24 @@ Restored Android 10/API 29 installation support while keeping compile/target SDK
 ### Status
 
 [OK] **Completed**
+
+
+## Session 35: 完成主题页预读取与父任务集成
+
+**Date**: 2026-08-10
+**Task**: 完成主题页预读取与父任务集成
+**Branch**: `main`
+
+### Summary
+
+实现在线主题页后两页预读取并严格排除已知末页；复用现有 THREAD.PAGE 请求，加入去重、前台晋升、暂停降级和静默失败合同及回归测试。应用单测、assemble、lint 与报告检查通过，仓库诊断仅保留既有基线失败；归档预读取子任务及首页排序与主题预读取父任务。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `59a32710` | (see git log) |
+
+### Status
+
+[OK] **Completed**
