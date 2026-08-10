@@ -787,3 +787,24 @@ Restored Android 10/API 29 installation support while keeping compile/target SDK
 ### Status
 
 [OK] **Completed**
+
+
+## Session 34: 主题与板块页固定 FAB 与主题刷新
+
+**Date**: 2026-08-10
+**Task**: 主题与板块页固定 FAB 与主题刷新
+**Branch**: `main`
+
+### Summary
+
+固定板块发帖与主题回复 FAB 为始终可见；仅主题页增加回复 FAB 底部安全留白；在主题更多菜单首项增加当前页刷新，并补充回归测试与组件规范。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f348d985` | (see git log) |
+
+### Status
+
+[OK] **Completed**
