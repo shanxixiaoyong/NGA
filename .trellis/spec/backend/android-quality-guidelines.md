@@ -159,9 +159,31 @@ Before handing off an Android product change, run:
 
 The app restores upstream `abortOnError false` and disables
 `MissingTranslation`, so a zero lint process exit is not sufficient by itself:
-inspect the generated lint report for errors. The pinned upstream tree has 11
-existing app lint errors outside the favorite/FAB delta; record them separately
-and do not expand a compatibility-restoration task into unrelated cleanup.
+inspect the generated lint report and require zero `Error` and zero `Fatal`
+issues. The inherited 11-error app baseline was explicitly remediated on
+2026-08-10; do not reclassify a new error as accepted upstream debt. Warning
+count is diagnostic and may change independently of this zero-error contract.
+
+```bash
+python3 - <<'PY'
+import xml.etree.ElementTree as ET
+
+report = ET.parse(
+    "nga_phone_base_3.0/build/reports/lint-results-debug.xml"
+).getroot()
+blocking = [
+    issue for issue in report.findall("issue")
+    if issue.get("severity") in {"Error", "Fatal"}
+]
+if blocking:
+    raise SystemExit(f"Android lint has {len(blocking)} blocking issue(s)")
+PY
+```
+
+If a pinned legacy layout intentionally keeps a shape that a generic Lint rule
+cannot model, preserve runtime attributes and use only a documented,
+element-local `tools:ignore`. Do not disable the rule for the file, module, or
+project merely to keep the report green.
 
 Use the repository-wide `testDebugUnitTest --continue` task as the diagnostic
 baseline rather than the aggregate `test` task: the latter enters
