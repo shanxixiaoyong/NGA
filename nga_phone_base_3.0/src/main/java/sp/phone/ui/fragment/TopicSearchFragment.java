@@ -7,7 +7,6 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModelProvider;
@@ -39,7 +38,6 @@ import sp.phone.ui.adapter.BaseAppendableAdapter;
 import sp.phone.ui.adapter.ReplyListAdapter;
 import sp.phone.ui.adapter.TopicListAdapter;
 import sp.phone.util.ARouterUtils;
-import sp.phone.util.ActivityUtils;
 import sp.phone.util.StringUtils;
 import sp.phone.view.RecyclerViewEx;
 
@@ -161,9 +159,6 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
                 mPresenter.loadPage(1, mRequestParam);
             }
         });
-
-        TextView sayingView = (TextView) mLoadingView.findViewById(R.id.saying);
-        sayingView.setText(ActivityUtils.getSaying());
 
         super.onViewCreated(view, savedInstanceState);
 

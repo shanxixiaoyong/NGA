@@ -1,10 +1,7 @@
 package com.justwen.androidnga.ui.compose.widget
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,13 +28,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import com.justwen.androidnga.ui.compose.R
-import gov.anzong.androidnga.base.util.StringUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -82,32 +77,18 @@ fun DividerView() {
 
 @Preview
 @Composable
-fun CircularProgressIndicatorView(saying: String = StringUtils.getSaying()) {
+fun CircularProgressIndicatorView() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(LocalConfiguration.current.screenHeightDp.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(70.dp),
-                color = com.justwen.androidnga.ui.compose.theme.PrimaryGreen,
-                strokeWidth = 6.dp
-            )
-            Spacer(modifier = Modifier.size(16.dp))
-            Text(
-                modifier = Modifier.padding(start = 32.dp, end = 32.dp),
-                text = saying,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.size(64.dp))
-        }
-
+        CircularProgressIndicator(
+            modifier = Modifier.size(70.dp),
+            color = com.justwen.androidnga.ui.compose.theme.PrimaryGreen,
+            strokeWidth = 6.dp
+        )
     }
 }
 

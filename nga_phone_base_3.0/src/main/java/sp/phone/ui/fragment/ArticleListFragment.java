@@ -8,7 +8,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
-import android.widget.TextView;
 
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -261,9 +260,6 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         if (PhoneConfiguration.getInstance().useSolidColorBackground()) {
             mListView.addItemDecoration(new DividerItemDecoration(view.getContext(), DividerItemDecoration.VERTICAL));
         }
-
-        TextView sayingView = (TextView) mLoadingView.findViewById(R.id.saying);
-        sayingView.setText(ActivityUtils.getSaying());
 
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override

@@ -5,12 +5,10 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
 import gov.anzong.androidnga.R;
-import sp.phone.util.StringUtils;
 
 /**
  * Created by Justwen on 2018/3/11.
@@ -27,12 +25,5 @@ public class LoadingLayout extends LinearLayout {
         setGravity(Gravity.CENTER);
         setOrientation(LinearLayout.VERTICAL);
         LayoutInflater.from(getContext()).inflate(R.layout.include_loading_view,this,true);
-    }
-
-    @Override
-    protected void onFinishInflate() {
-        super.onFinishInflate();
-        TextView textView = findViewById(R.id.saying);
-        textView.setText(StringUtils.getSaying());
     }
 }

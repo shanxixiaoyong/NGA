@@ -77,34 +77,12 @@ public class ActivityUtils {
 
     }
 
-    static public String getSaying() {
-        String str = StringUtils.getSaying();
-        if (str.indexOf(";") != -1) {
-            str = str.replace(";", "-----");
-        }
-
-        return str;
-
-    }
-
     public void noticeSaying(Context context) {
-
-        String str = StringUtils.getSaying();
-        if (str.indexOf(";") != -1) {
-            notice("", str.replace(";", "-----"), context);
-        } else {
-            notice("", str, context);
-        }
+        notice("", "", context);
     }
 
     public void noticeSayingWithProgressBar(Context context) {
-
-        String str = StringUtils.getSaying();
-        if (str.indexOf(";") != -1) {
-            noticebar("", str.replace(";", "-----"), context);
-        } else {
-            noticebar("", str, context);
-        }
+        noticebar("", "", context);
     }
 
     public void noticeSaying(String str, Context context) {
@@ -127,7 +105,7 @@ public class ActivityUtils {
 
         if (c == null)
             return;
-        NLog.d(TAG, "saying dialog");
+        NLog.d(TAG, "progress dialog");
         Bundle b = new Bundle();
         b.putString("title", title);
         b.putString("content", content);
@@ -162,7 +140,7 @@ public class ActivityUtils {
 
         if (c == null)
             return;
-        NLog.d(TAG, "saying dialog");
+        NLog.d(TAG, "progress dialog");
         Bundle b = new Bundle();
         b.putString("title", title);
         b.putString("content", content);
@@ -255,10 +233,12 @@ public class ActivityUtils {
             if (b != null) {
                 String title = b.getString("title");
                 String content = b.getString("content");
-                dialog.setTitle(title);
-                if (StringUtils.isEmpty(content))
-                    content = ActivityUtils.getSaying();
-                dialog.setMessage(content);
+                if (!StringUtils.isEmpty(title)) {
+                    dialog.setTitle(title);
+                }
+                if (!StringUtils.isEmpty(content)) {
+                    dialog.setMessage(content);
+                }
             }
 
 
@@ -292,10 +272,12 @@ public class ActivityUtils {
             if (b != null) {
                 String title = b.getString("title");
                 String content = b.getString("content");
-                dialog.setTitle(title);
-                if (StringUtils.isEmpty(content))
-                    content = ActivityUtils.getSaying();
-                dialog.setMessage(content);
+                if (!StringUtils.isEmpty(title)) {
+                    dialog.setTitle(title);
+                }
+                if (!StringUtils.isEmpty(content)) {
+                    dialog.setMessage(content);
+                }
             }
 
 
