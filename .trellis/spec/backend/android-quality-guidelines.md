@@ -154,29 +154,49 @@ Before handing off an Android product change, run:
 ./gradlew :nga_phone_base_3.0:assembleDebug
 ./gradlew :nga_phone_base_3.0:testDebugUnitTest
 ./gradlew :nga_phone_base_3.0:lintDebug
+./gradlew lintDebug --continue --rerun-tasks --console=plain
 ./gradlew testDebugUnitTest --continue
 ```
 
 The app restores upstream `abortOnError false` and disables
 `MissingTranslation`, so a zero lint process exit is not sufficient by itself:
-inspect the generated lint report and require zero `Error` and zero `Fatal`
-issues. The inherited 11-error app baseline was explicitly remediated on
-2026-08-10; do not reclassify a new error as accepted upstream debt. Warning
-count is diagnostic and may change independently of this zero-error contract.
+inspect every Android module's generated lint report and require zero `Error`
+and zero `Fatal` issues. An application-only report does not cover independent
+library findings. The inherited 11-error app baseline and the remaining
+library error were explicitly remediated on 2026-08-10; do not reclassify a new
+error as accepted upstream debt. Warning count is diagnostic and may change
+independently of this zero-error contract.
 
 ```bash
 python3 - <<'PY'
+import re
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
-report = ET.parse(
-    "nga_phone_base_3.0/build/reports/lint-results-debug.xml"
-).getroot()
-blocking = [
-    issue for issue in report.findall("issue")
-    if issue.get("severity") in {"Error", "Fatal"}
-]
+settings = Path("settings.gradle").read_text(encoding="utf-8")
+modules = re.findall(r"include\s+['\"]:([^'\"]+)['\"]", settings)
+reports = {
+    module: Path(module) / "build/reports/lint-results-debug.xml"
+    for module in modules
+}
+missing = [module for module, report in reports.items() if not report.is_file()]
+blocking = {
+    module: [
+        issue for issue in ET.parse(report).getroot().findall("issue")
+        if issue.get("severity") in {"Error", "Fatal"}
+    ]
+    for module, report in reports.items()
+    if report.is_file()
+}
+blocking = {module: issues for module, issues in blocking.items() if issues}
+if missing:
+    raise SystemExit(f"Missing Android lint reports: {missing}")
 if blocking:
-    raise SystemExit(f"Android lint has {len(blocking)} blocking issue(s)")
+    raise SystemExit(
+        "Android lint blocking issues: "
+        + ", ".join(f"{module}={len(issues)}" for module, issues in blocking.items())
+    )
+print(f"Verified {len(reports)} Android modules: 0 Error / 0 Fatal")
 PY
 ```
 
