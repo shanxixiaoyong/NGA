@@ -12,6 +12,7 @@ import gov.anzong.androidnga.common.util.LogUtils
 import gov.anzong.androidnga.core.board.data.BoardEntity
 import java.io.File
 import java.io.IOException
+import sp.phone.linuxdo.LinuxDoConstants
 
 object ForumBoardRepository {
 
@@ -73,7 +74,20 @@ object ForumBoardRepository {
             type = BoardEntity.BoardType.BOOKMARK
             children = mutableListOf()
         }
-        bookmarkBoard.children!!.addAll(readBookmarkBoards(context.filesDir))
+        val boards = readBookmarkBoards(context.filesDir)
+        if (!PreferenceUtils.getData(LinuxDoConstants.DEFAULT_BOARD_MIGRATION_KEY, false)) {
+            if (boards.none { it.fid == LinuxDoConstants.BOARD_FID }) {
+                boards.add(BoardEntity().apply {
+                    id = LinuxDoConstants.BOARD_ID
+                    name = LinuxDoConstants.BOARD_NAME
+                    fid = LinuxDoConstants.BOARD_FID
+                    stid = 0
+                })
+                writeBookmarkBoard(context.filesDir, boards)
+            }
+            PreferenceUtils.putData(LinuxDoConstants.DEFAULT_BOARD_MIGRATION_KEY, true)
+        }
+        bookmarkBoard.children!!.addAll(boards)
         return bookmarkBoard
     }
 

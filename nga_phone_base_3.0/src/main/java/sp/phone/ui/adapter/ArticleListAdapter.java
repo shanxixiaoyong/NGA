@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.alibaba.android.arouter.launcher.ARouter;
 
 import java.text.MessageFormat;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -62,6 +63,8 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
 
     private static final int VIEW_TYPE_NATIVE_VIEW = 1;
 
+    private static final Object PAYLOAD_LOCALITY = new Object();
+
     private Context mContext;
 
     private FragmentManager mFragmentManager;
@@ -75,6 +78,27 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
     private LocalWebView[] mLocalWebViews = new LocalWebView[20];
 
     private String mTopicOwner;
+
+    private boolean mReadOnlyExternalSource;
+
+    /** Returns only a real server row; floor identity never comes from adapter position. */
+    public ThreadRowInfo getRowAt(int position) {
+        if (mData == null || mData.getRowList() == null
+                || position < 0 || position >= mData.getRowList().size()) {
+            return null;
+        }
+        return mData.getRowList().get(position);
+    }
+
+    /** Finds an exact real server floor; no later-floor substitution is permitted. */
+    public int findPositionForFloor(int targetFloor) {
+        if (mData == null || mData.getRowList() == null) return RecyclerView.NO_POSITION;
+        for (int index = 0; index < mData.getRowList().size(); index++) {
+            ThreadRowInfo row = mData.getRowList().get(index);
+            if (row != null && row.getLou() == targetFloor) return index;
+        }
+        return RecyclerView.NO_POSITION;
+    }
 
     private View.OnClickListener mOnClientClickListener = new View.OnClickListener() {
         @Override
@@ -253,6 +277,11 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
         @Override
         public void onClick(View view) {
 
+            if (mReadOnlyExternalSource) {
+                ActivityUtils.showToast("LINUX DO 当前为只读浏览");
+                return;
+            }
+
             ThreadRowInfo row = (ThreadRowInfo) view.getTag();
 
             Observable.create((ObservableOnSubscribe<Intent>) emitter -> {
@@ -379,8 +408,24 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
         mTopicOwner = topicOwner;
     }
 
+    public void setReadOnlyExternalSource(boolean readOnlyExternalSource) {
+        mReadOnlyExternalSource = readOnlyExternalSource;
+    }
+
     public void setData(ThreadData data) {
         mData = data;
+    }
+
+    public void applyLocality(int authorId, String locality) {
+        if (mData == null || mData.getRowList() == null || authorId <= 0) return;
+        for (int index = 0; index < mData.getRowList().size(); index++) {
+            ThreadRowInfo row = mData.getRowList().get(index);
+            if (row != null && row.getAuthorid() == authorId
+                    && !TextUtils.equals(row.getIpLoc(), locality)) {
+                row.setIpLoc(locality);
+                notifyItemChanged(index, PAYLOAD_LOCALITY);
+            }
+        }
     }
 
     public void setSupportListener(View.OnClickListener listener) {
@@ -457,8 +502,48 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
         holder.postTimeTv.setText(row.getPostdate());
         holder.scoreTv.setText(MessageFormat.format("{0}", row.getScore()));
 
-        holder.detailTv.setText(String.format("级别：%s   威望：%s   发帖：%s", row.getMemberGroup(), row.getReputation(), row.getPostCount()));
+        // External rows deliberately reuse the complete NGA floor chrome. Mutating actions are
+        // intercepted as read-only by the fragment/adapter instead of making the layout jump.
+        holder.supportBtn.setEnabled(true);
+        holder.opposeBtn.setVisibility(View.VISIBLE);
+        holder.replyBtn.setVisibility(View.VISIBLE);
+        holder.menuIv.setVisibility(View.VISIBLE);
+        holder.nickNameTV.setEnabled(!mReadOnlyExternalSource);
+        holder.avatarPanel.setEnabled(!mReadOnlyExternalSource);
 
+        bindDetail(holder, row);
+
+    }
+
+    @Override
+    public void onBindViewHolder(
+            @NonNull ArticleViewHolder holder,
+            int position,
+            @NonNull List<Object> payloads) {
+        if (payloads.contains(PAYLOAD_LOCALITY)) {
+            ThreadRowInfo row = getRowAt(position);
+            if (row != null) bindDetail(holder, row);
+            return;
+        }
+        super.onBindViewHolder(holder, position, payloads);
+    }
+
+    private void bindDetail(ArticleViewHolder holder, ThreadRowInfo row) {
+        if (mReadOnlyExternalSource) {
+            String trust = TextUtils.isEmpty(row.getMemberGroup()) ? "LINUX DO" : row.getMemberGroup();
+            holder.detailTv.setText(TextUtils.isEmpty(row.getIpLoc())
+                    ? trust : trust + "   属地：" + row.getIpLoc());
+            return;
+        }
+        if (TextUtils.isEmpty(row.getIpLoc())) {
+            holder.detailTv.setText(String.format(
+                    "威望：%s   发帖：%s",
+                    row.getReputation(), row.getPostCount()));
+        } else {
+            holder.detailTv.setText(String.format(
+                    "威望：%s   发帖：%s   属地：%s",
+                    row.getReputation(), row.getPostCount(), row.getIpLoc()));
+        }
     }
 
     private LocalWebView createLocalWebView() {

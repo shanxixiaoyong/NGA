@@ -326,15 +326,93 @@ reorderableTabRange = 1..tabs.lastIndex
 - Topic-list and article floating action buttons use their layout-default
   `end|bottom` placement. Do not add a handedness preference or runtime
   gravity override.
-- Live article lists add `article_list_reply_fab_clearance` (80dp) to their
-  existing bottom padding and set `clipToPadding=false`, allowing the final
-  floor's controls to scroll above the persistent reply FAB. Apply this in
-  `ArticleListFragment` only when `loadCache` is false. Do not add matching
-  clearance to topic lists, and do not turn the clearance into a list item or
-  include it in floor/page calculations.
+- Article lists do not add a permanent reply-FAB clearance, footer, or adapter
+  row. The final floor ends with its normal row spacing/system inset; content
+  may scroll behind the small overlay FAB. A persistent `80dp` tail creates an
+  empty final screen and is forbidden.
 - Article pages always use `fragment_article_tab`, with the page tabs at the
   top. Do not add a bottom-tab preference or a second bottom-tab layout.
 - Retain the existing pull-to-refresh behavior.
+
+## Article end-of-page continuation
+
+### 1. Scope / Trigger
+
+Use this contract when changing article RecyclerView touch observation, the
+article `ViewPager`, final-row spacing, or vertical page continuation.
+
+### 2. Signatures
+
+```java
+BottomPageAdvanceGesture(float thresholdPx, float directionSlopPx)
+void onDown(boolean alreadyAtBottom, float y)
+void onMove(float y)
+boolean onUp(float y)
+void cancel()
+void ArticleTabFragment.requestNextPageFromBottom()
+```
+
+### 3. Contracts
+
+- Observe through a non-intercepting `RecyclerView.SimpleOnItemTouchListener`;
+  every interception callback returns `false`, preserving native fling and
+  nested scrolling.
+- Arm only when `ACTION_DOWN` starts while the list cannot scroll farther
+  down. Reaching the bottom during a fling or drag does not arm that stream.
+- Advance on release only after a new upward drag reaches
+  `max(4 * scaledTouchSlop, 56dp)`. Direction reversal beyond touch slop,
+  multiple pointers, cancellation, or view destruction cancels the candidate.
+- Advance exactly one adapter position with the existing horizontal Pager.
+  Never wrap the last page or add a loading/footer row.
+- Keep article bottom padding unchanged. The reply FAB remains its original
+  bottom-right overlay and is hidden only on explicitly read-only sources.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required result |
+| --- | --- |
+| Down at bottom, deliberate upward drag past threshold, release | Advance exactly one page |
+| Drag/fling starts above bottom and later reaches bottom | Remain on current page |
+| Short upward drag or direction reversal | Remain on current page |
+| Second pointer, cancel, or teardown | Reset without page change |
+| Already on final Pager page | No-op; never wrap or create a page |
+| Normal article scrolling/flinging | RecyclerView retains native inertia |
+
+### 5. Good/Base/Bad Cases
+
+- **Good**: scroll to the last floor, lift, then make a clear second upward
+  drag; the next page animates in once.
+- **Base**: one fling coasts to the final floor and stops without changing the
+  page.
+- **Bad**: intercepting touch, arming after a stream reaches bottom, or adding
+  an `80dp` footer to expose the FAB.
+
+### 6. Tests Required
+
+- JVM-test arming, threshold, reversal, cancel, short drag, and exactly-once
+  reset in `BottomPageAdvanceGestureTest`.
+- Source-contract-test non-interception, down-time bottom eligibility,
+  multi-pointer cancellation, last-page bounds, and absence of permanent FAB
+  clearance.
+- Device/emulator validation is a separate authorized gate for real inertial
+  scrolling and coexistence with horizontal paging.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```java
+if (!recyclerView.canScrollVertically(1)) pager.setCurrentItem(page + 1);
+recyclerView.setPadding(0, 0, 0, dp(80));
+```
+
+#### Correct
+
+```java
+gesture.onDown(!recyclerView.canScrollVertically(1), event.getY());
+if (gesture.onUp(event.getY())) requestNextPageFromBottom();
+return false;
+```
 
 ## Article current-page refresh
 
@@ -530,8 +608,8 @@ rg -n "setOnTitleClickListener|onTitleClick" nga_phone_base_3.0/src/main
 The first scan must have no active matches. The second scan must have no
 matches; the unused `ScrollAwareFabBehavior` class itself may remain while no
 layout attaches it. The third scan should show one direct action per relevant
-layout, retained pull-to-refresh wiring, article-only clearance, and the
-current-page long-press refresh wiring. The fourth scan must have no matches.
+layout, retained pull-to-refresh and current-page long-press refresh wiring,
+with no `article_list_reply_fab_clearance` match. The fourth scan must have no matches.
 The fifth scan must have no matches. The sixth scan must show reads only — no
 assignment into the emoticon tables outside `EmoticonUtils` itself. The seventh
 scan must show one binding per topic-list toolbar and the matching handler, and

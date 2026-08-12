@@ -28,8 +28,9 @@ import sp.phone.mvp.contract.ArticleListContract;
 import sp.phone.mvp.model.convert.ArticleConvertFactory;
 import sp.phone.mvp.model.convert.ErrorConvertFactory;
 import sp.phone.param.ArticleListParam;
+import sp.phone.param.ContentSource;
+import sp.phone.linuxdo.LinuxDoRepository;
 import sp.phone.rxjava.BaseSubscriber;
-import gov.anzong.androidnga.common.util.NLog;
 
 /**
  * 加载帖子内容
@@ -74,6 +75,14 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
 
     @Override
     public void loadPage(ArticleListParam param, Map<String, String> header, OnHttpCallBack<ThreadData> callBack) {
+        if (param.source == ContentSource.LINUX_DO) {
+            try {
+                LinuxDoRepository.getInstance().loadArticle(param.tid, param.page, callBack);
+            } catch (RuntimeException | LinkageError error) {
+                callBack.onError("LINUX DO 初始化失败，请稍后重试");
+            }
+            return;
+        }
         String url = getUrl(param);
         mService.get(url, header)
                 .subscribeOn(Schedulers.io())
@@ -82,13 +91,16 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
                 .map(new Function<String, ThreadData>() {
                     @Override
                     public ThreadData apply(@NonNull String s) throws Exception {
-                        long time = System.currentTimeMillis();
-                        ThreadData data = ArticleConvertFactory.getArticleInfo(s);
-                        NLog.e(TAG, "time = " + (System.currentTimeMillis() - time));
+                        ArticleConvertFactory.ParseOutcome outcome =
+                                ArticleConvertFactory.parseArticleInfo(s);
+                        ThreadData data = outcome.getData();
                         if (data == null) {
                             String errorMsg = ErrorConvertFactory.getErrorMessage(s);
                             if (errorMsg != null) {
                                 throw new Exception(errorMsg);
+                            } else if (outcome.getDiagnostic() != null) {
+                                throw new ArticleParseException(
+                                        outcome.getDiagnostic().toUserMessage(param.tid, param.page));
                             } else {
                                 throw new ServerException("NGA后台抽风了，请尝试右上角菜单中的使用内置浏览器打开");
                             }
@@ -166,6 +178,13 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
     public static class ServerException extends Exception {
 
         public ServerException(String message) {
+            super(message);
+        }
+    }
+
+    public static class ArticleParseException extends Exception {
+
+        public ArticleParseException(String message) {
             super(message);
         }
     }

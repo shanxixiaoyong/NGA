@@ -94,12 +94,14 @@ fun OptionActionMenu(optionActions: List<OptionMenuData>? = null) {
 @Composable
 fun TopAppBarEx(
     topAppBarData: TopAppBarData,
+    elevation: androidx.compose.ui.unit.Dp = 4.dp,
 ) {
     val paddingValues = WindowInsets.statusBars.asPaddingValues()
     val top = paddingValues.calculateTopPadding()
     val pxValue = with(LocalDensity.current) { top.toPx() }
 
     TopAppBar(
+        elevation = elevation,
         backgroundColor = MaterialTheme.colors.primary,
         windowInsets = WindowInsets(0, pxValue.toInt(), 0, 0),
         title = {
@@ -157,6 +159,8 @@ data class OptionMenuData(
 fun ScaffoldApp(
     topAppBarData: TopAppBarData = TopAppBarData("App"),
     fabClick: (() -> Unit)? = null,
+    topBarElevation: androidx.compose.ui.unit.Dp = 4.dp,
+    contentSpacing: androidx.compose.ui.unit.Dp = 16.dp,
     appContent: @Composable (() -> Unit)? = null,
 ) {
     rememberSystemUiController().run {
@@ -165,7 +169,8 @@ fun ScaffoldApp(
     Scaffold(
         topBar = {
             TopAppBarEx(
-                topAppBarData = topAppBarData
+                topAppBarData = topAppBarData,
+                elevation = topBarElevation,
             )
         },
         floatingActionButton = {
@@ -174,7 +179,7 @@ fun ScaffoldApp(
     ) { innerPadding ->
         Column(
             modifier = Modifier.padding(innerPadding),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(contentSpacing),
         ) {
             appContent?.invoke()
         }

@@ -36,9 +36,13 @@ public class ThreadPageInfo implements JavaBean {
 
     private int mPostDate;
 
+    private int mLastPost;
+
     private ReplyInfo mReplyInfo;
 
     private String mBoard;
+
+    private int mParentFid;
 
     /**
      * 是否是版面镜像
@@ -55,6 +59,14 @@ public class ThreadPageInfo implements JavaBean {
 
     public void setPostDate(int postDate) {
         mPostDate = postDate;
+    }
+
+    public int getLastPost() {
+        return mLastPost;
+    }
+
+    public void setLastPost(int lastPost) {
+        mLastPost = lastPost;
     }
 
     public int getTid() {
@@ -184,6 +196,14 @@ public class ThreadPageInfo implements JavaBean {
     public void setBoard(String parentBoard) {
         mBoard = parentBoard;
         mMirrorBoard = "版面镜像".equals(parentBoard);
+    }
+
+    public int getParentFid() {
+        return mParentFid;
+    }
+
+    public void setParentFid(int parentFid) {
+        mParentFid = parentFid;
     }
 
     public static class ReplyInfo implements JavaBean {

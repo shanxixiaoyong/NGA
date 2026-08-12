@@ -17,6 +17,8 @@ import gov.anzong.androidnga.arouter.ARouterConstants;
 import gov.anzong.androidnga.ui.fragment.TopicListSimpleFragment;
 import sp.phone.param.ParamKey;
 import sp.phone.param.TopicListParam;
+import sp.phone.param.ContentSource;
+import sp.phone.linuxdo.LinuxDoWebSession;
 import sp.phone.ui.fragment.TopicFavoriteFragment;
 import sp.phone.ui.fragment.TopicListFragment;
 import sp.phone.util.ActivityUtils;
@@ -80,10 +82,21 @@ public class TopicListActivity extends BaseActivity {
         mRequestParam = getRequestParam();
         super.onCreate(savedInstanceState);
         if (mRequestParam != null) {
+            if (mRequestParam.source == ContentSource.LINUX_DO) {
+                LinuxDoWebSession.getInstance().acquire();
+            }
             setupFragment();
         } else {
             finish();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mRequestParam != null && mRequestParam.source == ContentSource.LINUX_DO) {
+            LinuxDoWebSession.getInstance().release();
+        }
+        super.onDestroy();
     }
 
     private void setupFragment() {

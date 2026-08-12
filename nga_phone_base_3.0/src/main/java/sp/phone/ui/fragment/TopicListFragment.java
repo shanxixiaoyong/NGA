@@ -25,6 +25,7 @@ import gov.anzong.androidnga.arouter.ARouterConstants;
 import gov.anzong.androidnga.base.util.ToastUtils;
 import sp.phone.mvp.model.entity.TopicListInfo;
 import sp.phone.param.ParamKey;
+import sp.phone.param.ContentSource;
 import sp.phone.util.ActivityUtils;
 
 /**
@@ -69,6 +70,9 @@ public class TopicListFragment extends TopicSearchFragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        if (mRequestParam.source == ContentSource.LINUX_DO) {
+            mFab.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -103,6 +107,18 @@ public class TopicListFragment extends TopicSearchFragment {
 
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
+        if (mRequestParam.source == ContentSource.LINUX_DO) {
+            menu.findItem(R.id.menu_add_bookmark).setVisible(false);
+            menu.findItem(R.id.menu_remove_bookmark).setVisible(false);
+            menu.findItem(R.id.menu_search).setVisible(false);
+            menu.findItem(R.id.menu_twenty_four).setVisible(false);
+            menu.findItem(R.id.menu_board_head).setVisible(false);
+            menu.findItem(R.id.menu_recommend).setVisible(false);
+            menu.findItem(R.id.menu_sub_board).setVisible(false);
+            menu.findItem(R.id.menu_favorite).setVisible(false);
+            super.onPrepareOptionsMenu(menu);
+            return;
+        }
         if (mPresenter.isBookmarkBoard(mRequestParam.fid, mRequestParam.stid)) {
             menu.findItem(R.id.menu_add_bookmark).setVisible(false);
             menu.findItem(R.id.menu_remove_bookmark).setVisible(true);

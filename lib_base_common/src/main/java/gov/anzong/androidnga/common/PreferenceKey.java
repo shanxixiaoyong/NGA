@@ -60,6 +60,9 @@ public class PreferenceKey {
     /** 图片域名模式从旧 0/1/2 编号迁移到新 0/1/2/3 编号的一次性完成标记。 */
     public static final String KEY_IMAGE_DOMAIN_MODE_MIGRATED = "pref_image_domain_mode_v2_migrated";
 
+    /** Dedicated RFC 8484 resolver for native LINUX DO JSON requests. */
+    public static final String KEY_LINUX_DO_DOH_URL = "pref_linux_do_doh_url";
+
     public static final String KEY_SEARCH_HISTORY_TOPIC = "search_history_topic";
 
     public static final String KEY_SEARCH_HISTORY_BOARD = "search_history_board";

@@ -1,10 +1,10 @@
 package sp.phone.mvp.presenter;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.ArrayMap;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.OnLifecycleEvent;
 
@@ -16,7 +16,6 @@ import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.Utils;
 import gov.anzong.androidnga.activity.fragment.ForumWebFragment;
 import gov.anzong.androidnga.base.util.ToastUtils;
-import gov.anzong.androidnga.common.PreferenceKey;
 import gov.anzong.androidnga.http.OnHttpCallBack;
 import sp.phone.common.UserManager;
 import sp.phone.common.UserManagerImpl;
@@ -25,6 +24,8 @@ import sp.phone.http.bean.ThreadRowInfo;
 import sp.phone.mvp.contract.ArticleListContract;
 import sp.phone.mvp.model.ArticleListModel;
 import sp.phone.param.ArticleListParam;
+import sp.phone.param.ContentSource;
+import sp.phone.linuxdo.LinuxDoNavigation;
 import sp.phone.rxjava.BaseSubscriber;
 import sp.phone.rxjava.RxUtils;
 import sp.phone.task.LikeTask;
@@ -53,9 +54,19 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         @Override
         public void onError(String text) {
             mPageRequestState.failForegroundLoad(mThreadData != null);
+            if (mRequestParam != null
+                    && mRequestParam.source == ContentSource.LINUX_DO
+                    && text != null
+                    && text.contains("会话已失效")
+                    && mBaseView != null) {
+                LinuxDoNavigation.openVerification(mBaseView.getContext());
+                mBaseView.finish();
+                return;
+            }
             if (mBaseView != null) {
                 mBaseView.hideLoadingView();
                 mBaseView.setRefreshing(false);
+                mBaseView.onLoadFailed();
                 mBaseView.showToast(text);
             }
         }
@@ -63,7 +74,9 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         @Override
         public void onError(String msg, Throwable t) {
             onError(msg);
-            if (t instanceof ArticleListModel.ServerException) {
+            if (t instanceof ArticleListModel.ArticleParseException) {
+                showParseDiagnostic(msg);
+            } else if (t instanceof ArticleListModel.ServerException) {
                 showWithWebView();
             }
         }
@@ -195,8 +208,12 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         }
     }
 
+    public ArticleListPresenter(ArticleListParam articleListParam) {
+        mRequestParam = articleListParam;
+    }
+
     private void showWithWebView() {
-        if (mBaseView == null || !mBaseView.getContext().getSharedPreferences(PreferenceKey.PERFERENCE, Context.MODE_PRIVATE).getBoolean(mBaseView.getString(gov.anzong.androidnga.common.R.string.pref_show_with_webview), true)) {
+        if (mBaseView == null || mRequestParam == null) {
             return;
         }
         ARouterUtils.build(ARouterConstants.ACTIVITY_FRAGMENT_TEMPLATE)
@@ -205,6 +222,19 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
                 .withString("fragment", ForumWebFragment.class.getName())
                 .navigation(mBaseView.getContext());
         mBaseView.finish();
+    }
+
+    private void showParseDiagnostic(String message) {
+        if (mBaseView == null || mBaseView.getContext() == null) {
+            return;
+        }
+        new AlertDialog.Builder(mBaseView.getContext())
+                .setTitle(R.string.article_parse_diagnostic_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.open_browser_mode,
+                        (dialog, which) -> showWithWebView())
+                .setNegativeButton(R.string.close, null)
+                .show();
     }
 
     private String getCurrentUrl() {
@@ -216,10 +246,6 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
             builder.append("tid=").append(mRequestParam.tid);
         }
         return builder.toString();
-    }
-
-    public ArticleListPresenter(ArticleListParam articleListParam) {
-        mRequestParam = articleListParam;
     }
 
     public ArticleListPresenter() {

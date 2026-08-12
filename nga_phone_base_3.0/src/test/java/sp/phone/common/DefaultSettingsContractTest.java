@@ -2,7 +2,6 @@ package sp.phone.common;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.w3c.dom.Document;
@@ -18,6 +17,7 @@ import java.util.List;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import gov.anzong.androidnga.common.util.NgaImageHost;
+import sp.phone.linuxdo.LinuxDoDohConfig;
 
 public class DefaultSettingsContractTest {
 
@@ -29,6 +29,7 @@ public class DefaultSettingsContractTest {
 
         assertDefault(document, "nga_domain", "1");
         assertDefault(document, "pref_image_domain", "0");
+        assertDefault(document, "pref_linux_do_doh_url", LinuxDoDohConfig.DEFAULT_URL);
         assertDefault(document, "nightmode", "false");
         assertDefault(document, "key_night_mode_follow_system",
                 Boolean.toString(Constants.NIGHT_MODE_FOLLOW_SYSTEM_DEFAULT));
@@ -119,14 +120,16 @@ public class DefaultSettingsContractTest {
                 "PreferenceCategory:发帖设置",
                 "PreferenceScreen:实验室");
         assertCategory(preferenceScreen, "域名与账号",
-                "nga_domain", "pref_image_domain", "pref_user_compose");
+                "nga_domain", "pref_image_domain", "pref_linux_do_doh_url",
+                "pref_user_compose");
         assertCategory(preferenceScreen, "外观设置",
                 "nightmode", "key_night_mode_follow_system", "use_solid_color_bg",
                 "material_theme", "adjust_size");
         assertCategory(preferenceScreen, "通知设置",
                 "enableNotification", "notificationSound");
         assertCategory(preferenceScreen, "其他设置",
-                "pref_black_list_new", "key_clear_cache", "key_reset_emoticon_order");
+                "pref_black_list_new", "pref_hidden_boards", "key_clear_cache",
+                "key_reset_emoticon_order");
         assertCategory(preferenceScreen, "主题列表设置",
                 "sort_by_post", "filter_sub_board");
         assertCategory(preferenceScreen, "主题详情设置",
@@ -150,21 +153,23 @@ public class DefaultSettingsContractTest {
                 "sp.phone.ui.fragment.SettingsSizeFragment");
         assertAttribute(document, "pref_black_list_new", "android:fragment",
                 "gov.anzong.androidnga.activity.compose.filter.FilterWordFragment");
+        assertAttribute(document, "pref_hidden_boards", "android:fragment",
+                "gov.anzong.androidnga.activity.compose.topic.HiddenBoardsFragment");
     }
 
     @Test
     public void sizeDefaultsMatchStandardSettings() {
-        assertEquals(20, Constants.TOPIC_TITLE_SIZE_DEFAULT);
-        assertEquals(100, Constants.AVATAR_SIZE_DEFAULT);
+        assertEquals(18, Constants.TOPIC_TITLE_SIZE_DEFAULT);
+        assertEquals(104, Constants.AVATAR_SIZE_DEFAULT);
         assertEquals(60, Constants.EMOTICON_SIZE_DEFAULT);
-        assertEquals(80, Constants.WEBVIEW_DEFAULT_TEXT_ZOOM);
+        assertEquals(70, Constants.WEBVIEW_DEFAULT_TEXT_ZOOM);
     }
 
     @Test
     public void runtimeFallbacksMatchPreferenceDefaults() {
         assertFalse(Constants.NOTIFICATION_SOUND_DEFAULT);
-        assertEquals("2", Constants.MATERIAL_THEME_DEFAULT);
-        assertTrue(Constants.NIGHT_MODE_FOLLOW_SYSTEM_DEFAULT);
+        assertEquals("1", Constants.MATERIAL_THEME_DEFAULT);
+        assertFalse(Constants.NIGHT_MODE_FOLLOW_SYSTEM_DEFAULT);
     }
 
     private static void assertDefault(Document document, String key, String expected) {

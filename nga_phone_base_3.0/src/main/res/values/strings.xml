@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">NGA Just Works</string>
+    <string name="app_name">NGA</string>
     <string name="menu_login">登录</string>
     <string name="menu_setting">设置</string>
     <string name="menu_exit">退出</string>
@@ -44,6 +44,14 @@
     <string name="new_message">发新消息</string>
     <string name="reply_message">回短消息</string>
     <string name="reply_thread">回帖</string>
+    <string name="restored_read_position">已定位到上次阅读位置</string>
+    <string name="hide_topic">屏蔽帖子</string>
+    <string name="hide_board">屏蔽板块</string>
+    <string name="linuxdo_session_hint">如出现验证或登录页面，请完成后点击下方按钮</string>
+    <string name="linuxdo_enter_read_only">进入只读浏览</string>
+    <string name="linuxdo_session_checking">正在确认 LINUX DO 会话…</string>
+    <string name="linuxdo_session_verify_again">请在页面中完成验证或登录，然后再次点击进入</string>
+    <string name="linuxdo_session_not_ready">会话尚未准备好，请等待页面加载后重试</string>
     <string name="bookmark">收藏本帖</string>
     <string name="bookmark_title">已收藏的主题</string>
     <string name="goto_bookmark">收藏夹</string>
@@ -127,6 +135,8 @@
     <string name="fuck_gfw_prefix">方滨兴造墙烂屁眼</string>
     <string name="fail_to_cross_gfw">又被墙了,草</string>
     <string name="close">关闭</string>
+    <string name="article_parse_diagnostic_title">帖子解析诊断</string>
+    <string name="open_browser_mode">浏览器模式</string>
     <string name="change_night_mode">夜间模式</string>
     <string name="change_daily_mode">白天模式</string>
     <string name="floor_one">1楼</string>
@@ -152,7 +162,7 @@
     <string name="prompt">提示</string>
     <string name="promptnewversion">提示(花几秒看完它)</string>
     <string name="i_know">知道了</string>
-    <string name="start_title">NGA Just Works</string>
+    <string name="start_title">NGA</string>
     <string name="create_cache_dir">创建缓存目录</string>
     <string name="move_avatar">移动头像到新位置</string>
     <string name="error">错误</string>
@@ -332,8 +342,6 @@
     <string name="setting_title_material_mode">Material Mode</string>
     <string name="setting_title_size">调整字体和头像大小</string>
     <string name="setting_title_material_theme">主题风格</string>
-    <string name="summary_show_with_webview">加载出错时默认使用内置浏览器打开</string>
-    <string name="title_show_with_webview">使用内置浏览器打开</string>
     <string name="setting_title_sort_by_post">按发帖顺序排序</string>
     <string name="setting_title_user">账号管理</string>
     <string name="setting_title_black_list">黑名单</string>
@@ -385,7 +393,7 @@
     <string name="label_activity_message_detail">短消息正文</string>
     <string name="label_activity_topic_history">浏览历史</string>
     <string name="label_activity_login">登录</string>
-    <string name="label_activity_main">NGA Just Works</string>
+    <string name="label_activity_main">NGA</string>
     <string name="title_about">关于</string>
 
     <!-- error -->

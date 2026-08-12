@@ -29,6 +29,8 @@ import gov.anzong.androidnga.common.PreferenceKey;
 import gov.anzong.androidnga.common.util.EmoticonOrderStore;
 import gov.anzong.androidnga.ui.fragment.BasePreferenceFragment;
 import sp.phone.common.UserManagerImpl;
+import sp.phone.linuxdo.LinuxDoDohConfig;
+import sp.phone.linuxdo.LinuxDoHttpSession;
 import sp.phone.theme.ThemeManager;
 import sp.phone.ui.fragment.dialog.AlertDialogFragment;
 import sp.phone.ui.fragment.dialog.ImageDomainDialogFragment;
@@ -57,6 +59,11 @@ public class SettingsFragment extends BasePreferenceFragment
             showResetEmoticonOrderDialog();
             return true;
         });
+
+        Preference dohPreference = findPreference(PreferenceKey.KEY_LINUX_DO_DOH_URL);
+        if (dohPreference != null) {
+            dohPreference.setSummary(LinuxDoDohConfig.currentUrl());
+        }
 
     }
 
@@ -136,6 +143,15 @@ public class SettingsFragment extends BasePreferenceFragment
 
         String key = preference.getKey();
         switch (key) {
+            case PreferenceKey.KEY_LINUX_DO_DOH_URL:
+                String dohUrl = newValue == null ? "" : newValue.toString().trim();
+                if (!LinuxDoDohConfig.isValid(dohUrl)) {
+                    ToastUtils.error("请输入完整的 HTTPS DoH 地址");
+                    return false;
+                }
+                preference.setSummary(dohUrl);
+                LinuxDoHttpSession.getInstance().invalidateClient();
+                break;
             case PreferenceKey.NIGHT_MODE:
                 SettingsActivity.sRecreated = true;
                 break;

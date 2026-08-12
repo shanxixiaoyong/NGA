@@ -107,13 +107,15 @@ class TopicPagePrefetchContractTest {
     }
 
     @Test
-    fun normalRefreshRetryAndWebViewFallbackRemainOnTheForegroundPath() {
+    fun normalRefreshRetriesAnAccountThenFallsBackOnlyOnClassifiedServerFailure() {
         assertTrue(listFragmentSource.contains("mSwipeRefreshLayout.setOnRefreshListener"))
         assertTrue(listFragmentSource.contains("mPresenter.loadPage(mRequestParam);"))
         assertTrue(presenterSource.contains("requestForegroundLoad(true);"))
         assertTrue(presenterSource.contains("private class RetryCallback extends ArticleCallback"))
         assertTrue(presenterSource.contains("retryWithNewAccount()"))
-        assertTrue(presenterSource.contains("showWithWebView();"))
+        assertTrue(presenterSource.contains("t instanceof ArticleListModel.ServerException"))
+        assertTrue(presenterSource.contains("showWithWebView()"))
+        assertTrue(presenterSource.contains("ForumWebFragment.class.getName()"))
     }
 
     @Test
@@ -124,7 +126,8 @@ class TopicPagePrefetchContractTest {
             ),
         )
         assertTrue(modelSource.contains("mService.get(url, header)"))
-        assertTrue(modelSource.contains("ArticleConvertFactory.getArticleInfo(s)"))
+        assertTrue(modelSource.contains("ArticleConvertFactory.parseArticleInfo(s)"))
+        assertTrue(modelSource.contains("outcome.getDiagnostic()"))
         assertEquals(
             2,
             Regex("bindUntilEvent\\(FragmentEvent\\.DETACH\\)").findAll(modelSource).count(),

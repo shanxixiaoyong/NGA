@@ -19,6 +19,14 @@
             android:key="pref_image_domain"
             android:title="@string/setting_image_domain" />
 
+        <EditTextPreference
+            android:defaultValue="https://cloudflare-dns.com/dns-query"
+            android:dialogTitle="LINUX DO 原生请求专用 DoH"
+            android:key="pref_linux_do_doh_url"
+            android:singleLine="true"
+            android:summary="用于原生帖子列表和正文请求；首次登录网页仍使用系统 DNS"
+            android:title="LINUX DO 原生请求专用 DoH" />
+
         <PreferenceScreen
             android:fragment="com.justwent.androidnga.bu.user.UserManagerFragment"
             android:key="pref_user_compose"
@@ -34,7 +42,7 @@
             android:title="@string/nightmode" />
 
         <SwitchPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="key_night_mode_follow_system"
             android:title="夜间模式跟随系统"/>
 
@@ -45,7 +53,7 @@
             android:title="@string/setting_solid_color_bg_title" />
 
         <ListSummaryPreference
-            android:defaultValue="2"
+            android:defaultValue="1"
             android:entries="@array/material_theme"
             android:entryValues="@array/material_theme_value"
             android:key="material_theme"
@@ -79,6 +87,11 @@
             android:fragment="gov.anzong.androidnga.activity.compose.filter.FilterWordFragment"
             android:key="pref_black_list_new"
             android:title="屏蔽规则" />
+
+        <PreferenceScreen
+            android:fragment="gov.anzong.androidnga.activity.compose.topic.HiddenBoardsFragment"
+            android:key="pref_hidden_boards"
+            android:title="已屏蔽板块" />
 
         <PreferenceScreen
             android:key="key_clear_cache"

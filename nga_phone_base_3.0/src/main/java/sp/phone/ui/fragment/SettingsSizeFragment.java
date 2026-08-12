@@ -57,8 +57,8 @@ public class SettingsSizeFragment extends BaseFragment implements  SignSeekBar.O
 
     private void initWebFontSizeView(View rootView) {
         SeekBarEx seekBar = rootView.findViewById(R.id.seek_web_size);
-        int max = 100;
-        int min = 1;
+        int max = Constants.WEBVIEW_TEXT_ZOOM_MAX;
+        int min = Constants.WEBVIEW_TEXT_ZOOM_MIN;
         int size = mConfiguration.getWebViewTextZoom();
         seekBar.getConfigBuilder()
                 .max(max)

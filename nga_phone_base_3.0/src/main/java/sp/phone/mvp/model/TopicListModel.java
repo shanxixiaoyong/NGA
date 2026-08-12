@@ -30,6 +30,8 @@ import sp.phone.mvp.model.convert.ErrorConvertFactory;
 import sp.phone.mvp.model.convert.TopicConvertFactory;
 import sp.phone.mvp.model.entity.ThreadPageInfo;
 import sp.phone.mvp.model.entity.TopicListInfo;
+import sp.phone.linuxdo.LinuxDoRepository;
+import sp.phone.param.ContentSource;
 import sp.phone.param.TopicListParam;
 import sp.phone.rxjava.BaseSubscriber;
 import gov.anzong.androidnga.common.util.NLog;
@@ -128,6 +130,14 @@ public class TopicListModel extends BaseModel implements TopicListContract.Model
 
     @Override
     public void loadTopicList(final int page, TopicListParam param, final OnHttpCallBack<TopicListInfo> callBack) {
+        if (param.source == ContentSource.LINUX_DO) {
+            try {
+                LinuxDoRepository.getInstance().loadTopics(page, callBack);
+            } catch (RuntimeException | LinkageError error) {
+                callBack.onError("LINUX DO 初始化失败，请稍后重试");
+            }
+            return;
+        }
         String url = getUrl(page, param);
         mService.get(url)
                 .subscribeOn(Schedulers.io())

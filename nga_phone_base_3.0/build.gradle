@@ -168,6 +168,11 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit-converters:$retrofit_version"
     implementation "com.squareup.retrofit2:converter-scalars:$retrofit_version"
     implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofit_version"
+    // Tiny, source-isolated resolver used only by the read-only LINUX DO client.
+    // Coil resolves OkHttp 4.12.0 into the app. Keep the DoH module on the exact same
+    // binary API; mixing 3.12 here crashes the OkHttp dispatcher with NoSuchMethodError.
+    implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0'
+    implementation 'com.google.android.gms:play-services-cronet:18.0.1'
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 

@@ -25,6 +25,7 @@ import gov.anzong.androidnga.common.util.ReflectUtils;
 import gov.anzong.androidnga.db.AppDatabase;
 import sp.phone.common.UserManagerImpl;
 import sp.phone.common.VersionUpgradeHelper;
+import sp.phone.linuxdo.LinuxDoWebSession;
 import sp.phone.task.CheckInTask;
 
 public class NgaClientApp extends Application {
@@ -32,6 +33,8 @@ public class NgaClientApp extends Application {
     private static final String TAG = NgaClientApp.class.getSimpleName();
 
     private static boolean sNewVersion;
+
+    private LinuxDoWebSession mLinuxDoWebSession;
 
     @Override
     public void onCreate() {
@@ -137,6 +140,14 @@ public class NgaClientApp extends Application {
 
     public static void setNewVersion(boolean newVersion) {
         sNewVersion = newVersion;
+    }
+
+    /** Application-owned so the short-lived browser session never statically retains Activity. */
+    public synchronized LinuxDoWebSession getLinuxDoWebSession() {
+        if (mLinuxDoWebSession == null) {
+            mLinuxDoWebSession = new LinuxDoWebSession();
+        }
+        return mLinuxDoWebSession;
     }
 
 }

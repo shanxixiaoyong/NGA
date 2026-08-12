@@ -11,6 +11,8 @@ import com.alibaba.android.arouter.facade.annotation.Route;
 
 import gov.anzong.androidnga.arouter.ARouterConstants;
 import sp.phone.param.ArticleListParam;
+import sp.phone.param.ContentSource;
+import sp.phone.linuxdo.LinuxDoWebSession;
 import sp.phone.param.ParamKey;
 import sp.phone.ui.fragment.ArticleSearchFragment;
 import sp.phone.ui.fragment.ArticleTabFragment;
@@ -80,10 +82,21 @@ public class ArticleListActivity extends BaseActivity {
             finish();
             return;
         }
+        if (mRequestParam.source == ContentSource.LINUX_DO) {
+            LinuxDoWebSession.getInstance().acquire();
+        }
         setupFragment();
         if (mRequestParam.title != null) {
             setTitle(mRequestParam.title);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mRequestParam != null && mRequestParam.source == ContentSource.LINUX_DO) {
+            LinuxDoWebSession.getInstance().release();
+        }
+        super.onDestroy();
     }
 
     @Override

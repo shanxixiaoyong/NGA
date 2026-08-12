@@ -3,17 +3,21 @@ package sp.phone.mvp.model.convert;
 import android.text.TextUtils;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import gov.anzong.androidnga.Utils;
-import gov.anzong.androidnga.base.logger.Logger;
 import gov.anzong.androidnga.common.util.NgaImageHost;
 import gov.anzong.androidnga.core.HtmlConvertFactory;
-import gov.anzong.androidnga.common.util.NLog;
 import gov.anzong.androidnga.core.data.AttachmentData;
 import gov.anzong.androidnga.core.data.CommentData;
 import gov.anzong.androidnga.core.data.HtmlData;
@@ -34,17 +38,19 @@ import sp.phone.util.StringUtils;
 
 public class ArticleConvertFactory {
 
-    private static final String TAG = ArticleConvertFactory.class.getSimpleName();
-
     public static ThreadData getArticleInfo(String js) {
-        return parseJsonThreadPage(js);
+        return parseArticleInfo(js).getData();
     }
 
-    private static ThreadData parseJsonThreadPage(String js) {
-        ThreadData data = null;
+    /**
+     * Parse a THREAD.PAGE payload while retaining only redacted failure metadata.
+     * Raw authenticated payloads and post content must never enter logs or diagnostics.
+     */
+    public static ParseOutcome parseArticleInfo(String js) {
+        String stage = "normalize";
         try {
             if (js.isEmpty()) {
-                return null;
+                return ParseOutcome.empty();
             } else if (js.contains("/*error fill content")) {
                 js = js.substring(0, js.indexOf("/*error fill content"));
             }
@@ -56,48 +62,489 @@ public class ArticleConvertFactory {
                     .replaceAll("\"subject\":(0\\d+),", "\"subject\":\"$1\",")
                     .replaceAll("\"author\":(0\\d+),", "\"author\":\"$1\",")
                     .replaceAll("\"alterinfo\":\"\\[(\\w|\\s)+\\]\\s+\",", ""); //部分页面打不开的问题
-//            NLog.e(js);
-            JSONObject obj = (JSONObject) JSON.parseObject(js).get("data");
-            NLog.d(TAG, "js = :\n" + js);
+            stage = "root-json";
+            RootParseResult rootResult = parseRootWithBoundedRecovery(js);
+            JSONObject root = rootResult.root;
+            js = rootResult.payload;
+            Object rawData = root.get("data");
+            JSONObject obj = rawData instanceof JSONObject ? (JSONObject) rawData : null;
             if (obj == null) {
-                return null;
+                return ParseOutcome.empty();
             }
-            int allRows = (Integer) obj.get("__ROWS");
-            data = new ThreadData();
+            // Recognized NGA error payloads are classified by ErrorConvertFactory.
+            if (obj.get("__MESSAGE") != null && obj.get("__R") == null) {
+                return ParseOutcome.empty();
+            }
+            stage = "row-list";
+            List<ThreadRowInfo> rowList = buildThreadRowList(obj);
+            stage = "thread-info";
+            ThreadPageInfo threadInfo = buildThreadPageInfo(obj, rowList);
+            ThreadData data = new ThreadData();
             data.setRawData(js);
-            data.setThreadInfo(buildThreadPageInfo(obj));
-            data.setRowList(buildThreadRowList(obj));
+            data.setThreadInfo(threadInfo);
+            data.setRowList(rowList);
+            stage = "page-count";
+            int allRows = resolveAllRows(obj.get("__ROWS"), threadInfo, data.getRowList());
             data.set__ROWS(allRows);
             data.setRowNum(data.getRowList().size());
+            return ParseOutcome.success(data);
+        } catch (PayloadParseException e) {
+            ParseDiagnostic diagnostic = e.toDiagnostic();
+            return ParseOutcome.failure(diagnostic);
         } catch (Exception e) {
-            NLog.e(TAG, "can not parse :\n" + js);
-            Logger.d(e);
+            ParseDiagnostic diagnostic = "root-json".equals(stage)
+                    ? ParseDiagnostic.forRootJson(js, e)
+                    : ParseDiagnostic.of(stage, -1, -1, e);
+            return ParseOutcome.failure(diagnostic);
         }
-        return data;
     }
 
-    private static ThreadPageInfo buildThreadPageInfo(JSONObject obj) {
-        JSONObject subObj = (JSONObject) obj.get("__T");
-        if (subObj == null) {
-            return null;
-        }
+    /** Strict parse first, followed by a small deterministic set of safe repairs. */
+    private static RootParseResult parseRootWithBoundedRecovery(String payload) {
+        JSONException originalFailure;
         try {
-            return JSONObject.toJavaObject(subObj, ThreadPageInfo.class);
-        } catch (RuntimeException e) {
-            NLog.e(TAG, subObj.toJSONString());
+            return new RootParseResult(JSON.parseObject(payload), payload);
+        } catch (JSONException failure) {
+            originalFailure = failure;
         }
-        return null;
+
+        LinkedHashSet<String> candidates = new LinkedHashSet<>();
+        String envelopeRepaired = stripKnownRootEnvelope(payload);
+        String quoteRepaired = sanitizeJsonStrings(payload);
+        String envelopeQuoteRepaired = sanitizeJsonStrings(envelopeRepaired);
+        addChangedCandidate(candidates, payload, envelopeRepaired);
+        addChangedCandidate(candidates, payload, quoteRepaired);
+        addChangedCandidate(candidates, payload, envelopeQuoteRepaired);
+        addChangedCandidate(candidates, payload, closeTruncatedJson(payload));
+        addChangedCandidate(candidates, payload, closeTruncatedJson(quoteRepaired));
+        addChangedCandidate(candidates, payload, closeTruncatedJson(envelopeRepaired));
+        addChangedCandidate(candidates, payload, closeTruncatedJson(envelopeQuoteRepaired));
+        addChangedCandidate(candidates, payload, completeJsonPrefix(payload));
+        addChangedCandidate(candidates, payload, completeJsonPrefix(quoteRepaired));
+        addChangedCandidate(candidates, payload, completeJsonPrefix(envelopeRepaired));
+        addChangedCandidate(candidates, payload, completeJsonPrefix(envelopeQuoteRepaired));
+        addSalvagedNestedObjectCandidates(candidates, envelopeRepaired, "__R", 3);
+        addSalvagedNestedObjectCandidates(candidates, envelopeQuoteRepaired, "__R", 3);
+        addSalvagedDataCandidates(candidates, envelopeRepaired);
+        addSalvagedDataCandidates(candidates, envelopeQuoteRepaired);
+        for (String candidate : candidates) {
+            try {
+                return new RootParseResult(JSON.parseObject(candidate), candidate);
+            } catch (JSONException ignored) {
+                // Try only the bounded candidates above, then retain original diagnostics.
+            }
+        }
+        throw originalFailure;
+    }
+
+    /**
+     * NGA occasionally cuts a response while writing the last data member. Keep
+     * every complete member before that point and discard only the damaged tail.
+     */
+    static void addSalvagedDataCandidates(LinkedHashSet<String> candidates, String payload) {
+        if (payload == null || payload.isEmpty()) return;
+        int dataKey = payload.indexOf("\"data\"");
+        if (dataKey < 0) return;
+        int colon = payload.indexOf(':', dataKey + 6);
+        if (colon < 0) return;
+        int dataStart = skipWhitespace(payload, colon + 1);
+        if (dataStart >= payload.length() || payload.charAt(dataStart) != '{') return;
+
+        ArrayList<Integer> memberEnds = new ArrayList<>();
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+        for (int i = 0; i < payload.length(); i++) {
+            char value = payload.charAt(i);
+            if (inString) {
+                if (escaped) escaped = false;
+                else if (value == '\\') escaped = true;
+                else if (value == '"') inString = false;
+                continue;
+            }
+            if (value == '"') {
+                inString = true;
+            } else if (value == '{' || value == '[') {
+                depth++;
+            } else if (value == '}' || value == ']') {
+                depth--;
+            } else if (value == ',' && depth == 2 && i > dataStart) {
+                memberEnds.add(i);
+            }
+        }
+        int attempts = 0;
+        for (int i = memberEnds.size() - 1; i >= 0 && attempts < 32; i--, attempts++) {
+            candidates.add(payload.substring(0, memberEnds.get(i)) + "}}");
+        }
+    }
+
+    /** Preserve complete numeric entries in a truncated __R map. */
+    static void addSalvagedNestedObjectCandidates(
+            LinkedHashSet<String> candidates, String payload, String key, int objectDepth) {
+        if (payload == null || payload.isEmpty()) return;
+        int keyIndex = payload.indexOf("\"" + key + "\"");
+        if (keyIndex < 0) return;
+        int colon = payload.indexOf(':', keyIndex + key.length() + 2);
+        if (colon < 0) return;
+        int objectStart = skipWhitespace(payload, colon + 1);
+        if (objectStart >= payload.length() || payload.charAt(objectStart) != '{') return;
+
+        ArrayList<Integer> entryEnds = new ArrayList<>();
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+        for (int i = 0; i < payload.length(); i++) {
+            char value = payload.charAt(i);
+            if (inString) {
+                if (escaped) escaped = false;
+                else if (value == '\\') escaped = true;
+                else if (value == '"') inString = false;
+                continue;
+            }
+            if (value == '"') inString = true;
+            else if (value == '{' || value == '[') depth++;
+            else if (value == '}' || value == ']') depth--;
+            else if (value == ',' && depth == objectDepth && i > objectStart) entryEnds.add(i);
+        }
+        int attempts = 0;
+        for (int i = entryEnds.size() - 1; i >= 0 && attempts < 32; i--, attempts++) {
+            StringBuilder candidate = new StringBuilder(payload.substring(0, entryEnds.get(i)));
+            for (int close = 0; close < objectDepth; close++) candidate.append('}');
+            candidates.add(candidate.toString());
+        }
+    }
+
+    /** Remove only wrappers that NGA itself uses around JSON responses. */
+    static String stripKnownRootEnvelope(String payload) {
+        if (payload == null || payload.isEmpty()) return payload;
+        int start = 0;
+        while (start < payload.length()) {
+            char value = payload.charAt(start);
+            if (value == '\ufeff' || Character.isWhitespace(value)) start++;
+            else break;
+        }
+        String prefix = "window.script_muti_get_var_store=";
+        if (payload.startsWith(prefix, start)) {
+            start += prefix.length();
+            while (start < payload.length() && Character.isWhitespace(payload.charAt(start))) {
+                start++;
+            }
+            return payload.substring(start);
+        }
+        return start == 0 ? payload : payload.substring(start);
+    }
+
+    private static void addChangedCandidate(
+            LinkedHashSet<String> candidates, String original, String candidate) {
+        if (candidate != null && !candidate.equals(original)) candidates.add(candidate);
+    }
+
+    /**
+     * Repair raw quotes inside JSON string values without touching valid JSON.
+     * NGA occasionally emits a quote that is not escaped; a real closing quote
+     * must be followed by a JSON separator (ignoring whitespace).
+     */
+    static String escapeUnquotedStringQuotes(String payload) {
+        return sanitizeJsonStrings(payload);
+    }
+
+    /**
+     * Repair raw quotes and control characters inside JSON strings. A quote is
+     * accepted as a terminator only when the following token is valid for the
+     * current object/array position.
+     */
+    static String sanitizeJsonStrings(String payload) {
+        if (payload == null || payload.isEmpty()) return payload;
+        StringBuilder repaired = null;
+        ArrayDeque<Character> containers = new ArrayDeque<>();
+        boolean inString = false;
+        boolean escaped = false;
+        boolean stringIsKey = false;
+        char previousSignificant = 0;
+        for (int i = 0; i < payload.length(); i++) {
+            char value = payload.charAt(i);
+            if (!inString) {
+                if (value == '"') {
+                    inString = true;
+                    char parent = containers.isEmpty() ? 0 : containers.peek();
+                    stringIsKey = parent == '{'
+                            && (previousSignificant == '{' || previousSignificant == ',');
+                } else if (value == '{' || value == '[') {
+                    containers.push(value);
+                    previousSignificant = value;
+                } else if (value == '}' || value == ']') {
+                    if (!containers.isEmpty()) containers.pop();
+                    previousSignificant = value;
+                } else if (!Character.isWhitespace(value)) {
+                    previousSignificant = value;
+                }
+            } else if (escaped) {
+                escaped = false;
+            } else if (value == '\\') {
+                escaped = true;
+            } else if (value == '"') {
+                int next = i + 1;
+                while (next < payload.length() && Character.isWhitespace(payload.charAt(next))) {
+                    next++;
+                }
+                char parent = containers.isEmpty() ? 0 : containers.peek();
+                boolean closesString = isValidStringTerminator(
+                        payload, next, parent, stringIsKey);
+                if (closesString) {
+                    inString = false;
+                    previousSignificant = '"';
+                } else {
+                    if (repaired == null) {
+                        repaired = new StringBuilder(payload.length() + 8);
+                        repaired.append(payload, 0, i);
+                    }
+                    repaired.append('\\');
+                }
+            } else if (value < 0x20) {
+                if (repaired == null) {
+                    repaired = new StringBuilder(payload.length() + 8);
+                    repaired.append(payload, 0, i);
+                }
+                appendEscapedControl(repaired, value);
+                continue;
+            }
+            if (repaired != null) repaired.append(value);
+        }
+        return repaired == null ? payload : repaired.toString();
+    }
+
+    private static boolean isValidStringTerminator(
+            String payload, int next, char parent, boolean stringIsKey) {
+        if (stringIsKey) return next < payload.length() && payload.charAt(next) == ':';
+        if (next == payload.length()) return parent == 0;
+        char token = payload.charAt(next);
+        if (parent == '{') {
+            if (token == '}') return true;
+            if (token != ',') return false;
+            return startsObjectMemberOrEnd(payload, skipWhitespace(payload, next + 1));
+        }
+        if (parent == '[') {
+            if (token == ']') return true;
+            if (token != ',') return false;
+            return startsJsonValueOrEnd(payload, skipWhitespace(payload, next + 1), ']');
+        }
+        return false;
+    }
+
+    private static boolean startsObjectMemberOrEnd(String payload, int start) {
+        if (start >= payload.length()) return false;
+        if (payload.charAt(start) == '}') return true;
+        if (payload.charAt(start) != '"') return false;
+        boolean escaped = false;
+        for (int i = start + 1; i < payload.length(); i++) {
+            char value = payload.charAt(i);
+            if (escaped) escaped = false;
+            else if (value == '\\') escaped = true;
+            else if (value == '"') {
+                int next = skipWhitespace(payload, i + 1);
+                return next < payload.length() && payload.charAt(next) == ':';
+            }
+        }
+        return false;
+    }
+
+    private static boolean startsJsonValueOrEnd(String payload, int start, char endToken) {
+        if (start >= payload.length()) return false;
+        char value = payload.charAt(start);
+        return value == endToken || value == '"' || value == '{' || value == '['
+                || value == '-' || (value >= '0' && value <= '9')
+                || value == 't' || value == 'f' || value == 'n';
+    }
+
+    private static int skipWhitespace(String payload, int start) {
+        while (start < payload.length() && Character.isWhitespace(payload.charAt(start))) start++;
+        return start;
+    }
+
+    private static void appendEscapedControl(StringBuilder builder, char value) {
+        switch (value) {
+            case '\b': builder.append("\\b"); break;
+            case '\f': builder.append("\\f"); break;
+            case '\n': builder.append("\\n"); break;
+            case '\r': builder.append("\\r"); break;
+            case '\t': builder.append("\\t"); break;
+            default:
+                String hex = Integer.toHexString(value);
+                builder.append("\\u");
+                for (int i = hex.length(); i < 4; i++) builder.append('0');
+                builder.append(hex);
+        }
+    }
+
+    /** Complete only an otherwise structurally consistent truncated JSON tail. */
+    static String closeTruncatedJson(String payload) {
+        if (payload == null || payload.isEmpty()) return payload;
+        ArrayDeque<Character> containers = new ArrayDeque<>();
+        boolean inString = false;
+        boolean escaped = false;
+        for (int i = 0; i < payload.length(); i++) {
+            char value = payload.charAt(i);
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                } else if (value == '\\') {
+                    escaped = true;
+                } else if (value == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (value == '"') {
+                inString = true;
+            } else if (value == '{' || value == '[') {
+                containers.push(value);
+            } else if (value == '}' || value == ']') {
+                if (containers.isEmpty()) return payload;
+                char opening = containers.pop();
+                if ((opening == '{' && value != '}') || (opening == '[' && value != ']')) {
+                    return payload;
+                }
+            }
+        }
+        if (containers.isEmpty()) return payload;
+        StringBuilder completed = new StringBuilder(payload.length() + containers.size() + 2);
+        completed.append(payload);
+        if (inString) {
+            // A final backslash is an incomplete JSON escape. Preserve it as a literal
+            // backslash before closing the truncated string.
+            if (escaped) completed.append('\\');
+            completed.append('"');
+        }
+        while (!containers.isEmpty()) {
+            completed.append(containers.pop() == '{' ? '}' : ']');
+        }
+        return completed.toString();
+    }
+
+    /** Remove only a quote/semicolon suffix after an already complete JSON object. */
+    static String completeJsonPrefix(String payload) {
+        if (payload == null || payload.isEmpty()) return payload;
+        ArrayDeque<Character> containers = new ArrayDeque<>();
+        boolean inString = false;
+        boolean escaped = false;
+        boolean started = false;
+        for (int i = 0; i < payload.length(); i++) {
+            char value = payload.charAt(i);
+            if (inString) {
+                if (escaped) escaped = false;
+                else if (value == '\\') escaped = true;
+                else if (value == '"') inString = false;
+                continue;
+            }
+            if (value == '"') {
+                inString = true;
+            } else if (value == '{' || value == '[') {
+                containers.push(value);
+                started = true;
+            } else if (value == '}' || value == ']') {
+                if (containers.isEmpty()) return payload;
+                char opening = containers.pop();
+                if ((opening == '{' && value != '}') || (opening == '[' && value != ']')) {
+                    return payload;
+                }
+                if (started && containers.isEmpty()) {
+                    for (int suffix = i + 1; suffix < payload.length(); suffix++) {
+                        char trailing = payload.charAt(suffix);
+                        if (!Character.isWhitespace(trailing)
+                                && trailing != ';' && trailing != '"') return payload;
+                    }
+                    return i + 1 == payload.length() ? payload : payload.substring(0, i + 1);
+                }
+            }
+        }
+        return payload;
+    }
+
+    static ThreadPageInfo buildThreadPageInfo(
+            JSONObject obj, List<ThreadRowInfo> rows) {
+        Object rawThread = obj.get("__T");
+        JSONObject subObj = rawThread instanceof JSONObject ? (JSONObject) rawThread : null;
+        if (subObj != null && subObj.size() == 1 && subObj.get("0") instanceof JSONObject) {
+            subObj = subObj.getJSONObject("0");
+        }
+        if (subObj != null) {
+            try {
+                return JSONObject.toJavaObject(subObj, ThreadPageInfo.class);
+            } catch (RuntimeException ignored) {
+                // Synthesize the small page header below; valid rows remain usable.
+            }
+        }
+        ThreadPageInfo recovered = new ThreadPageInfo();
+        if (rows == null || rows.isEmpty()) return recovered;
+        ThreadRowInfo first = rows.get(0);
+        recovered.setTid(first.getTid());
+        recovered.setFid(first.getFid());
+        recovered.setAuthor(first.getAuthor());
+        recovered.setAuthorId(first.getAuthorid());
+        recovered.setSubject(first.getSubject());
+        recovered.setPid(first.getPid());
+        recovered.setPostDate(nonNegativeInt(first.getPostdate(), 0));
+        recovered.setReplies(Math.max(0, resolveAllRows(obj.get("__ROWS"), null, rows) - 1));
+        return recovered;
     }
 
     private static List<ThreadRowInfo> buildThreadRowList(JSONObject obj) {
-        JSONObject subObj = (JSONObject) obj.get("__R");
-        int rows = (Integer) obj.get("__R__ROWS");
-        JSONObject userInfoMap = (JSONObject) obj.get("__U");
+        Object rawRows = obj.get("__R");
+        JSONObject subObj = rawRows instanceof JSONObject ? (JSONObject) rawRows : null;
+        Object rawUserInfoMap = obj.get("__U");
+        JSONObject userInfoMap = rawUserInfoMap instanceof JSONObject
+                ? (JSONObject) rawUserInfoMap : null;
         if (subObj == null) {
             return new ArrayList<>();
         }
+        int rows = Math.max(nonNegativeInt(obj.get("__R__ROWS"), -1), numericEntryCount(subObj));
         String attachmentsPrefix = resolveAttachmentsPrefix(obj);
-        return convertJsObjToList(subObj, rows, userInfoMap, attachmentsPrefix);
+        return convertJsObjToList(subObj, rows, userInfoMap, attachmentsPrefix, "row");
+    }
+
+    private static int resolveAllRows(
+            Object rawCount, ThreadPageInfo threadInfo, List<ThreadRowInfo> rows) {
+        int explicit = nonNegativeInt(rawCount, -1);
+        if (explicit >= 0) return explicit;
+        int inferred = rows == null ? 0 : rows.size();
+        if (threadInfo != null && threadInfo.getReplies() >= 0) {
+            inferred = Math.max(inferred, threadInfo.getReplies() + 1);
+        }
+        if (rows != null) {
+            for (ThreadRowInfo row : rows) {
+                if (row != null && row.getLou() >= 0) inferred = Math.max(inferred, row.getLou() + 1);
+            }
+        }
+        return inferred;
+    }
+
+    private static int numericEntryCount(JSONObject object) {
+        int max = 0;
+        for (String key : object.keySet()) {
+            try {
+                int index = Integer.parseInt(key);
+                if (index >= 0 && index < Integer.MAX_VALUE) max = Math.max(max, index + 1);
+            } catch (NumberFormatException ignored) {
+                // Metadata keys do not contribute to the page row range.
+            }
+        }
+        return max;
+    }
+
+    private static int nonNegativeInt(Object value, int fallback) {
+        if (value instanceof Number) {
+            long number = ((Number) value).longValue();
+            return number >= 0 && number <= Integer.MAX_VALUE ? (int) number : fallback;
+        }
+        if (value instanceof String) {
+            try {
+                long number = Long.parseLong(((String) value).trim());
+                return number >= 0 && number <= Integer.MAX_VALUE ? (int) number : fallback;
+            } catch (NumberFormatException ignored) {
+                return fallback;
+            }
+        }
+        return fallback;
     }
 
     /** 从当前 THREAD.PAGE 的 data 中提取并解析页面级附件前缀。 */
@@ -119,9 +566,9 @@ public class ArticleConvertFactory {
             JSONObject rowMap,
             int count,
             JSONObject userInfoMap,
-            String attachmentsPrefix) {
+            String attachmentsPrefix,
+            String scope) {
         List<ThreadRowInfo> rowList = new ArrayList<>();
-        NLog.d("ArticleUtil", "convertJsObjToList");
         for (int i = 0; i < count; i++) {
             Object obj = rowMap.get(String.valueOf(i));
             JSONObject rowObj;
@@ -130,16 +577,59 @@ public class ArticleConvertFactory {
             } else {
                 continue;
             }
-            ThreadRowInfo row = JSONObject.toJavaObject(rowObj, ThreadRowInfo.class);
-            buildRowHotReplay(row, rowObj);
-            buildRowComment(row, rowObj, userInfoMap, attachmentsPrefix);
-            buildRowClientInfo(row, rowObj);
-            buildRowUserInfo(row, userInfoMap);
-            buildRowVote(row, rowObj);
-            buildRowContent(row, attachmentsPrefix);
+            ThreadRowInfo row;
+            try {
+                row = JSONObject.toJavaObject(rowObj, ThreadRowInfo.class);
+            } catch (RuntimeException ignored) {
+                continue;
+            }
+            try { buildRowIpLocation(row, rowObj, userInfoMap); } catch (RuntimeException ignored) { }
+            try { buildRowHotReplay(row, rowObj); } catch (RuntimeException ignored) { }
+            try { buildRowComment(row, rowObj, userInfoMap, attachmentsPrefix); } catch (RuntimeException ignored) { }
+            try { buildRowClientInfo(row, rowObj); } catch (RuntimeException ignored) { }
+            try { buildRowUserInfo(row, userInfoMap); } catch (RuntimeException ignored) { }
+            try { buildRowVote(row, rowObj); } catch (RuntimeException ignored) { }
+            try {
+                buildRowContent(row, attachmentsPrefix);
+            } catch (RuntimeException ignored) {
+                row.setFormattedHtmlData(row.getContent() == null ? "" : row.getContent());
+            }
             rowList.add(row);
         }
         return rowList;
+    }
+
+    /** Resolve locality once from THREAD.PAGE; the adapter only binds the normalized field. */
+    static void buildRowIpLocation(
+            ThreadRowInfo row, JSONObject rowObj, JSONObject userInfoMap) {
+        JSONObject userInfo = pageUserInfo(row, userInfoMap);
+        String username = userInfo == null ? null : userInfo.getString("username");
+        if (row.getISANONYMOUS() || (username != null && username.startsWith("#anony_"))) {
+            row.setIpLoc(null);
+            return;
+        }
+        String value = normalizedIpLocation(rowObj.get("ipLoc"));
+        if (value == null) value = normalizedIpLocation(row.getIpLoc());
+        if (value == null) value = normalizedIpLocation(rowObj.get("ip_loc"));
+        if (value == null) value = normalizedIpLocation(rowObj.get("ipLocation"));
+        if (value == null) value = normalizedIpLocation(rowObj.get("ip_location"));
+        if (value == null && userInfo != null) value = normalizedIpLocation(userInfo.get("ipLoc"));
+        if (value == null && userInfo != null) value = normalizedIpLocation(userInfo.get("ip_loc"));
+        if (value == null && userInfo != null) value = normalizedIpLocation(userInfo.get("ipLocation"));
+        if (value == null && userInfo != null) value = normalizedIpLocation(userInfo.get("ip_location"));
+        row.setIpLoc(value);
+    }
+
+    private static JSONObject pageUserInfo(ThreadRowInfo row, JSONObject userInfoMap) {
+        if (row == null || row.getAuthorid() == 0 || userInfoMap == null) return null;
+        Object value = userInfoMap.get(String.valueOf(row.getAuthorid()));
+        return value instanceof JSONObject ? (JSONObject) value : null;
+    }
+
+    private static String normalizedIpLocation(Object raw) {
+        if (!(raw instanceof String)) return null;
+        String value = ((String) raw).trim();
+        return value.isEmpty() ? null : value;
     }
 
     private static void buildRowContent(ThreadRowInfo row, String attachmentsPrefix) {
@@ -223,15 +713,243 @@ public class ArticleConvertFactory {
     }
 
     //解析贴条
-    private static void buildRowComment(
+    static void buildRowComment(
             ThreadRowInfo row,
             JSONObject rowObj,
             JSONObject userInfoMap,
             String attachmentsPrefix) {
-        JSONObject commObj = (JSONObject) rowObj.get("comment");
+        Object rawComment = rowObj.get("comment");
+        JSONObject commObj = rawComment instanceof JSONObject ? (JSONObject) rawComment : null;
         if (commObj != null) {
             row.setComments(convertJsObjToList(
-                    commObj, commObj.size(), userInfoMap, attachmentsPrefix));
+                    commObj, commObj.size(), userInfoMap, attachmentsPrefix, "comment"));
+        }
+    }
+
+    private static final class RootParseResult {
+        final JSONObject root;
+        final String payload;
+
+        RootParseResult(JSONObject root, String payload) {
+            this.root = root;
+            this.payload = payload;
+        }
+    }
+
+    public static final class ParseOutcome {
+        private final ThreadData data;
+        private final ParseDiagnostic diagnostic;
+
+        private ParseOutcome(ThreadData data, ParseDiagnostic diagnostic) {
+            this.data = data;
+            this.diagnostic = diagnostic;
+        }
+
+        static ParseOutcome success(ThreadData data) {
+            return new ParseOutcome(data, null);
+        }
+
+        static ParseOutcome empty() {
+            return new ParseOutcome(null, null);
+        }
+
+        static ParseOutcome failure(ParseDiagnostic diagnostic) {
+            return new ParseOutcome(null, diagnostic);
+        }
+
+        public ThreadData getData() {
+            return data;
+        }
+
+        public ParseDiagnostic getDiagnostic() {
+            return diagnostic;
+        }
+    }
+
+    public static final class ParseDiagnostic {
+        private static final Pattern ERROR_OFFSET_PATTERN = Pattern.compile(
+                "(?:pos|position)\\s*[:=]?\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+
+        private final String stage;
+        private final int rowIndex;
+        private final int floor;
+        private final String causeType;
+        private final String payloadShape;
+        private final int payloadLength;
+        private final int errorOffset;
+        private final String errorTokenClass;
+        private final String reasonCode;
+
+        private ParseDiagnostic(
+                String stage,
+                int rowIndex,
+                int floor,
+                String causeType,
+                String payloadShape,
+                int payloadLength,
+                int errorOffset,
+                String errorTokenClass,
+                String reasonCode) {
+            this.stage = stage;
+            this.rowIndex = rowIndex;
+            this.floor = floor;
+            this.causeType = causeType;
+            this.payloadShape = payloadShape;
+            this.payloadLength = payloadLength;
+            this.errorOffset = errorOffset;
+            this.errorTokenClass = errorTokenClass;
+            this.reasonCode = reasonCode;
+        }
+
+        static ParseDiagnostic of(String stage, int rowIndex, int floor, Throwable cause) {
+            return new ParseDiagnostic(stage, rowIndex, floor,
+                    cause == null ? "Unknown" : cause.getClass().getSimpleName(),
+                    null, -1, -1, null, null);
+        }
+
+        static ParseDiagnostic forRootJson(String payload, Throwable cause) {
+            int offset = extractErrorOffset(cause);
+            return new ParseDiagnostic(
+                    "root-json",
+                    -1,
+                    -1,
+                    cause == null ? "Unknown" : cause.getClass().getSimpleName(),
+                    classifyPayloadShape(payload),
+                    payload == null ? 0 : payload.length(),
+                    offset,
+                    classifyTokenAt(payload, offset),
+                    classifyReason(cause));
+        }
+
+        private static int extractErrorOffset(Throwable cause) {
+            String message = cause == null ? null : cause.getMessage();
+            if (message == null) return -1;
+            Matcher matcher = ERROR_OFFSET_PATTERN.matcher(message);
+            if (!matcher.find()) return -1;
+            try {
+                long value = Long.parseLong(matcher.group(1));
+                return value > Integer.MAX_VALUE ? -1 : (int) value;
+            } catch (NumberFormatException ignored) {
+                return -1;
+            }
+        }
+
+        private static String classifyPayloadShape(String payload) {
+            if (payload == null || payload.isEmpty()) return "empty";
+            for (int i = 0; i < payload.length(); i++) {
+                char value = payload.charAt(i);
+                if (value == '\ufeff' || Character.isWhitespace(value)) continue;
+                if (value == '{') return "json-object";
+                if (value == '[') return "json-array";
+                if (value == '<') return "html";
+                return "other";
+            }
+            return "empty";
+        }
+
+        private static String classifyTokenAt(String payload, int offset) {
+            if (payload == null || offset < 0 || offset >= payload.length()) return "unavailable";
+            char value = payload.charAt(offset);
+            if (value < 0x20) return Character.isWhitespace(value) ? "whitespace" : "control";
+            if (Character.isWhitespace(value)) return "whitespace";
+            if (value == '"') return "quote";
+            if (value == '\\') return "backslash";
+            if (value == '{' || value == '}') return "brace";
+            if (value == '[' || value == ']') return "bracket";
+            if (value == ':' || value == ',') return "separator";
+            if (value >= '0' && value <= '9') return "digit";
+            if ((value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z')) {
+                return "ascii-letter";
+            }
+            return value > 0x7f ? "non-ascii" : "other";
+        }
+
+        private static String classifyReason(Throwable cause) {
+            String message = cause == null ? null : cause.getMessage();
+            if (message == null) return "parser-rejected";
+            String normalized = message.toLowerCase(Locale.ROOT);
+            if (normalized.contains("unclosed string") || normalized.contains("unclosed str")) {
+                return "unclosed-string";
+            }
+            if (normalized.contains("illegal escape")) return "illegal-escape";
+            if (normalized.contains("eof")) return "unexpected-eof";
+            if (normalized.contains("expect")) return "expected-token";
+            if (normalized.contains("syntax error")) return "syntax-error";
+            return "parser-rejected";
+        }
+
+        public String getStage() {
+            return stage;
+        }
+
+        public int getRowIndex() {
+            return rowIndex;
+        }
+
+        public int getFloor() {
+            return floor;
+        }
+
+        public String getCauseType() {
+            return causeType;
+        }
+
+        public String getPayloadShape() {
+            return payloadShape;
+        }
+
+        public int getPayloadLength() {
+            return payloadLength;
+        }
+
+        public int getErrorOffset() {
+            return errorOffset;
+        }
+
+        public String getErrorTokenClass() {
+            return errorTokenClass;
+        }
+
+        public String getReasonCode() {
+            return reasonCode;
+        }
+
+        public String toUserMessage(int tid, int page) {
+            StringBuilder builder = new StringBuilder("原生帖子解析失败")
+                    .append("\ntid=").append(tid)
+                    .append("  page=").append(page)
+                    .append("\nstage=").append(stage);
+            if (rowIndex >= 0) builder.append("  row=").append(rowIndex);
+            if (floor >= 0) builder.append("  floor=").append(floor);
+            builder.append("\ncause=").append(causeType);
+            if (payloadShape != null) {
+                builder.append("\nshape=").append(payloadShape)
+                        .append("  length=").append(payloadLength)
+                        .append("\nreason=").append(reasonCode)
+                        .append("  offset=").append(errorOffset)
+                        .append("  token=").append(errorTokenClass);
+            }
+            return builder
+                    .append("\n\n请截图此信息反馈；诊断不包含帖子正文或登录信息。")
+                    .toString();
+        }
+
+    }
+
+    private static final class PayloadParseException extends RuntimeException {
+        private final String stage;
+        private final int rowIndex;
+        private final int floor;
+
+        PayloadParseException(String stage, int rowIndex, int floor, Throwable cause) {
+            super(cause);
+            this.stage = stage;
+            this.rowIndex = rowIndex;
+            this.floor = floor;
+        }
+
+        ParseDiagnostic toDiagnostic() {
+            return ParseDiagnostic.of(stage, rowIndex, floor, getCause());
         }
     }
 
@@ -260,24 +978,26 @@ public class ArticleConvertFactory {
     }
 
     private static void buildRowUserInfo(ThreadRowInfo row, JSONObject userInfoMap) {
-        if (row.getAuthorid() == 0) {
+        if (row.getAuthorid() == 0 || userInfoMap == null) {
             return;
         }
-        JSONObject userInfo = (JSONObject) userInfoMap.get(String.valueOf(row
-                .getAuthorid()));
-        JSONObject groupObj = userInfoMap.getJSONObject("__GROUPS");
-
+        JSONObject userInfo = pageUserInfo(row, userInfoMap);
         if (userInfo == null) {
             return;
         }
+        String username = userInfo.getString("username");
+        if (username == null) {
+            return;
+        }
+        Object rawGroupInfo = userInfoMap.get("__GROUPS");
+        JSONObject groupObj = rawGroupInfo instanceof JSONObject
+                ? (JSONObject) rawGroupInfo : null;
         int uid = row.getAuthorid();
         row.set_IsInBlackList(UserManagerImpl.getInstance().checkBlackList(String.valueOf(uid)));
         String t1 = "甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥";
         String t2 = "王李张刘陈杨黄吴赵周徐孙马朱胡林郭何高罗郑梁谢宋唐许邓冯韩曹曾彭萧蔡潘田董袁于余叶蒋杜苏魏程吕丁沈任姚卢傅钟姜崔谭廖范汪陆金石戴贾韦夏邱方侯邹熊孟秦白江阎薛尹段雷黎史龙陶贺顾毛郝龚邵万钱严赖覃洪武莫孔汤向常温康施文牛樊葛邢安齐易乔伍庞颜倪庄聂章鲁岳翟殷詹申欧耿关兰焦俞左柳甘祝包宁尚符舒阮柯纪梅童凌毕单季裴霍涂成苗谷盛曲翁冉骆蓝路游辛靳管柴蒙鲍华喻祁蒲房滕屈饶解牟艾尤阳时穆农司卓古吉缪简车项连芦麦褚娄窦戚岑景党宫费卜冷晏席卫米柏宗瞿桂全佟应臧闵苟邬边卞姬师和仇栾隋商刁沙荣巫寇桑郎甄丛仲虞敖巩明佘池查麻苑迟邝 ";
-        if (userInfo.getString("username").length() == 39
-                && userInfo.getString("username").startsWith("#anony_")) {
+        if (username.length() == 39 && username.startsWith("#anony_")) {
             StringBuilder builder = new StringBuilder();
-            String username = userInfo.getString("username");
             int i = 6;
             for (int j = 0; j < 6; j++) {
                 int pos;
@@ -293,7 +1013,7 @@ public class ArticleConvertFactory {
             row.setAuthor(builder.toString());
             row.setISANONYMOUS(true);
         } else {
-            row.setAuthor(userInfo.getString("username"));
+            row.setAuthor(username);
         }
         row.setJs_escap_avatar(userInfo.getString("avatar"));
         row.setYz(userInfo.getString("yz"));
@@ -308,7 +1028,9 @@ public class ArticleConvertFactory {
         try {
             row.setPostCount(userInfo.getString("postnum"));
             row.setReputation(Float.parseFloat(userInfo.getString("rvrc")) / 10.0f);
-            row.setMemberGroup(groupObj.getJSONObject(userInfo.getString("memberid")).getString("0"));
+            if (groupObj != null && groupObj.getJSONObject(userInfo.getString("memberid")) != null) {
+                row.setMemberGroup(groupObj.getJSONObject(userInfo.getString("memberid")).getString("0"));
+            }
         } catch (Exception e) {
         }
 

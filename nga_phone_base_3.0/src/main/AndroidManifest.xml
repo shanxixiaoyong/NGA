@@ -51,6 +51,10 @@
 
         <activity android:name=".activity.ProfileActivity" />
         <activity
+            android:name=".activity.LinuxDoSessionActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false" />
+        <activity
             android:name=".activity.PostActivity"
             android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="adjustResize" />

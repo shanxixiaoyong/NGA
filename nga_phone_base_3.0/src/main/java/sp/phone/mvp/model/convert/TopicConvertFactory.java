@@ -171,6 +171,7 @@ public class TopicConvertFactory {
                 pageInfo.setAuthor(tBean.getAuthor());
             }
             pageInfo.setLastPoster(tBean.getLastposter());
+            pageInfo.setLastPost(tBean.getLastpost());
             pageInfo.setSubject(tBean.getSubject());
             pageInfo.setReplies(tBean.getReplies());
             pageInfo.setType(tBean.getType());
@@ -182,6 +183,7 @@ public class TopicConvertFactory {
                 tid = StringUtils.getUrlParameter(tpcUrl, "tid");
             }
             pageInfo.setTid(tid);
+            pageInfo.setFid(tBean.getFid());
             pageInfo.setPage(page);
             TopicListBean.DataBean.TBean.PBean pBean = tBean.get__P();
             if (pBean != null) {
@@ -201,6 +203,13 @@ public class TopicConvertFactory {
                 try {
                     JSONObject obj = JSON.parseObject(parent);
                     pageInfo.setBoard(Objects.requireNonNull(obj.get("2")).toString());
+                    Object parentFid = obj.get("0");
+                    if (parentFid != null) {
+                        pageInfo.setParentFid(Integer.parseInt(parentFid.toString()));
+                        if (pageInfo.getFid() == 0) {
+                            pageInfo.setFid(pageInfo.getParentFid());
+                        }
+                    }
                 } catch (Exception e) {
                     // ignore
                 }

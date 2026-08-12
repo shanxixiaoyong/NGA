@@ -1,12 +1,16 @@
 package sp.phone.ui.fragment;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.Window;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModelProvider;
@@ -34,6 +38,8 @@ import sp.phone.mvp.presenter.TopicListPresenter;
 import sp.phone.param.ArticleListParam;
 import sp.phone.param.ParamKey;
 import sp.phone.param.TopicListParam;
+import sp.phone.param.ContentSource;
+import sp.phone.linuxdo.LinuxDoNavigation;
 import sp.phone.ui.adapter.BaseAppendableAdapter;
 import sp.phone.ui.adapter.ReplyListAdapter;
 import sp.phone.ui.adapter.TopicListAdapter;
@@ -41,7 +47,7 @@ import sp.phone.util.ARouterUtils;
 import sp.phone.util.StringUtils;
 import sp.phone.view.RecyclerViewEx;
 
-public class TopicSearchFragment extends BaseFragment implements View.OnClickListener {
+public class TopicSearchFragment extends BaseFragment implements View.OnClickListener, View.OnLongClickListener {
 
     private static final String TAG = TopicSearchFragment.class.getSimpleName();
 
@@ -131,7 +137,13 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
 
         } else {
 
-            mAdapter = new TopicListAdapter(getContext());
+            TopicListAdapter topicAdapter = new TopicListAdapter(getContext(), mRequestParam.source);
+            topicAdapter.setFallbackBoardName(mRequestParam.title);
+            topicAdapter.setLocalProjectionEnabled(isOrdinaryBoardFeed());
+            mAdapter = topicAdapter;
+            if (isOrdinaryBoardFeed()) {
+                mAdapter.setOnLongClickListener(this);
+            }
         }
 
         mAdapter.setOnClickListener(this);
@@ -173,6 +185,13 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
         mPresenter.getNextTopicList().observe(getViewLifecycleOwner(), this::setData);
 
         mPresenter.getErrorMsg().observe(getViewLifecycleOwner(), res -> {
+            if (mRequestParam.source == ContentSource.LINUX_DO
+                    && res != null
+                    && res.contains("会话已失效")) {
+                LinuxDoNavigation.openVerification(requireContext());
+                requireActivity().finish();
+                return;
+            }
             showToast(res);
             setNextPageEnabled(false);
         });
@@ -234,6 +253,10 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
 
     public void setData(TopicListInfo result) {
         mTopicListInfo = result;
+        if (mAdapter instanceof TopicListAdapter) {
+            ((TopicListAdapter) mAdapter).setFallbackBoardName(
+                    TextUtils.isEmpty(mRequestParam.title) ? result.getName() : mRequestParam.title);
+        }
         mAdapter.setData(result.getThreadPageList());
     }
 
@@ -245,6 +268,53 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
     public void onClick(View view) {
         ThreadPageInfo info = (ThreadPageInfo) view.getTag();
         handleClickEvent(view.getContext(), info, mRequestParam);
+    }
+
+    protected boolean isOrdinaryBoardFeed() {
+        return this instanceof TopicListFragment;
+    }
+
+    @Override
+    public boolean onLongClick(View view) {
+        if (!(mAdapter instanceof TopicListAdapter) || !isOrdinaryBoardFeed()) return false;
+        ThreadPageInfo topic = (ThreadPageInfo) view.getTag();
+        if (topic == null) return false;
+        TopicListAdapter adapter = (TopicListAdapter) mAdapter;
+        String boardName = adapter.boardName(topic);
+        View content = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_topic_block_actions, null, false);
+        Dialog dialog = new Dialog(requireContext());
+        dialog.setContentView(content);
+        TextView hideTopic = content.findViewById(R.id.action_hide_topic);
+        TextView hideBoard = content.findViewById(R.id.action_hide_board);
+        hideTopic.setOnClickListener(ignored -> {
+            dialog.dismiss();
+            adapter.hideTopic(topic);
+        });
+        hideBoard.setEnabled(topic.getFid() != 0);
+        hideBoard.setAlpha(topic.getFid() == 0 ? 0.38f : 1f);
+        hideBoard.setOnClickListener(ignored -> {
+            if (topic.getFid() == 0) return;
+            dialog.dismiss();
+            adapter.hideBoard(topic, boardName);
+        });
+        dialog.setCancelable(true);
+        dialog.setCanceledOnTouchOutside(true);
+        dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+            window.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        return true;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mAdapter instanceof TopicListAdapter && isOrdinaryBoardFeed()) {
+            ((TopicListAdapter) mAdapter).refreshLocalProjection();
+        }
     }
 
     public static void handleClickEvent(Context context, ThreadPageInfo info, TopicListParam requestParam) {
@@ -265,6 +335,7 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
         } else {
 
             ArticleListParam param = new ArticleListParam();
+            param.source = requestParam.source;
             param.tid = info.getTid();
             param.page = info.getPage();
             param.title = StringUtils.unEscapeHtml(info.getSubject());

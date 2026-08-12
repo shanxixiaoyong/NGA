@@ -34,10 +34,10 @@ class ReleaseWorkflowContractTest {
     }
 
     @Test
-    fun rootGradleAcceptsDebugDistributionNamesAndRejectsLegacyPreviewNames() {
+    fun rootGradleAcceptsDebugAndPersonalDistributionNamesAndRejectsLegacyPreviewNames() {
         val gradle = File(repositoryRoot, "build.gradle").readText()
 
-        assertTrue(gradle.contains("(?:-debug\\.[0-9]+)?"))
+        assertTrue(gradle.contains("(?:-(?:debug|personal)\\.[0-9]+)?"))
         assertFalse(gradle.contains("-preview"))
     }
 

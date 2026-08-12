@@ -23,7 +23,7 @@
             android:id="@+id/iv_person"
             android:layout_width="15dp"
             android:layout_height="15dp"
-            android:src="@drawable/ic_person" />
+            android:src="@drawable/default_board_icon" />
 
         <TextView
             android:id="@+id/author"
@@ -72,4 +72,3 @@
     </RelativeLayout>
 
 </LinearLayout>
-			

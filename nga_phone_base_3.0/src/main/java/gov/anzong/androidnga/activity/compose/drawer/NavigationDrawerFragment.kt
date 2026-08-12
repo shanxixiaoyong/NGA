@@ -351,11 +351,15 @@ class NavigationDrawerFragment : BaseComposeFragment() {
                 }
             },
         ) {
-            ScaffoldApp(getTopAppBarData(navigationIconAction = {
-                scope.launch {
-                    drawerState.open()
-                }
-            })) {
+            ScaffoldApp(
+                topAppBarData = getTopAppBarData(navigationIconAction = {
+                    scope.launch {
+                        drawerState.open()
+                    }
+                }),
+                topBarElevation = 0.dp,
+                contentSpacing = 0.dp,
+            ) {
                 ForumBoardView(
                     forumBoardViewModel = forumBoardViewModel,
                     pagerModifier = Modifier.onGloballyPositioned {

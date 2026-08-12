@@ -37,6 +37,8 @@ public class TopicListParam implements Cloneable, Parcelable {
 
     public String boardHead;
 
+    public int source = ContentSource.NGA;
+
     public TopicListParam() {
     }
 
@@ -55,6 +57,7 @@ public class TopicListParam implements Cloneable, Parcelable {
         stid = in.readInt();
         loadCache = in.readInt() == 1;
         boardHead = in.readString();
+        source = in.dataAvail() > 0 ? in.readInt() : ContentSource.NGA;
     }
 
     @Override
@@ -73,6 +76,7 @@ public class TopicListParam implements Cloneable, Parcelable {
         dest.writeInt(stid);
         dest.writeInt(loadCache ? 1 : 0);
         dest.writeString(boardHead);
+        dest.writeInt(source);
     }
 
     @Override

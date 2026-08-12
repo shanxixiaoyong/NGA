@@ -53,22 +53,22 @@ class ArticlePageRefreshContractTest {
     }
 
     @Test
-    fun onlyLiveArticlePagesReceiveReplyFabClearance() {
-        assertTrue(
-            dimensSource.contains(
-                "<dimen name=\"article_list_reply_fab_clearance\">80dp</dimen>",
-            ),
-        )
-        assertTrue(articleListSource.contains("applyReplyFabClearance();"))
-
-        val clearanceMethod = articleListSource
-            .substringAfter("private void applyReplyFabClearance()")
-            .substringBefore("public void loadPage()")
-        assertTrue(clearanceMethod.contains("if (mRequestParam.loadCache)"))
-        assertTrue(clearanceMethod.contains("R.dimen.article_list_reply_fab_clearance"))
-        assertTrue(clearanceMethod.contains("mListView.setPadding("))
-        assertTrue(clearanceMethod.contains("mListView.setClipToPadding(false);"))
+    fun articlePagesDoNotManufactureAReplyFabTailSpacer() {
+        assertFalse(dimensSource.contains("article_list_reply_fab_clearance"))
+        assertFalse(articleListSource.contains("applyReplyFabClearance"))
+        assertFalse(articleListSource.contains("mListView.setClipToPadding(false)"))
         assertFalse(boardLayout.contains("article_list_reply_fab_clearance"))
+    }
+
+    @Test
+    fun deliberateBottomDragCanAdvanceExactlyOnePageWithoutInterceptingTheList() {
+        assertTrue(articleListSource.contains("installBottomPageAdvanceGesture();"))
+        assertTrue(articleListSource.contains("!recyclerView.canScrollVertically(1)"))
+        assertTrue(articleListSource.contains("return false;"))
+        assertTrue(articleListSource.contains("requestNextArticlePage();"))
+        assertTrue(articleTabSource.contains("public void requestNextPageFromBottom()"))
+        assertTrue(articleTabSource.contains("mViewPager.getCurrentItem() + 1"))
+        assertTrue(articleTabSource.contains("nextPosition < mPagerAdapter.getStandardCount()"))
     }
 
     @Test
@@ -101,7 +101,7 @@ class ArticlePageRefreshContractTest {
 
         val refreshMethod = articleTabSource
             .substringAfter("private void refreshCurrentPage()")
-            .substringBefore("@Override\n    public void onResume()")
+            .substringBefore("public void requestNextPageFromBottom()")
         assertTrue(refreshMethod.contains("mPagerAdapter.getCurrentFragment()"))
         assertTrue(refreshMethod.contains("!fragment.isRefreshing()"))
         assertTrue(refreshMethod.contains("fragment.loadPage();"))

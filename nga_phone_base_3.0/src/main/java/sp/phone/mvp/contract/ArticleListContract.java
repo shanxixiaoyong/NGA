@@ -49,6 +49,8 @@ public interface ArticleListContract {
 
         void setData(ThreadData data);
 
+        void onLoadFailed();
+
         void startPostActivity(Intent intent);
 
         void showPostCommentDialog(String prefix, Bundle bundle);

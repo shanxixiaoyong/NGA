@@ -48,6 +48,8 @@ public class ThreadRowInfo implements JavaBean {
 
     public String mMemberGroup;
 
+    public String ipLoc;
+
     public List<String> mImageUrlList = new ArrayList<>();
 
     public int score;
@@ -288,5 +290,13 @@ public class ThreadRowInfo implements JavaBean {
 
     public void setMemberGroup(String memberGroup) {
         mMemberGroup = memberGroup;
+    }
+
+    public String getIpLoc() {
+        return ipLoc;
+    }
+
+    public void setIpLoc(String ipLoc) {
+        this.ipLoc = ipLoc;
     }
 }

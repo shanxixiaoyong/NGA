@@ -7,6 +7,7 @@ import gov.anzong.androidnga.arouter.ARouterConstants
 import gov.anzong.androidnga.base.util.PreferenceUtils
 import gov.anzong.androidnga.base.util.ToastUtils
 import gov.anzong.androidnga.core.board.data.BoardEntity
+import gov.anzong.androidnga.base.util.ContextUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -14,6 +15,8 @@ import kotlinx.coroutines.withContext
 import sp.phone.param.ParamKey
 import sp.phone.util.ARouterUtils
 import java.util.concurrent.TimeUnit
+import sp.phone.linuxdo.LinuxDoConstants
+import sp.phone.linuxdo.LinuxDoNavigation
 
 object ForumBoardViewModel : ViewModel() {
 
@@ -182,6 +185,11 @@ object ForumBoardViewModel : ViewModel() {
     }
 
     fun showTopicList(board: BoardEntity) {
+        if (board.fid == LinuxDoConstants.BOARD_FID) {
+            val context = ContextUtils.getContext()
+            LinuxDoNavigation.openNativeList(context)
+            return
+        }
         val fid = board.fid
         val stid = board.stid
         ARouterUtils.build(ARouterConstants.ACTIVITY_TOPIC_LIST)

@@ -1,35 +1,47 @@
 package sp.phone.ui.fragment;
 
 import android.content.Intent;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.alibaba.android.arouter.launcher.ARouter;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.activity.BaseActivity;
+import gov.anzong.androidnga.activity.compose.topic.TopicLocalState;
 import gov.anzong.androidnga.arouter.ARouterConstants;
 import io.reactivex.annotations.NonNull;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.common.User;
 import sp.phone.common.UserManagerImpl;
+import sp.phone.data.ArticleLocalityRepository;
 import sp.phone.http.bean.ThreadData;
 import sp.phone.http.bean.ThreadRowInfo;
 import sp.phone.mvp.contract.ArticleListContract;
 import sp.phone.mvp.presenter.ArticleListPresenter;
 import sp.phone.mvp.viewmodel.ArticleShareViewModel;
 import sp.phone.param.ArticleListParam;
+import sp.phone.param.ContentSource;
 import sp.phone.param.ParamKey;
 import sp.phone.rxjava.RxEvent;
 import sp.phone.task.BookmarkTask;
@@ -41,6 +53,7 @@ import sp.phone.util.FunctionUtils;
 import gov.anzong.androidnga.common.util.NLog;
 import sp.phone.util.StringUtils;
 import sp.phone.view.RecyclerViewEx;
+import sp.phone.linuxdo.LinuxDoLocalityRepository;
 
 /*
  * MD 帖子详情每一页
@@ -59,6 +72,34 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     public SwipeRefreshLayout mSwipeRefreshLayout;
 
     private ArticleListAdapter mArticleAdapter;
+
+    private final Set<Integer> mLocalityRequestedAuthors = new HashSet<>();
+
+    private final ArticleLocalityRepository.Callback mLocalityCallback =
+            (authorId, locality) -> {
+                if (mArticleAdapter != null) {
+                    mArticleAdapter.applyLocality(authorId, locality);
+                }
+            };
+
+    private final LinuxDoLocalityRepository.Callback mLinuxDoLocalityCallback =
+            (authorId, locality) -> {
+                if (mArticleAdapter != null) {
+                    mArticleAdapter.applyLocality(authorId, locality);
+                }
+            };
+
+    private BottomPageAdvanceGesture mBottomPageAdvanceGesture;
+
+    private TopicLocalState mTopicLocalState;
+
+    private int mObservedReplies;
+
+    private int mPendingRestoreFloor = RecyclerView.NO_POSITION;
+
+    private int mRestoreMarkerFloor = RecyclerView.NO_POSITION;
+
+    private boolean mHasArticleData;
 
     protected ArticleListParam mRequestParam;
 
@@ -148,6 +189,10 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
 
         @Override
         public void onClick(View view) {
+            if (mRequestParam.source == ContentSource.LINUX_DO) {
+                showToast("LINUX DO 当前为只读浏览");
+                return;
+            }
             mMenuItemClickListener.setThreadRowInfo((ThreadRowInfo) view.getTag());
             int menuId;
             if (mRequestParam.pid == 0) {
@@ -187,6 +232,10 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     private View.OnClickListener mSupportListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
+            if (mRequestParam.source == ContentSource.LINUX_DO) {
+                showToast("LINUX DO 当前为只读浏览");
+                return;
+            }
             ThreadRowInfo row = ((ThreadRowInfo) view.getTag());
             mPresenter.postSupportTask(row.getTid(), row.getPid());
         }
@@ -195,6 +244,10 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     private View.OnClickListener mOpposeListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
+            if (mRequestParam.source == ContentSource.LINUX_DO) {
+                showToast("LINUX DO 当前为只读浏览");
+                return;
+            }
             ThreadRowInfo row = ((ThreadRowInfo) view.getTag());
             mPresenter.postOpposeTask(row.getTid(), row.getPid());
         }
@@ -204,6 +257,7 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     public void onCreate(Bundle savedInstanceState) {
         NLog.d(TAG, "onCreate");
         mRequestParam = getArguments().getParcelable(ParamKey.KEY_PARAM);
+        mTopicLocalState = new TopicLocalState(mRequestParam.source);
         registerRxBus();
 
         initData();
@@ -264,17 +318,30 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         ButterKnife.bind(this, view);
         ((BaseActivity) getActivity()).setupToolbar();
         mArticleAdapter = new ArticleListAdapter(getContext(),getActivity().getSupportFragmentManager());
+        mArticleAdapter.setReadOnlyExternalSource(
+                mRequestParam.source == ContentSource.LINUX_DO);
         mArticleAdapter.setSupportListener(mSupportListener);
         mArticleAdapter.setOpposeListener(mOpposeListener);
         mArticleAdapter.setMenuTogglerListener(mMenuTogglerListener);
         mListView.setLayoutManager(new LinearLayoutManager(getContext()));
         mListView.setItemViewCacheSize(20);
         mListView.setAdapter(mArticleAdapter);
+        mListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(
+                    @androidx.annotation.NonNull RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    recordHighestExposedFloor();
+                    requestVisibleLocalities();
+                }
+            }
+        });
         mListView.setEmptyView(view.findViewById(R.id.empty_view));
-        applyReplyFabClearance();
+        installBottomPageAdvanceGesture();
         if (PhoneConfiguration.getInstance().useSolidColorBackground()) {
             mListView.addItemDecoration(new DividerItemDecoration(view.getContext(), DividerItemDecoration.VERTICAL));
         }
+        mListView.addItemDecoration(new RestoreMarkerDecoration());
 
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -283,20 +350,114 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
             }
         });
         super.onViewCreated(view, savedInstanceState);
+        notifyArticlePageReady();
     }
 
-    private void applyReplyFabClearance() {
-        if (mRequestParam.loadCache) {
+    private boolean isReadProgressEligible() {
+        return mRequestParam != null && UnreadJumpPolicy.isEligibleRoute(
+                mRequestParam.tid,
+                mRequestParam.pid,
+                mRequestParam.authorId,
+                mRequestParam.searchPost,
+                mRequestParam.loadCache);
+    }
+
+    private void recordHighestExposedFloor() {
+        if (!isReadProgressEligible() || mListView == null || mArticleAdapter == null) return;
+        LinearLayoutManager manager = (LinearLayoutManager) mListView.getLayoutManager();
+        if (manager == null) return;
+        int childCount = mListView.getChildCount();
+        int[] positions = new int[childCount];
+        int[] bottoms = new int[childCount];
+        for (int index = 0; index < childCount; index++) {
+            View child = mListView.getChildAt(index);
+            positions[index] = mListView.getChildAdapterPosition(child);
+            bottoms[index] = manager.getDecoratedBottom(child);
+        }
+        int highestPosition = ArticleReadProgressPolicy.highestExposedPosition(
+                manager.findFirstVisibleItemPosition(),
+                positions,
+                bottoms,
+                mListView.getHeight() - mListView.getPaddingBottom());
+        ThreadRowInfo row = mArticleAdapter.getRowAt(highestPosition);
+        if (row != null && row.getLou() >= 0 && row.getTid() == mRequestParam.tid) {
+            mTopicLocalState.recordReadFloor(
+                    row.getTid(), row.getLou(), mObservedReplies, System.currentTimeMillis());
+        }
+    }
+
+    @Override
+    public void onPause() {
+        recordHighestExposedFloor();
+        super.onPause();
+    }
+
+    private void installBottomPageAdvanceGesture() {
+        int touchSlop = ViewConfiguration.get(requireContext()).getScaledTouchSlop();
+        float density = getResources().getDisplayMetrics().density;
+        mBottomPageAdvanceGesture = new BottomPageAdvanceGesture(
+                Math.max(touchSlop * 4f, 56f * density), touchSlop * 1.5f);
+        mListView.addOnItemTouchListener(new RecyclerView.SimpleOnItemTouchListener() {
+            @Override
+            public boolean onInterceptTouchEvent(
+                    @androidx.annotation.NonNull RecyclerView recyclerView,
+                    @androidx.annotation.NonNull MotionEvent event) {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        boolean hasRows = mArticleAdapter != null
+                                && mArticleAdapter.getItemCount() > 0;
+                        mBottomPageAdvanceGesture.onDown(
+                                hasRows && !recyclerView.canScrollVertically(1), event.getY());
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        mBottomPageAdvanceGesture.onMove(event.getY());
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        if (mBottomPageAdvanceGesture.onUp(event.getY())) {
+                            requestNextArticlePage();
+                        }
+                        break;
+                    case MotionEvent.ACTION_POINTER_DOWN:
+                    case MotionEvent.ACTION_CANCEL:
+                        mBottomPageAdvanceGesture.cancel();
+                        break;
+                    default:
+                        break;
+                }
+                return false;
+            }
+        });
+    }
+
+    private void requestNextArticlePage() {
+        if (getParentFragment() instanceof ArticleTabFragment) {
+            ((ArticleTabFragment) getParentFragment()).requestNextPageFromBottom();
+        }
+    }
+
+    private void requestVisibleLocalities() {
+        if (mListView == null || mArticleAdapter == null
+                || !(mListView.getLayoutManager() instanceof LinearLayoutManager)) {
             return;
         }
-        int bottomPadding = mListView.getPaddingBottom()
-                + getResources().getDimensionPixelSize(R.dimen.article_list_reply_fab_clearance);
-        mListView.setPadding(
-                mListView.getPaddingLeft(),
-                mListView.getPaddingTop(),
-                mListView.getPaddingRight(),
-                bottomPadding);
-        mListView.setClipToPadding(false);
+        LinearLayoutManager manager = (LinearLayoutManager) mListView.getLayoutManager();
+        int first = manager.findFirstVisibleItemPosition();
+        int last = manager.findLastVisibleItemPosition();
+        if (first == RecyclerView.NO_POSITION || last == RecyclerView.NO_POSITION) return;
+        for (int position = first; position <= last; position++) {
+            ThreadRowInfo row = mArticleAdapter.getRowAt(position);
+            if (row == null || row.getAuthorid() <= 0 || !StringUtils.isEmpty(row.getIpLoc())
+                    || !mLocalityRequestedAuthors.add(row.getAuthorid())) {
+                continue;
+            }
+            if (mRequestParam.source == ContentSource.LINUX_DO) {
+                LinuxDoLocalityRepository.getInstance().request(
+                        row.getAuthorid(), row.getAuthor(), mLinuxDoLocalityCallback);
+            } else {
+                ArticleLocalityRepository.getInstance().request(
+                        row.getAuthorid(), mLocalityCallback);
+            }
+        }
     }
 
     public void loadPage() {
@@ -309,11 +470,79 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         }
     }
 
+    public void restoreFloorWhenReady(int floor, int markerFloor) {
+        if (floor < 0) return;
+        showRestoreMarkerAtFloor(markerFloor);
+        mPendingRestoreFloor = floor;
+        positionPendingRestoreFloor();
+    }
+
+    public void showRestoreMarkerAtFloor(int markerFloor) {
+        mRestoreMarkerFloor = markerFloor;
+        if (mListView != null) {
+            mListView.invalidateItemDecorations();
+        }
+    }
+
+    private void positionPendingRestoreFloor() {
+        if (!mHasArticleData || mPendingRestoreFloor == RecyclerView.NO_POSITION
+                || mListView == null || mArticleAdapter == null) {
+            return;
+        }
+        final int position = mArticleAdapter.findPositionForFloor(mPendingRestoreFloor);
+        mPendingRestoreFloor = RecyclerView.NO_POSITION;
+        if (position == RecyclerView.NO_POSITION) {
+            notifyAutomaticRestoreFinished(false);
+            return;
+        }
+        mListView.post(() -> {
+            if (!isAdded() || getView() == null || mListView == null) {
+                return;
+            }
+            LinearLayoutManager manager = (LinearLayoutManager) mListView.getLayoutManager();
+            if (manager == null) {
+                notifyAutomaticRestoreFinished(false);
+                return;
+            }
+            manager.scrollToPositionWithOffset(position, 0);
+            mListView.postOnAnimation(() -> {
+                if (!isAdded() || getView() == null || mListView == null) return;
+                View target = manager.findViewByPosition(position);
+                if (target != null) {
+                    mListView.scrollBy(0, manager.getDecoratedTop(target));
+                }
+                notifyAutomaticRestoreFinished(target != null);
+            });
+        });
+    }
+
+    private void notifyArticlePageReady() {
+        if (getParentFragment() instanceof ArticleTabFragment) {
+            ((ArticleTabFragment) getParentFragment()).onArticlePageReady(
+                    this, mRequestParam == null ? 0 : mRequestParam.page);
+        }
+    }
+
+    private void notifyAutomaticRestoreFinished(boolean positioned) {
+        if (getParentFragment() instanceof ArticleTabFragment) {
+            ((ArticleTabFragment) getParentFragment()).onAutomaticRestoreFinished(positioned);
+        }
+    }
+
+    @Override
+    public void onLoadFailed() {
+        if (mPendingRestoreFloor != RecyclerView.NO_POSITION) {
+            mPendingRestoreFloor = RecyclerView.NO_POSITION;
+            notifyAutomaticRestoreFinished(false);
+        }
+    }
+
     @Override
     public void setData(ThreadData data) {
         ArticleShareViewModel viewModel = getActivityViewModelProvider().get(ArticleShareViewModel.class);
         if (getActivity() != null && data != null) {
             viewModel.setReplyCount(data.get__ROWS());
+            mObservedReplies = Math.max(0, data.get__ROWS() - 1);
         }
         if (data != null && getActivity() != null && mRequestParam.title == null) {
             getActivity().setTitle(data.getThreadInfo().getSubject());
@@ -330,7 +559,20 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         }
         mArticleAdapter.setData(data);
         mArticleAdapter.notifyDataSetChanged();
+        mHasArticleData = data != null && data.getRowList() != null;
+        mListView.invalidateItemDecorations();
+        positionPendingRestoreFloor();
+        mListView.post(this::requestVisibleLocalities);
 
+    }
+
+    @Override
+    public void onDestroyView() {
+        mHasArticleData = false;
+        ArticleLocalityRepository.getInstance().removeCallback(mLocalityCallback);
+        LinuxDoLocalityRepository.getInstance().removeCallback(mLinuxDoLocalityCallback);
+        mBottomPageAdvanceGesture = null;
+        super.onDestroyView();
     }
 
     @Override
@@ -373,6 +615,55 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
 
         void setThreadRowInfo(ThreadRowInfo threadRowInfo);
 
+    }
+
+    /** Paints the restore label over the existing item boundary without adding a second line. */
+    private final class RestoreMarkerDecoration extends RecyclerView.ItemDecoration {
+        private final Paint mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mMaskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final float mHorizontalPadding;
+        private final float mVerticalPadding;
+
+        RestoreMarkerDecoration() {
+            float density = getResources().getDisplayMetrics().density;
+            mHorizontalPadding = 8f * density;
+            mVerticalPadding = 2f * density;
+            mTextPaint.setTextSize(13f * getResources().getDisplayMetrics().scaledDensity);
+            mTextPaint.setColor(sp.phone.theme.ThemeManager.getInstance().getAccentColor(getContext()));
+            mMaskPaint.setColor(ContextCompat.getColor(getContext(), R.color.background_color));
+        }
+
+        @Override
+        public void onDrawOver(
+                @androidx.annotation.NonNull Canvas canvas,
+                @androidx.annotation.NonNull RecyclerView parent,
+                @androidx.annotation.NonNull RecyclerView.State state) {
+            if (mRestoreMarkerFloor == RecyclerView.NO_POSITION || mArticleAdapter == null) return;
+            String label = getString(R.string.restored_read_position);
+            Paint.FontMetrics metrics = mTextPaint.getFontMetrics();
+            float textHeight = metrics.descent - metrics.ascent;
+            for (int index = 0; index < parent.getChildCount(); index++) {
+                View child = parent.getChildAt(index);
+                ThreadRowInfo row = mArticleAdapter.getRowAt(
+                        parent.getChildAdapterPosition(child));
+                if (row == null || row.getLou() != mRestoreMarkerFloor) continue;
+                LinearLayoutManager manager = (LinearLayoutManager) parent.getLayoutManager();
+                if (manager == null) return;
+                float boundaryY = manager.getDecoratedTop(child);
+                float centerY = Math.max(boundaryY, textHeight / 2f + mVerticalPadding);
+                float baseline = centerY - (metrics.ascent + metrics.descent) / 2f;
+                float textWidth = mTextPaint.measureText(label);
+                float centerX = parent.getWidth() / 2f;
+                canvas.drawRect(
+                        centerX - textWidth / 2f - mHorizontalPadding,
+                        baseline + metrics.ascent - mVerticalPadding,
+                        centerX + textWidth / 2f + mHorizontalPadding,
+                        baseline + metrics.descent + mVerticalPadding,
+                        mMaskPaint);
+                canvas.drawText(label, centerX - textWidth / 2f, baseline, mTextPaint);
+                return;
+            }
+        }
     }
 
 

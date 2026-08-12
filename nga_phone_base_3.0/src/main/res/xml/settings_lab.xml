@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <SwitchPreference
-        android:defaultValue="true"
-        android:title="@string/title_show_with_webview"
-        android:summary="@string/summary_show_with_webview"
-        android:key="@string/pref_show_with_webview"/>
-
     <EditTextPreference
         android:dialogTitle="USER AGENT"
         android:title="USER AGENT"
