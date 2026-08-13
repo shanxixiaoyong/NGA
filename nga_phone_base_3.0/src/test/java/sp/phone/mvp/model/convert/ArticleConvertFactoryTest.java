@@ -6,13 +6,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.LinkedHashSet;
 
 import gov.anzong.androidnga.common.util.NgaImageHost;
 import sp.phone.http.bean.ThreadData;
@@ -134,7 +131,7 @@ public class ArticleConvertFactoryTest {
     }
 
     @Test
-    public void unescapedQuoteInTextIsRepairedByTheRealParserEntryPoint() {
+    public void unescapedQuoteInTextIsRejectedWithoutGuessing() {
         String payload = "{\"data\":{"
                 + "\"__ROWS\":0,"
                 + "\"__R__ROWS\":0,"
@@ -146,26 +143,26 @@ public class ArticleConvertFactoryTest {
         ArticleConvertFactory.ParseOutcome outcome =
                 ArticleConvertFactory.parseArticleInfo(payload);
 
-        assertNull(outcome.getDiagnostic());
-        ThreadData data = outcome.getData();
-        assertNotNull(data);
-        assertEquals(0, data.getRowList().size());
+        assertNull(outcome.getData());
+        assertNotNull(outcome.getDiagnostic());
+        assertEquals("root-json", outcome.getDiagnostic().getStage());
     }
 
     @Test
-    public void truncatedTailAtQuoteClosesOnlyKnownJsonContainers() {
-        String payload = "{\"data\":{"
-                + "\"__ROWS\":0,"
-                + "\"__R__ROWS\":0,"
-                + "\"__T\":{\"tid\":123,\"subject\":\"fixture\"},"
-                + "\"__R\":{},"
-                + "\"__U\":\"";
-
-        ArticleConvertFactory.ParseOutcome outcome =
-                ArticleConvertFactory.parseArticleInfo(payload);
-
-        assertNull(outcome.getDiagnostic());
-        assertNotNull(outcome.getData());
+    public void truncatedPayloadVariantsAreRejectedWithoutTailRepair() {
+        String[] payloads = {
+                "{\"data\":{\"__T\":{\"tid\":123,\"subject\":\"fixture",
+                "{\"data\":{\"__T\":{\"tid\":123,\"subject\":\"fixture\\",
+                "{\"data\":{\"__T\":{\"tid\":123},\"__R\":{},\"__U\":\"",
+                "{\"data\":{\"__T\":{\"tid\":123},\"__R\":{\"0\":{\"content\":\"cut"
+        };
+        for (String payload : payloads) {
+            ArticleConvertFactory.ParseOutcome outcome =
+                    ArticleConvertFactory.parseArticleInfo(payload);
+            assertNull(outcome.getData());
+            assertNotNull(outcome.getDiagnostic());
+            assertEquals("root-json", outcome.getDiagnostic().getStage());
+        }
     }
 
     @Test
@@ -189,45 +186,10 @@ public class ArticleConvertFactoryTest {
     }
 
     @Test
-    public void truncatedDanglingEscapeAndTrailingQuoteAreBoundedlyRecovered() {
-        String danglingEscape = "{\"data\":{"
-                + "\"__ROWS\":0,\"__R__ROWS\":0,"
-                + "\"__T\":{\"tid\":123,\"subject\":\"fixture\\";
-        ArticleConvertFactory.ParseOutcome escapeOutcome =
-                ArticleConvertFactory.parseArticleInfo(danglingEscape);
-        assertNull(escapeOutcome.getDiagnostic());
-        assertNotNull(escapeOutcome.getData());
-
-        String trailingQuote = "{\"data\":{"
-                + "\"__ROWS\":0,\"__R__ROWS\":0,"
-                + "\"__T\":{\"tid\":123,\"subject\":\"fixture\"},"
-                + "\"__R\":{},\"__U\":{}}}\"";
-        ArticleConvertFactory.ParseOutcome quoteOutcome =
-                ArticleConvertFactory.parseArticleInfo(trailingQuote);
-        assertNull(quoteOutcome.getDiagnostic());
-        assertNotNull(quoteOutcome.getData());
-    }
-
-    @Test
-    public void rawQuoteCommaInsideTextDoesNotMasqueradeAsAFieldBoundary() {
-        String payload = "{\"data\":{"
-                + "\"__ROWS\":0,\"__R__ROWS\":0,"
-                + "\"__T\":{\"tid\":123,\"subject\":\"say \\\"hello\\\", then leave\"},"
-                + "\"__R\":{},\"__U\":{}}}";
-        payload = payload.replace("\\\"hello\\\"", "\"hello\"");
-
-        ArticleConvertFactory.ParseOutcome outcome =
-                ArticleConvertFactory.parseArticleInfo(payload);
-
-        assertNull(outcome.getDiagnostic());
-        assertNotNull(outcome.getData());
-    }
-
-    @Test
-    public void rawControlCharacterAndKnownNgaWrapperAreRecovered() {
+    public void completeJsonInsideKnownNgaWrapperStillParses() {
         String payload = "window.script_muti_get_var_store={\"data\":{"
                 + "\"__ROWS\":0,\"__R__ROWS\":0,"
-                + "\"__T\":{\"tid\":123,\"subject\":\"first\nsecond\"},"
+                + "\"__T\":{\"tid\":123,\"subject\":\"first second\"},"
                 + "\"__R\":{},\"__U\":{}}};";
 
         ArticleConvertFactory.ParseOutcome outcome =
@@ -238,34 +200,37 @@ public class ArticleConvertFactoryTest {
     }
 
     @Test
-    public void rawQuoteCommaAndTruncatedTailAreRecoveredTogether() {
-        String payload = "{\"data\":{"
-                + "\"__ROWS\":0,\"__R__ROWS\":0,"
-                + "\"__T\":{\"tid\":123,\"subject\":\"say \\\"hello\\\", then leave\"},"
-                + "\"__R\":{},\"__U\":\"unfinished";
-        payload = payload.replace("\\\"hello\\\"", "\"hello\"");
+    public void sanitizedWebSnapshotUsesNativeRowsAndReaderTheme() {
+        String snapshot = "{\"data\":{"
+                + "\"__ROWS\":1,\"__R__ROWS\":1,"
+                + "\"__T\":{\"tid\":123,\"fid\":7,\"subject\":\"topic\",\"replies\":0},"
+                + "\"__R\":{\"0\":{"
+                + "\"tid\":123,\"fid\":7,\"pid\":99,\"authorid\":0,"
+                + "\"author\":\"tester\",\"postdate\":\"2026-08-13\",\"lou\":0,"
+                + "\"subject\":\"<unsafe>\",\"content\":\"<p>body</p>\","
+                + "\"__WEB_FALLBACK_HTML\":true,"
+                + "\"__WEB_IMAGE_URLS\":[\"https://img4.nga.cn/a.png\"],"
+                + "\"__WEB_SIGNATURE_HTML\":\"<span>signature</span>\"}},"
+                + "\"__U\":{}}}";
 
-        ArticleConvertFactory.ParseOutcome outcome =
-                ArticleConvertFactory.parseArticleInfo(payload);
+        ArticleConvertFactory.ParseOutcome webOutcome =
+                ArticleConvertFactory.parseWebArticleInfo(snapshot, 18, false, true);
+        assertNull(webOutcome.getDiagnostic());
+        assertNotNull(webOutcome.getData());
+        assertEquals(1, webOutcome.getData().getRowList().size());
+        ThreadRowInfo row = webOutcome.getData().getRowList().get(0);
+        assertEquals(99, row.getPid());
+        assertEquals("https://img4.nga.cn/a.png", row.getImageUrls().get(0));
+        assertTrue(row.getFormattedHtmlData().contains("&lt;unsafe&gt;"));
+        assertTrue(row.getFormattedHtmlData().contains("<p>body</p>"));
+        assertTrue(row.getFormattedHtmlData().contains("signature"));
+        assertTrue(row.getFormattedHtmlData().contains("font-size:18px"));
 
-        assertNull(outcome.getDiagnostic());
-        assertNotNull(outcome.getData());
-    }
-
-    @Test
-    public void damagedFinalDataMemberIsDroppedWithoutLosingRows() {
-        String payload = "{\"data\":{" + "\"__ROWS\":1,"
-                + "\"__R__ROWS\":1,"
-                + "\"__T\":{\"tid\":123,\"subject\":\"fixture\"},"
-                + "\"__R\":{\"0\":\"invalid row\"},"
-                + "\"__U\":\"broken tail";
-
-        ArticleConvertFactory.ParseOutcome outcome =
-                ArticleConvertFactory.parseArticleInfo(payload);
-
-        assertNull(outcome.getDiagnostic());
-        assertNotNull(outcome.getData());
-        assertEquals(0, outcome.getData().getRowList().size());
+        ArticleConvertFactory.ParseOutcome nativeOutcome =
+                ArticleConvertFactory.parseArticleInfo(snapshot);
+        assertNull(nativeOutcome.getData());
+        assertNotNull(nativeOutcome.getDiagnostic());
+        assertEquals("row-list", nativeOutcome.getDiagnostic().getStage());
     }
 
     @Test
@@ -284,16 +249,14 @@ public class ArticleConvertFactoryTest {
     }
 
     @Test
-    public void damagedLastRowKeepsEarlierCompleteRowsMap() {
-        String payload = "{\"data\":{\"__T\":{\"tid\":123},\"__R\":{" +
-                "\"0\":\"ignored non-object\",\"1\":{\"content\":\"broken";
+    public void webHtmlWrapperEscapesSubjectAndKeepsResponsiveMedia() {
+        String html = NgaWebArticleHtml.wrap(
+                "<script>", "<img src='https://img4.nga.cn/a.png'>", null, 20, true);
 
-        LinkedHashSet<String> candidates = new LinkedHashSet<>();
-        ArticleConvertFactory.addSalvagedNestedObjectCandidates(
-                candidates, payload, "__R", 3);
-
-        JSONObject recovered = JSON.parseObject(candidates.iterator().next());
-        assertEquals(1, recovered.getJSONObject("data").getJSONObject("__R").size());
+        assertTrue(html.contains("&lt;script&gt;"));
+        assertTrue(html.contains("style_dark.css"));
+        assertTrue(html.contains("padding:0 8px"));
+        assertTrue(html.contains("max-width:100%!important"));
     }
 
     private static JSONObject pageDataWithAttachmentBaseView(Object value) {

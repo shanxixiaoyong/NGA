@@ -3,12 +3,10 @@ package sp.phone.mvp.model.convert;
 import android.text.TextUtils;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,14 +40,28 @@ public class ArticleConvertFactory {
         return parseArticleInfo(js).getData();
     }
 
+    public static ParseOutcome parseWebArticleInfo(String js) {
+        return parseArticleInfo(js, WebRenderOptions.fromPreferences());
+    }
+
+    static ParseOutcome parseWebArticleInfo(
+            String js, int textSize, boolean nightMode, boolean showSignature) {
+        return parseArticleInfo(js,
+                new WebRenderOptions(textSize, nightMode, showSignature));
+    }
+
     /**
      * Parse a THREAD.PAGE payload while retaining only redacted failure metadata.
      * Raw authenticated payloads and post content must never enter logs or diagnostics.
      */
     public static ParseOutcome parseArticleInfo(String js) {
+        return parseArticleInfo(js, null);
+    }
+
+    private static ParseOutcome parseArticleInfo(String js, WebRenderOptions webRenderOptions) {
         String stage = "normalize";
         try {
-            if (js.isEmpty()) {
+            if (js == null || js.isEmpty()) {
                 return ParseOutcome.empty();
             } else if (js.contains("/*error fill content")) {
                 js = js.substring(0, js.indexOf("/*error fill content"));
@@ -63,9 +75,8 @@ public class ArticleConvertFactory {
                     .replaceAll("\"author\":(0\\d+),", "\"author\":\"$1\",")
                     .replaceAll("\"alterinfo\":\"\\[(\\w|\\s)+\\]\\s+\",", ""); //部分页面打不开的问题
             stage = "root-json";
-            RootParseResult rootResult = parseRootWithBoundedRecovery(js);
-            JSONObject root = rootResult.root;
-            js = rootResult.payload;
+            js = stripKnownRootEnvelope(js);
+            JSONObject root = JSON.parseObject(js);
             Object rawData = root.get("data");
             JSONObject obj = rawData instanceof JSONObject ? (JSONObject) rawData : null;
             if (obj == null) {
@@ -76,7 +87,12 @@ public class ArticleConvertFactory {
                 return ParseOutcome.empty();
             }
             stage = "row-list";
-            List<ThreadRowInfo> rowList = buildThreadRowList(obj);
+            if (webRenderOptions == null && containsWebFallbackRows(obj)) {
+                throw new PayloadParseException(
+                        "row-list", -1, -1,
+                        new IllegalStateException("Rendered web rows require the web parser"));
+            }
+            List<ThreadRowInfo> rowList = buildThreadRowList(obj, webRenderOptions);
             stage = "thread-info";
             ThreadPageInfo threadInfo = buildThreadPageInfo(obj, rowList);
             ThreadData data = new ThreadData();
@@ -99,121 +115,6 @@ public class ArticleConvertFactory {
         }
     }
 
-    /** Strict parse first, followed by a small deterministic set of safe repairs. */
-    private static RootParseResult parseRootWithBoundedRecovery(String payload) {
-        JSONException originalFailure;
-        try {
-            return new RootParseResult(JSON.parseObject(payload), payload);
-        } catch (JSONException failure) {
-            originalFailure = failure;
-        }
-
-        LinkedHashSet<String> candidates = new LinkedHashSet<>();
-        String envelopeRepaired = stripKnownRootEnvelope(payload);
-        String quoteRepaired = sanitizeJsonStrings(payload);
-        String envelopeQuoteRepaired = sanitizeJsonStrings(envelopeRepaired);
-        addChangedCandidate(candidates, payload, envelopeRepaired);
-        addChangedCandidate(candidates, payload, quoteRepaired);
-        addChangedCandidate(candidates, payload, envelopeQuoteRepaired);
-        addChangedCandidate(candidates, payload, closeTruncatedJson(payload));
-        addChangedCandidate(candidates, payload, closeTruncatedJson(quoteRepaired));
-        addChangedCandidate(candidates, payload, closeTruncatedJson(envelopeRepaired));
-        addChangedCandidate(candidates, payload, closeTruncatedJson(envelopeQuoteRepaired));
-        addChangedCandidate(candidates, payload, completeJsonPrefix(payload));
-        addChangedCandidate(candidates, payload, completeJsonPrefix(quoteRepaired));
-        addChangedCandidate(candidates, payload, completeJsonPrefix(envelopeRepaired));
-        addChangedCandidate(candidates, payload, completeJsonPrefix(envelopeQuoteRepaired));
-        addSalvagedNestedObjectCandidates(candidates, envelopeRepaired, "__R", 3);
-        addSalvagedNestedObjectCandidates(candidates, envelopeQuoteRepaired, "__R", 3);
-        addSalvagedDataCandidates(candidates, envelopeRepaired);
-        addSalvagedDataCandidates(candidates, envelopeQuoteRepaired);
-        for (String candidate : candidates) {
-            try {
-                return new RootParseResult(JSON.parseObject(candidate), candidate);
-            } catch (JSONException ignored) {
-                // Try only the bounded candidates above, then retain original diagnostics.
-            }
-        }
-        throw originalFailure;
-    }
-
-    /**
-     * NGA occasionally cuts a response while writing the last data member. Keep
-     * every complete member before that point and discard only the damaged tail.
-     */
-    static void addSalvagedDataCandidates(LinkedHashSet<String> candidates, String payload) {
-        if (payload == null || payload.isEmpty()) return;
-        int dataKey = payload.indexOf("\"data\"");
-        if (dataKey < 0) return;
-        int colon = payload.indexOf(':', dataKey + 6);
-        if (colon < 0) return;
-        int dataStart = skipWhitespace(payload, colon + 1);
-        if (dataStart >= payload.length() || payload.charAt(dataStart) != '{') return;
-
-        ArrayList<Integer> memberEnds = new ArrayList<>();
-        int depth = 0;
-        boolean inString = false;
-        boolean escaped = false;
-        for (int i = 0; i < payload.length(); i++) {
-            char value = payload.charAt(i);
-            if (inString) {
-                if (escaped) escaped = false;
-                else if (value == '\\') escaped = true;
-                else if (value == '"') inString = false;
-                continue;
-            }
-            if (value == '"') {
-                inString = true;
-            } else if (value == '{' || value == '[') {
-                depth++;
-            } else if (value == '}' || value == ']') {
-                depth--;
-            } else if (value == ',' && depth == 2 && i > dataStart) {
-                memberEnds.add(i);
-            }
-        }
-        int attempts = 0;
-        for (int i = memberEnds.size() - 1; i >= 0 && attempts < 32; i--, attempts++) {
-            candidates.add(payload.substring(0, memberEnds.get(i)) + "}}");
-        }
-    }
-
-    /** Preserve complete numeric entries in a truncated __R map. */
-    static void addSalvagedNestedObjectCandidates(
-            LinkedHashSet<String> candidates, String payload, String key, int objectDepth) {
-        if (payload == null || payload.isEmpty()) return;
-        int keyIndex = payload.indexOf("\"" + key + "\"");
-        if (keyIndex < 0) return;
-        int colon = payload.indexOf(':', keyIndex + key.length() + 2);
-        if (colon < 0) return;
-        int objectStart = skipWhitespace(payload, colon + 1);
-        if (objectStart >= payload.length() || payload.charAt(objectStart) != '{') return;
-
-        ArrayList<Integer> entryEnds = new ArrayList<>();
-        int depth = 0;
-        boolean inString = false;
-        boolean escaped = false;
-        for (int i = 0; i < payload.length(); i++) {
-            char value = payload.charAt(i);
-            if (inString) {
-                if (escaped) escaped = false;
-                else if (value == '\\') escaped = true;
-                else if (value == '"') inString = false;
-                continue;
-            }
-            if (value == '"') inString = true;
-            else if (value == '{' || value == '[') depth++;
-            else if (value == '}' || value == ']') depth--;
-            else if (value == ',' && depth == objectDepth && i > objectStart) entryEnds.add(i);
-        }
-        int attempts = 0;
-        for (int i = entryEnds.size() - 1; i >= 0 && attempts < 32; i--, attempts++) {
-            StringBuilder candidate = new StringBuilder(payload.substring(0, entryEnds.get(i)));
-            for (int close = 0; close < objectDepth; close++) candidate.append('}');
-            candidates.add(candidate.toString());
-        }
-    }
-
     /** Remove only wrappers that NGA itself uses around JSON responses. */
     static String stripKnownRootEnvelope(String payload) {
         if (payload == null || payload.isEmpty()) return payload;
@@ -229,236 +130,26 @@ public class ArticleConvertFactory {
             while (start < payload.length() && Character.isWhitespace(payload.charAt(start))) {
                 start++;
             }
-            return payload.substring(start);
+            int end = payload.length();
+            while (end > start && Character.isWhitespace(payload.charAt(end - 1))) end--;
+            if (end > start && payload.charAt(end - 1) == ';') end--;
+            return payload.substring(start, end);
         }
         return start == 0 ? payload : payload.substring(start);
     }
 
-    private static void addChangedCandidate(
-            LinkedHashSet<String> candidates, String original, String candidate) {
-        if (candidate != null && !candidate.equals(original)) candidates.add(candidate);
-    }
-
-    /**
-     * Repair raw quotes inside JSON string values without touching valid JSON.
-     * NGA occasionally emits a quote that is not escaped; a real closing quote
-     * must be followed by a JSON separator (ignoring whitespace).
-     */
-    static String escapeUnquotedStringQuotes(String payload) {
-        return sanitizeJsonStrings(payload);
-    }
-
-    /**
-     * Repair raw quotes and control characters inside JSON strings. A quote is
-     * accepted as a terminator only when the following token is valid for the
-     * current object/array position.
-     */
-    static String sanitizeJsonStrings(String payload) {
-        if (payload == null || payload.isEmpty()) return payload;
-        StringBuilder repaired = null;
-        ArrayDeque<Character> containers = new ArrayDeque<>();
-        boolean inString = false;
-        boolean escaped = false;
-        boolean stringIsKey = false;
-        char previousSignificant = 0;
-        for (int i = 0; i < payload.length(); i++) {
-            char value = payload.charAt(i);
-            if (!inString) {
-                if (value == '"') {
-                    inString = true;
-                    char parent = containers.isEmpty() ? 0 : containers.peek();
-                    stringIsKey = parent == '{'
-                            && (previousSignificant == '{' || previousSignificant == ',');
-                } else if (value == '{' || value == '[') {
-                    containers.push(value);
-                    previousSignificant = value;
-                } else if (value == '}' || value == ']') {
-                    if (!containers.isEmpty()) containers.pop();
-                    previousSignificant = value;
-                } else if (!Character.isWhitespace(value)) {
-                    previousSignificant = value;
-                }
-            } else if (escaped) {
-                escaped = false;
-            } else if (value == '\\') {
-                escaped = true;
-            } else if (value == '"') {
-                int next = i + 1;
-                while (next < payload.length() && Character.isWhitespace(payload.charAt(next))) {
-                    next++;
-                }
-                char parent = containers.isEmpty() ? 0 : containers.peek();
-                boolean closesString = isValidStringTerminator(
-                        payload, next, parent, stringIsKey);
-                if (closesString) {
-                    inString = false;
-                    previousSignificant = '"';
-                } else {
-                    if (repaired == null) {
-                        repaired = new StringBuilder(payload.length() + 8);
-                        repaired.append(payload, 0, i);
-                    }
-                    repaired.append('\\');
-                }
-            } else if (value < 0x20) {
-                if (repaired == null) {
-                    repaired = new StringBuilder(payload.length() + 8);
-                    repaired.append(payload, 0, i);
-                }
-                appendEscapedControl(repaired, value);
-                continue;
-            }
-            if (repaired != null) repaired.append(value);
-        }
-        return repaired == null ? payload : repaired.toString();
-    }
-
-    private static boolean isValidStringTerminator(
-            String payload, int next, char parent, boolean stringIsKey) {
-        if (stringIsKey) return next < payload.length() && payload.charAt(next) == ':';
-        if (next == payload.length()) return parent == 0;
-        char token = payload.charAt(next);
-        if (parent == '{') {
-            if (token == '}') return true;
-            if (token != ',') return false;
-            return startsObjectMemberOrEnd(payload, skipWhitespace(payload, next + 1));
-        }
-        if (parent == '[') {
-            if (token == ']') return true;
-            if (token != ',') return false;
-            return startsJsonValueOrEnd(payload, skipWhitespace(payload, next + 1), ']');
-        }
-        return false;
-    }
-
-    private static boolean startsObjectMemberOrEnd(String payload, int start) {
-        if (start >= payload.length()) return false;
-        if (payload.charAt(start) == '}') return true;
-        if (payload.charAt(start) != '"') return false;
-        boolean escaped = false;
-        for (int i = start + 1; i < payload.length(); i++) {
-            char value = payload.charAt(i);
-            if (escaped) escaped = false;
-            else if (value == '\\') escaped = true;
-            else if (value == '"') {
-                int next = skipWhitespace(payload, i + 1);
-                return next < payload.length() && payload.charAt(next) == ':';
+    private static boolean containsWebFallbackRows(JSONObject data) {
+        Object rawRows = data.get("__R");
+        if (!(rawRows instanceof JSONObject)) return false;
+        for (Object value : ((JSONObject) rawRows).values()) {
+            if (value instanceof JSONObject
+                    && ((JSONObject) value).getBooleanValue("__WEB_FALLBACK_HTML")) {
+                return true;
             }
         }
         return false;
     }
 
-    private static boolean startsJsonValueOrEnd(String payload, int start, char endToken) {
-        if (start >= payload.length()) return false;
-        char value = payload.charAt(start);
-        return value == endToken || value == '"' || value == '{' || value == '['
-                || value == '-' || (value >= '0' && value <= '9')
-                || value == 't' || value == 'f' || value == 'n';
-    }
-
-    private static int skipWhitespace(String payload, int start) {
-        while (start < payload.length() && Character.isWhitespace(payload.charAt(start))) start++;
-        return start;
-    }
-
-    private static void appendEscapedControl(StringBuilder builder, char value) {
-        switch (value) {
-            case '\b': builder.append("\\b"); break;
-            case '\f': builder.append("\\f"); break;
-            case '\n': builder.append("\\n"); break;
-            case '\r': builder.append("\\r"); break;
-            case '\t': builder.append("\\t"); break;
-            default:
-                String hex = Integer.toHexString(value);
-                builder.append("\\u");
-                for (int i = hex.length(); i < 4; i++) builder.append('0');
-                builder.append(hex);
-        }
-    }
-
-    /** Complete only an otherwise structurally consistent truncated JSON tail. */
-    static String closeTruncatedJson(String payload) {
-        if (payload == null || payload.isEmpty()) return payload;
-        ArrayDeque<Character> containers = new ArrayDeque<>();
-        boolean inString = false;
-        boolean escaped = false;
-        for (int i = 0; i < payload.length(); i++) {
-            char value = payload.charAt(i);
-            if (inString) {
-                if (escaped) {
-                    escaped = false;
-                } else if (value == '\\') {
-                    escaped = true;
-                } else if (value == '"') {
-                    inString = false;
-                }
-                continue;
-            }
-            if (value == '"') {
-                inString = true;
-            } else if (value == '{' || value == '[') {
-                containers.push(value);
-            } else if (value == '}' || value == ']') {
-                if (containers.isEmpty()) return payload;
-                char opening = containers.pop();
-                if ((opening == '{' && value != '}') || (opening == '[' && value != ']')) {
-                    return payload;
-                }
-            }
-        }
-        if (containers.isEmpty()) return payload;
-        StringBuilder completed = new StringBuilder(payload.length() + containers.size() + 2);
-        completed.append(payload);
-        if (inString) {
-            // A final backslash is an incomplete JSON escape. Preserve it as a literal
-            // backslash before closing the truncated string.
-            if (escaped) completed.append('\\');
-            completed.append('"');
-        }
-        while (!containers.isEmpty()) {
-            completed.append(containers.pop() == '{' ? '}' : ']');
-        }
-        return completed.toString();
-    }
-
-    /** Remove only a quote/semicolon suffix after an already complete JSON object. */
-    static String completeJsonPrefix(String payload) {
-        if (payload == null || payload.isEmpty()) return payload;
-        ArrayDeque<Character> containers = new ArrayDeque<>();
-        boolean inString = false;
-        boolean escaped = false;
-        boolean started = false;
-        for (int i = 0; i < payload.length(); i++) {
-            char value = payload.charAt(i);
-            if (inString) {
-                if (escaped) escaped = false;
-                else if (value == '\\') escaped = true;
-                else if (value == '"') inString = false;
-                continue;
-            }
-            if (value == '"') {
-                inString = true;
-            } else if (value == '{' || value == '[') {
-                containers.push(value);
-                started = true;
-            } else if (value == '}' || value == ']') {
-                if (containers.isEmpty()) return payload;
-                char opening = containers.pop();
-                if ((opening == '{' && value != '}') || (opening == '[' && value != ']')) {
-                    return payload;
-                }
-                if (started && containers.isEmpty()) {
-                    for (int suffix = i + 1; suffix < payload.length(); suffix++) {
-                        char trailing = payload.charAt(suffix);
-                        if (!Character.isWhitespace(trailing)
-                                && trailing != ';' && trailing != '"') return payload;
-                    }
-                    return i + 1 == payload.length() ? payload : payload.substring(0, i + 1);
-                }
-            }
-        }
-        return payload;
-    }
 
     static ThreadPageInfo buildThreadPageInfo(
             JSONObject obj, List<ThreadRowInfo> rows) {
@@ -488,7 +179,8 @@ public class ArticleConvertFactory {
         return recovered;
     }
 
-    private static List<ThreadRowInfo> buildThreadRowList(JSONObject obj) {
+    private static List<ThreadRowInfo> buildThreadRowList(
+            JSONObject obj, WebRenderOptions webRenderOptions) {
         Object rawRows = obj.get("__R");
         JSONObject subObj = rawRows instanceof JSONObject ? (JSONObject) rawRows : null;
         Object rawUserInfoMap = obj.get("__U");
@@ -499,7 +191,8 @@ public class ArticleConvertFactory {
         }
         int rows = Math.max(nonNegativeInt(obj.get("__R__ROWS"), -1), numericEntryCount(subObj));
         String attachmentsPrefix = resolveAttachmentsPrefix(obj);
-        return convertJsObjToList(subObj, rows, userInfoMap, attachmentsPrefix, "row");
+        return convertJsObjToList(
+                subObj, rows, userInfoMap, attachmentsPrefix, webRenderOptions);
     }
 
     private static int resolveAllRows(
@@ -567,7 +260,7 @@ public class ArticleConvertFactory {
             int count,
             JSONObject userInfoMap,
             String attachmentsPrefix,
-            String scope) {
+            WebRenderOptions webRenderOptions) {
         List<ThreadRowInfo> rowList = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             Object obj = rowMap.get(String.valueOf(i));
@@ -585,13 +278,19 @@ public class ArticleConvertFactory {
             }
             try { buildRowIpLocation(row, rowObj, userInfoMap); } catch (RuntimeException ignored) { }
             try { buildRowHotReplay(row, rowObj); } catch (RuntimeException ignored) { }
-            try { buildRowComment(row, rowObj, userInfoMap, attachmentsPrefix); } catch (RuntimeException ignored) { }
+            try { buildRowComment(
+                    row, rowObj, userInfoMap, attachmentsPrefix, webRenderOptions);
+            } catch (RuntimeException ignored) { }
             try { buildRowClientInfo(row, rowObj); } catch (RuntimeException ignored) { }
             try { buildRowUserInfo(row, userInfoMap); } catch (RuntimeException ignored) { }
             try { buildRowVote(row, rowObj); } catch (RuntimeException ignored) { }
             try {
-                buildRowContent(row, attachmentsPrefix);
+                buildRowContent(row, rowObj, attachmentsPrefix, webRenderOptions);
             } catch (RuntimeException ignored) {
+                if (rowObj.getBooleanValue("__WEB_FALLBACK_HTML")) {
+                    // Rendered web HTML is accepted only through parseWebArticleInfo().
+                    continue;
+                }
                 row.setFormattedHtmlData(row.getContent() == null ? "" : row.getContent());
             }
             rowList.add(row);
@@ -632,10 +331,35 @@ public class ArticleConvertFactory {
         return value.isEmpty() ? null : value;
     }
 
-    private static void buildRowContent(ThreadRowInfo row, String attachmentsPrefix) {
+    private static void buildRowContent(
+            ThreadRowInfo row,
+            JSONObject rowObj,
+            String attachmentsPrefix,
+            WebRenderOptions webRenderOptions) {
         if (row.getContent() == null) {
             row.setContent(row.getSubject());
             row.setSubject(null);
+        }
+        if (rowObj.getBooleanValue("__WEB_FALLBACK_HTML")) {
+            if (webRenderOptions == null) {
+                throw new IllegalStateException("Web article rows require render options");
+            }
+            JSONArray imageUrls = rowObj.getJSONArray("__WEB_IMAGE_URLS");
+            if (imageUrls != null) {
+                for (Object rawUrl : imageUrls) {
+                    if (rawUrl instanceof String && !((String) rawUrl).isEmpty()) {
+                        row.addImageUrl((String) rawUrl);
+                    }
+                }
+            }
+            String signatureHtml = rowObj.getString("__WEB_SIGNATURE_HTML");
+            row.setFormattedHtmlData(NgaWebArticleHtml.wrap(
+                    row.getSubject(),
+                    row.getContent(),
+                    webRenderOptions.showSignature ? signatureHtml : null,
+                    webRenderOptions.textSize,
+                    webRenderOptions.nightMode));
+            return;
         }
         if (!StringUtils.isEmpty(row.getFromClient())
                 && row.getFromClient().startsWith("103 ")
@@ -718,21 +442,41 @@ public class ArticleConvertFactory {
             JSONObject rowObj,
             JSONObject userInfoMap,
             String attachmentsPrefix) {
+        buildRowComment(row, rowObj, userInfoMap, attachmentsPrefix, null);
+    }
+
+    private static void buildRowComment(
+            ThreadRowInfo row,
+            JSONObject rowObj,
+            JSONObject userInfoMap,
+            String attachmentsPrefix,
+            WebRenderOptions webRenderOptions) {
         Object rawComment = rowObj.get("comment");
         JSONObject commObj = rawComment instanceof JSONObject ? (JSONObject) rawComment : null;
         if (commObj != null) {
             row.setComments(convertJsObjToList(
-                    commObj, commObj.size(), userInfoMap, attachmentsPrefix, "comment"));
+                    commObj, commObj.size(), userInfoMap, attachmentsPrefix,
+                    webRenderOptions));
         }
     }
 
-    private static final class RootParseResult {
-        final JSONObject root;
-        final String payload;
+    private static final class WebRenderOptions {
+        final int textSize;
+        final boolean nightMode;
+        final boolean showSignature;
 
-        RootParseResult(JSONObject root, String payload) {
-            this.root = root;
-            this.payload = payload;
+        WebRenderOptions(int textSize, boolean nightMode, boolean showSignature) {
+            this.textSize = Math.max(8, Math.min(72, textSize));
+            this.nightMode = nightMode;
+            this.showSignature = showSignature;
+        }
+
+        static WebRenderOptions fromPreferences() {
+            PhoneConfiguration configuration = PhoneConfiguration.getInstance();
+            return new WebRenderOptions(
+                    configuration.getTopicContentSize(),
+                    ThemeManager.getInstance().isNightMode(),
+                    configuration.isShowSignature());
         }
     }
 

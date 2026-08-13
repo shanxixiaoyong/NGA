@@ -49,6 +49,7 @@ import sp.phone.theme.ThemeManager;
 import sp.phone.ui.adapter.ArticlePagerAdapter;
 import sp.phone.ui.fragment.dialog.GotoDialogFragment;
 import sp.phone.linuxdo.LinuxDoConstants;
+import sp.phone.linuxdo.LinuxDoActionDialogs;
 import sp.phone.util.ARouterUtils;
 import sp.phone.util.ActivityUtils;
 import sp.phone.util.StringUtils;
@@ -156,9 +157,6 @@ public class ArticleTabFragment extends BaseRxFragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         ButterKnife.bind(this, view);
-        if (mRequestParam.source == ContentSource.LINUX_DO) {
-            mFab.setVisibility(View.GONE);
-        }
         mPagerAdapter = new ArticlePagerAdapter(getChildFragmentManager(), mRequestParam);
         mViewPager.setAdapter(mPagerAdapter);
         mViewPager.setOffscreenPageLimit(2);
@@ -328,7 +326,12 @@ public class ArticleTabFragment extends BaseRxFragment {
 
     @OnClick(R.id.fab_post)
     public void reply() {
-        if (mRequestParam.source == ContentSource.LINUX_DO) return;
+        if (mRequestParam.source == ContentSource.LINUX_DO) {
+            LinuxDoActionDialogs.showReply(
+                    requireContext(), mRequestParam.tid, null,
+                    this::refreshCurrentPage);
+            return;
+        }
         Intent intent = new Intent();
         String tid = String.valueOf(mRequestParam.tid);
         intent.putExtra("prefix", "");

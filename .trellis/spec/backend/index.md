@@ -9,6 +9,7 @@
 | [NGA Platform Access Rules](./nga-platform-access-rules.md) | Any code crosses an NGA host, WebView, redirect, upload/media host, session, encoding, logging, or mutation boundary | Mandatory evidence, security, privacy, retry, and validation rules |
 | [NGA Platform Operation Registry](./nga-platform-operation-registry.md) | Implementing or reviewing a concrete read, post, upload, interaction, account mutation, message, or notification | Operation IDs and pinned Justwen wire/source facts |
 | [THREAD.PAGE Topic Pager Prefetch](./thread-page-prefetch-contract.md) | Changing online topic Pager retention, prefetch planning, request reuse, or foreground/background failure behavior | Current-fork prefetch and final-page freshness contract |
+| [THREAD.PAGE Web-Page Recovery](./thread-page-web-recovery-contract.md) | Changing truncated native JSON handling, foreground web recovery, rendered-page extraction, or browser fallback | Strict parse, transient WebView, sanitization, identity, and lifecycle contract |
 | [LINUX DO Read-Only Source](./linuxdo-read-source-contract.md) | Changing the built-in external board, browser-session gate, Discourse mapping, source namespaces, or native read-only UI | Current-fork external-source security, lifecycle, and payload contract |
 
 ## Pre-Development Checklist

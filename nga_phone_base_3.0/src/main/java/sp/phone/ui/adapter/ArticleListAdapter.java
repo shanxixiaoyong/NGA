@@ -63,8 +63,6 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
 
     private static final int VIEW_TYPE_NATIVE_VIEW = 1;
 
-    private static final Object PAYLOAD_LOCALITY = new Object();
-
     private Context mContext;
 
     private FragmentManager mFragmentManager;
@@ -278,7 +276,7 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
         public void onClick(View view) {
 
             if (mReadOnlyExternalSource) {
-                ActivityUtils.showToast("LINUX DO 当前为只读浏览");
+                if (mExternalReplyListener != null) mExternalReplyListener.onClick(view);
                 return;
             }
 
@@ -339,6 +337,8 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
     private View.OnClickListener mSupportListener;
     private View.OnClickListener mOpposeListener;
     private View.OnClickListener mMenuTogglerListener;
+
+    private View.OnClickListener mExternalReplyListener;
 
     private boolean mWifiConnected;
 
@@ -416,18 +416,6 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
         mData = data;
     }
 
-    public void applyLocality(int authorId, String locality) {
-        if (mData == null || mData.getRowList() == null || authorId <= 0) return;
-        for (int index = 0; index < mData.getRowList().size(); index++) {
-            ThreadRowInfo row = mData.getRowList().get(index);
-            if (row != null && row.getAuthorid() == authorId
-                    && !TextUtils.equals(row.getIpLoc(), locality)) {
-                row.setIpLoc(locality);
-                notifyItemChanged(index, PAYLOAD_LOCALITY);
-            }
-        }
-    }
-
     public void setSupportListener(View.OnClickListener listener) {
         mSupportListener = listener;
     }
@@ -438,6 +426,10 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
 
     public void setMenuTogglerListener(View.OnClickListener menuTogglerListener) {
         mMenuTogglerListener = menuTogglerListener;
+    }
+
+    public void setExternalReplyListener(View.OnClickListener externalReplyListener) {
+        mExternalReplyListener = externalReplyListener;
     }
 
     @Override
@@ -515,39 +507,22 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
 
     }
 
-    @Override
-    public void onBindViewHolder(
-            @NonNull ArticleViewHolder holder,
-            int position,
-            @NonNull List<Object> payloads) {
-        if (payloads.contains(PAYLOAD_LOCALITY)) {
-            ThreadRowInfo row = getRowAt(position);
-            if (row != null) bindDetail(holder, row);
-            return;
-        }
-        super.onBindViewHolder(holder, position, payloads);
-    }
-
     private void bindDetail(ArticleViewHolder holder, ThreadRowInfo row) {
         if (mReadOnlyExternalSource) {
             String trust = TextUtils.isEmpty(row.getMemberGroup()) ? "LINUX DO" : row.getMemberGroup();
-            holder.detailTv.setText(TextUtils.isEmpty(row.getIpLoc())
-                    ? trust : trust + "   属地：" + row.getIpLoc());
+            holder.detailTv.setText(trust);
             return;
         }
-        if (TextUtils.isEmpty(row.getIpLoc())) {
-            holder.detailTv.setText(String.format(
-                    "威望：%s   发帖：%s",
-                    row.getReputation(), row.getPostCount()));
-        } else {
-            holder.detailTv.setText(String.format(
-                    "威望：%s   发帖：%s   属地：%s",
-                    row.getReputation(), row.getPostCount(), row.getIpLoc()));
-        }
+        holder.detailTv.setText(String.format(
+                "级别：%s   威望：%s   发帖：%s",
+                TextUtils.isEmpty(row.getMemberGroup()) ? "-" : row.getMemberGroup(),
+                row.getReputation(), row.getPostCount()));
     }
 
     private LocalWebView createLocalWebView() {
         LocalWebView localWebView = new LocalWebView(mContext);
+        localWebView.setEagerNetworkImages(mReadOnlyExternalSource);
+        localWebView.setLinuxDoMediaTransport(mReadOnlyExternalSource);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.material_standard_half));
         lp.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.material_standard_half));
@@ -577,7 +552,9 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
                 holder.contentContainer.addView(holder.contentTV);
             }
             holder.contentTV.getWebViewClientEx().setImgUrls(row.getImageUrls());
-            holder.contentTV.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
+            holder.contentTV.loadDataWithBaseURL(
+                    mReadOnlyExternalSource ? "https://linux.do/" : null,
+                    html, "text/html", "utf-8", null);
         } else {
             holder.contentTextView.setText(row.getContent());
         }
@@ -620,9 +597,14 @@ public class ArticleListAdapter extends RecyclerView.Adapter<ArticleListAdapter.
 
     private void onBindAvatarView(ImageView avatarIv, ThreadRowInfo row) {
         final String avatarUrl = FunctionUtils.parseAvatarUrl(row.getJs_escap_avatar());
+        if (mReadOnlyExternalSource) {
+            ImageUtils.loadLinuxDoAvatar(avatarIv, avatarUrl);
+            return;
+        }
         final boolean downImg = PhoneConfiguration.getInstance().isAvatarLoadEnabled(mWifiConnected);
 
-        ImageUtils.loadRoundCornerAvatar(avatarIv, avatarUrl, !downImg);
+        ImageUtils.loadRoundCornerAvatar(
+                avatarIv, avatarUrl, !downImg && !mReadOnlyExternalSource);
     }
 
 }

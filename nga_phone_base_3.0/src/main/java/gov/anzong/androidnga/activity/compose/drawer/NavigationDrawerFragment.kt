@@ -318,6 +318,12 @@ class NavigationDrawerFragment : BaseComposeFragment() {
                                 viewModel.startLoginPage(requireActivity())
                             })
                         NavigationItem(
+                            label = "登录 LINUX DO",
+                            iconId = R.drawable.ic_login,
+                            onClick = {
+                                viewModel.startLinuxDoLogin(requireActivity())
+                            })
+                        NavigationItem(
                             label = "添加版面ID",
                             iconId = R.drawable.ic_action_add_to_queue,
                             onClick = { viewModel.showAddBoardDialog(this@NavigationDrawerFragment) })

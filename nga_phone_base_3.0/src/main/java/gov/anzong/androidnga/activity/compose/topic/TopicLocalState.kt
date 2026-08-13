@@ -61,6 +61,7 @@ class TopicLocalState @JvmOverloads constructor(
     private val lock = Any()
     private val hiddenTopics = mutableSetOf<Int>()
     private val hiddenBoards = mutableSetOf<Int>()
+    private val followedTopics = mutableSetOf<Int>()
 
     init {
         reloadHiddenState()
@@ -79,11 +80,27 @@ class TopicLocalState @JvmOverloads constructor(
                 .orEmpty()
                 .mapNotNull(String::toIntOrNull),
         )
+        followedTopics.clear()
+        followedTopics.addAll(
+            preferences.getStringSet(followedTopicsKey(), emptySet())
+                .orEmpty()
+                .mapNotNull(String::toIntOrNull),
+        )
     }
 
     fun hiddenTopicSnapshot(): Set<Int> = synchronized(lock) { hiddenTopics.toSet() }
 
     fun hiddenBoardSnapshot(): Set<Int> = synchronized(lock) { hiddenBoards.toSet() }
+
+    fun followedTopicSnapshot(): Set<Int> = synchronized(lock) { followedTopics.toSet() }
+
+    fun isTopicFollowed(tid: Int): Boolean = synchronized(lock) { followedTopics.contains(tid) }
+
+    fun setTopicFollowed(tid: Int, followed: Boolean) = synchronized(lock) {
+        if (tid <= 0) return@synchronized
+        if (followed) followedTopics.add(tid) else followedTopics.remove(tid)
+        persistIds(followedTopicsKey(), followedTopics)
+    }
 
     fun hiddenBoardEntries(nameFallback: (Int) -> String): List<HiddenBoard> = synchronized(lock) {
         hiddenBoards.sorted().map { fid ->
@@ -173,6 +190,7 @@ class TopicLocalState @JvmOverloads constructor(
     private fun hiddenTopicsKey() = namespace() + KEY_HIDDEN_TOPICS
     private fun hiddenBoardsKey() = namespace() + KEY_HIDDEN_BOARDS
     private fun readProgressPrefix() = namespace() + KEY_READ_PROGRESS_PREFIX
+    private fun followedTopicsKey() = namespace() + KEY_FOLLOWED_TOPICS
     private fun progressKey(tid: Int) = "${readProgressPrefix()}$tid"
     private fun boardNameKey(fid: Int) = "${namespace()}$KEY_HIDDEN_BOARD_NAME_PREFIX$fid"
 
@@ -182,6 +200,7 @@ class TopicLocalState @JvmOverloads constructor(
         private const val KEY_HIDDEN_TOPICS = "hidden_topics"
         private const val KEY_HIDDEN_BOARDS = "hidden_boards"
         private const val KEY_READ_PROGRESS_PREFIX = "read_progress_"
+        private const val KEY_FOLLOWED_TOPICS = "followed_topics"
         private const val KEY_HIDDEN_BOARD_NAME_PREFIX = "hidden_board_name_"
         private val PROGRESS_LOCK = Any()
         const val MAX_PROGRESS_ENTRIES = 500

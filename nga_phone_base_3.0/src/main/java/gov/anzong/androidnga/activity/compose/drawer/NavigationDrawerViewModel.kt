@@ -23,6 +23,7 @@ import gov.anzong.androidnga.base.util.PreferenceUtils
 import gov.anzong.androidnga.common.PreferenceKey
 import sp.phone.common.User
 import sp.phone.param.ParamKey
+import sp.phone.linuxdo.LinuxDoNavigation
 import sp.phone.ui.fragment.dialog.AddBoardDialogFragment
 import sp.phone.ui.fragment.dialog.UrlInputDialogFragment
 import sp.phone.util.ARouterUtils
@@ -47,6 +48,10 @@ class NavigationDrawerViewModel : ViewModel() {
             .navigation(
                 activity, 1
             )
+    }
+
+    fun startLinuxDoLogin(activity: Activity) {
+        LinuxDoNavigation.openLogin(activity)
     }
 
     fun startProfilePage(activity: Activity, user: User) {

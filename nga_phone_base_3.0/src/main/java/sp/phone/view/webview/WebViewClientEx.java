@@ -6,10 +6,13 @@ import android.content.Intent;
 import android.net.Uri;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 
 import com.alibaba.android.arouter.launcher.ARouter;
 
 import java.io.UnsupportedEncodingException;
+import java.io.ByteArrayInputStream;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +24,13 @@ import gov.anzong.androidnga.arouter.ARouterConstants;
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.gallery.ImageZoomActivity;
 import sp.phone.util.StringUtils;
+import sp.phone.linuxdo.LinuxDoAvatarProxy;
+import sp.phone.linuxdo.LinuxDoHttpSession;
 
 public class WebViewClientEx extends WebViewClient {
 
     private List<String> mImgUrlList;
+    private boolean mLinuxDoMediaTransport;
 
 
     private static final String NGA_USER_PROFILE_END = "&";
@@ -67,6 +73,46 @@ public class WebViewClientEx extends WebViewClient {
 
     public void setImgUrls(List<String> list) {
         mImgUrlList = list;
+    }
+
+    public void setLinuxDoMediaTransport(boolean enabled) {
+        mLinuxDoMediaTransport = enabled;
+    }
+
+    @Override
+    public WebResourceResponse shouldInterceptRequest(
+            WebView view, WebResourceRequest request) {
+        return interceptLinuxDoAvatar(request == null || request.getUrl() == null
+                ? null : request.getUrl().toString());
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+        return interceptLinuxDoAvatar(url);
+    }
+
+    private WebResourceResponse interceptLinuxDoAvatar(String requestUrl) {
+        if (!mLinuxDoMediaTransport) return null;
+        String sourceUrl = LinuxDoAvatarProxy.unwrap(requestUrl);
+        if (sourceUrl == null) return null;
+        byte[] bytes = LinuxDoHttpSession.getInstance().fetchAvatarBlocking(sourceUrl);
+        if (bytes == null || bytes.length == 0) return null;
+        return new WebResourceResponse(
+                detectImageMime(bytes), null, new ByteArrayInputStream(bytes));
+    }
+
+    private static String detectImageMime(byte[] bytes) {
+        if (bytes.length >= 8 && bytes[0] == (byte) 0x89 && bytes[1] == 'P'
+                && bytes[2] == 'N' && bytes[3] == 'G') return "image/png";
+        if (bytes.length >= 3 && bytes[0] == (byte) 0xff && bytes[1] == (byte) 0xd8
+                && bytes[2] == (byte) 0xff) return "image/jpeg";
+        if (bytes.length >= 6 && bytes[0] == 'G' && bytes[1] == 'I'
+                && bytes[2] == 'F') return "image/gif";
+        if (bytes.length >= 12 && bytes[0] == 'R' && bytes[1] == 'I'
+                && bytes[2] == 'F' && bytes[8] == 'W' && bytes[9] == 'E'
+                && bytes[10] == 'B' && bytes[11] == 'P') return "image/webp";
+        return "image/*";
     }
 
     private boolean overrideProfileUrlLoading(Context context, String url) {

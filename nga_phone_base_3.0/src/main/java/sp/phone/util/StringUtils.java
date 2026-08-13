@@ -14,10 +14,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import gov.anzong.androidnga.Utils;
+import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.common.util.EmoticonUtils;
 import gov.anzong.androidnga.common.util.NLog;
@@ -27,6 +29,7 @@ import sp.phone.theme.ThemeManager;
 
 @SuppressLint("SimpleDateFormat")
 public class StringUtils {
+
     public final static String key = "asdfasdf";
     private static final String lesserNukeStyle = "<div style='border:1px solid #B63F32;margin:10px 10px 10px 10px;padding:10px' > <span style='color:#EE8A9E'>用户因此贴被暂时禁言，此效果不会累加</span><br/>";
     private static final String styleAlignRight = "<div style='text-align:right' >";
@@ -678,6 +681,12 @@ public class StringUtils {
 
     public static String unEscapeHtml(String s) {
         return StringHelper.unescapeHTML(s);
+    }
+
+    public static String getSaying() {
+        String[] sayings = ContextUtils.getResources().getStringArray(R.array.saying);
+        String saying = sayings[new Random().nextInt(sayings.length)];
+        return saying.contains(";") ? saying.replace(";", "-----") : saying;
     }
 
     public static StringFindResult getStringBetween(String data, int begPosition, String startStr, String endStr) {

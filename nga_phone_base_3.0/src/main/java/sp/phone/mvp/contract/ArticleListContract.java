@@ -63,6 +63,8 @@ public interface ArticleListContract {
 
         void loadPage(ArticleListParam param, Map<String, String> header, OnHttpCallBack<ThreadData> callBack);
 
+        void loadWebFallbackPage(ArticleListParam param, OnHttpCallBack<ThreadData> callBack);
+
         void cachePage(ArticleListParam param, String rawData);
 
         void loadCachePage(ArticleListParam param, OnHttpCallBack<ThreadData> callBack);

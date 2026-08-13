@@ -13,8 +13,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import gov.anzong.androidnga.http.OnHttpCallBack;
 import io.reactivex.schedulers.Schedulers;
@@ -28,7 +32,14 @@ import sp.phone.theme.ThemeManager;
 /** Discourse JSON boundary. UI/model callers never parse linux.do payloads directly. */
 public final class LinuxDoRepository {
 
+    public interface MutationCallback {
+        void onSuccess();
+        void onError(String message);
+    }
+
     private static final int PAGE_SIZE = 20;
+    private static final Pattern IMAGE_SRC = Pattern.compile(
+            "(?i)<img\\b[^>]*\\bsrc=['\"]([^'\"]+)['\"]");
     private static final LinuxDoRepository INSTANCE = new LinuxDoRepository();
 
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
@@ -47,6 +58,69 @@ public final class LinuxDoRepository {
 
     public static LinuxDoRepository getInstance() {
         return INSTANCE;
+    }
+
+    public void createReply(
+            int topicId,
+            Integer replyToPostNumber,
+            String raw,
+            MutationCallback callback) {
+        if (topicId <= 0 || TextUtils.isEmpty(raw) || callback == null) return;
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("topic_id", String.valueOf(topicId));
+        fields.put("raw", raw.trim());
+        if (replyToPostNumber != null && replyToPostNumber > 0) {
+            fields.put("reply_to_post_number", String.valueOf(replyToPostNumber));
+        }
+        postMutation("/posts.json", fields, topicId, callback);
+    }
+
+    public void createBoost(
+            int topicId,
+            int postId,
+            String raw,
+            MutationCallback callback) {
+        if (topicId <= 0 || postId <= 0 || TextUtils.isEmpty(raw) || callback == null) return;
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("raw", raw.trim());
+        postMutation("/discourse-boosts/posts/" + postId + "/boosts",
+                fields, topicId, callback);
+    }
+
+    public void likePost(int topicId, int postId, MutationCallback callback) {
+        if (topicId <= 0 || postId <= 0 || callback == null) return;
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("id", String.valueOf(postId));
+        fields.put("post_action_type_id", "2");
+        postMutation("/post_actions", fields, topicId, callback);
+    }
+
+    public void invalidateTopic(int topicId) {
+        synchronized (mTopicCache) {
+            mTopicCache.remove(topicId);
+        }
+    }
+
+    private void postMutation(
+            String path,
+            Map<String, String> fields,
+            int topicId,
+            MutationCallback callback) {
+        LinuxDoHttpSession.getInstance().post(path, fields, new LinuxDoWebSession.Callback() {
+            @Override
+            public void onSuccess(String json) {
+                invalidateTopic(topicId);
+                callback.onSuccess();
+            }
+
+            @Override
+            public void onFailure(LinuxDoWebSession.Failure failure) {
+                callback.onError(failure == LinuxDoWebSession.Failure.VERIFICATION_REQUIRED
+                        || failure == LinuxDoWebSession.Failure.SESSION_UNAVAILABLE
+                        ? "LINUX DO 登录已失效，请重新登录"
+                        : "操作失败，请稍后重试");
+            }
+        });
     }
 
     public void loadTopics(int appPage, OnHttpCallBack<TopicListInfo> callback) {
@@ -235,6 +309,7 @@ public final class LinuxDoRepository {
             row.setTid(topic.id);
             row.setFid(topic.categoryId);
             row.setBoard(topic.categoryName == null ? LinuxDoConstants.BOARD_NAME : topic.categoryName);
+            row.setTags(topic.tags);
             row.setSubject(topic.title);
             row.setReplies(topic.replyCount);
             row.setPostDate(topic.createdAt);
@@ -260,6 +335,7 @@ public final class LinuxDoRepository {
         snapshot.topicId = topicId;
         snapshot.title = root.getString("title");
         snapshot.categoryId = root.getIntValue("category_id");
+        parseTopicBadgeNames(root, snapshot);
         for (int index = 0; index < streamJson.size(); index++) {
             snapshot.stream.add(streamJson.getIntValue(index));
         }
@@ -306,15 +382,19 @@ public final class LinuxDoRepository {
         row.setAuthor(firstNonBlank(post.getString("username"), post.getString("name")));
         row.setSubject(row.getLou() == 0 ? snapshot.title : null);
         row.setPostdate(formatIso(post.getString("created_at")));
-        row.setContent(sanitizeCooked(post.getString("cooked")));
+        String cooked = sanitizeCooked(post.getString("cooked"));
+        cooked += renderBoosts(post.getJSONArray("boosts"));
+        row.setContent(cooked);
         row.setFormattedHtmlData(wrapCooked(row.getContent()));
+        collectImageUrls(row, cooked);
         row.setScore(LinuxDoPostPayloadParser.resolveLikeCount(post));
-        row.setMemberGroup("信任等级 " + post.getIntValue("trust_level"));
+        row.setMemberGroup(buildLinuxDoIdentity(snapshot, post));
         row.setPostCount("-");
         String avatar = post.getString("avatar_template");
         if (!TextUtils.isEmpty(avatar)) {
             avatar = avatar.replace("{size}", "96");
-            if (avatar.startsWith("/")) avatar = LinuxDoConstants.ORIGIN + avatar;
+            if (avatar.startsWith("//")) avatar = "https:" + avatar;
+            else if (avatar.startsWith("/")) avatar = LinuxDoConstants.ORIGIN + avatar;
             row.setJs_escap_avatar(avatar);
         }
         return row;
@@ -343,11 +423,138 @@ public final class LinuxDoRepository {
                 .replaceAll("(?is)<(script|form|iframe|object|embed)[^>]*/?>", "")
                 .replaceAll("(?i)\\s+on[a-z]+\\s*=\\s*(['\"]).*?\\1", "")
                 .replaceAll("(?i)(href|src)\\s*=\\s*(['\"])javascript:[^'\"]*\\2", "$1=$2#$2");
-        clean = clean.replace("href=\"/", "href=\"" + LinuxDoConstants.ORIGIN + "/")
+        clean = clean
+                .replaceAll("(?is)<div\\b[^>]*class=['\"][^'\"]*\\bmeta\\b[^'\"]*['\"][^>]*>.*?</div>", "")
+                .replaceAll("(?is)<span\\b[^>]*class=['\"][^'\"]*(?:filename|informations|image-source-link)[^'\"]*['\"][^>]*>.*?</span>", "")
+                .replaceAll("(?i)<img\\b(?![^>]*\\bloading=)", "<img loading=\"eager\" decoding=\"async\"");
+        clean = clean.replace("href=\"//", "href=\"https://")
+                .replace("src=\"//", "src=\"https://")
+                .replace("href='//", "href='https://")
+                .replace("src='//", "src='https://")
+                .replace("href=\"/", "href=\"" + LinuxDoConstants.ORIGIN + "/")
                 .replace("src=\"/", "src=\"" + LinuxDoConstants.ORIGIN + "/")
                 .replace("href='/", "href='" + LinuxDoConstants.ORIGIN + "/")
                 .replace("src='/", "src='" + LinuxDoConstants.ORIGIN + "/");
         return clean;
+    }
+
+    private static String renderBoosts(JSONArray boosts) {
+        if (boosts == null || boosts.isEmpty()) return "";
+        StringBuilder html = new StringBuilder("<div class='linuxdo-boosts'>");
+        for (int index = 0; index < boosts.size() && index < 80; index++) {
+            JSONObject boost = boosts.getJSONObject(index);
+            if (boost == null) continue;
+            JSONObject user = boost.getJSONObject("user");
+            String avatar = user == null
+                    ? boost.getString("avatar_template") : user.getString("avatar_template");
+            if (!TextUtils.isEmpty(avatar)) {
+                avatar = avatar.replace("{size}", "48");
+                if (avatar.startsWith("//")) avatar = "https:" + avatar;
+                else if (avatar.startsWith("/")) avatar = LinuxDoConstants.ORIGIN + avatar;
+            }
+            String content = sanitizeCooked(boost.getString("cooked"));
+            if (TextUtils.isEmpty(content)) continue;
+            html.append("<div class='linuxdo-boost'>");
+            if (!TextUtils.isEmpty(avatar)) {
+                html.append("<img class='linuxdo-boost-avatar' src='")
+                        .append(escapeAttribute(LinuxDoAvatarProxy.wrap(avatar))).append("'>");
+            }
+            html.append(content).append("</div>");
+        }
+        return html.append("</div>").toString();
+    }
+
+    private static void collectImageUrls(ThreadRowInfo row, String html) {
+        Matcher matcher = IMAGE_SRC.matcher(html == null ? "" : html);
+        while (matcher.find() && row.getImageUrls().size() < 200) {
+            row.addImageUrl(matcher.group(1));
+        }
+    }
+
+    private static String buildLinuxDoIdentity(TopicSnapshot snapshot, JSONObject post) {
+        Set<String> details = new LinkedHashSet<>();
+        Object trust = post.get("trust_level");
+        if (trust != null) details.add("信任等级 " + post.getIntValue("trust_level"));
+        addNonBlank(details, post.getString("user_title"));
+        addNonBlank(details, post.getString("primary_group_name"));
+        JSONArray granted = post.getJSONArray("badges_granted");
+        if (granted != null) {
+            for (int index = 0; index < granted.size() && details.size() < 6; index++) {
+                JSONObject badge = granted.getJSONObject(index);
+                if (badge != null) addNonBlank(details, badge.getString("name"));
+            }
+        }
+        List<String> topicBadges = snapshot.badgesByUser.get(post.getIntValue("user_id"));
+        if (topicBadges != null) {
+            for (String badge : topicBadges) {
+                if (details.size() >= 6) break;
+                addNonBlank(details, badge);
+            }
+        }
+        return details.isEmpty() ? "LINUX DO" : TextUtils.join(" · ", details);
+    }
+
+    private static void parseTopicBadgeNames(JSONObject root, TopicSnapshot snapshot) {
+        JSONObject container = root.getJSONObject("user_badges");
+        if (container == null) return;
+        Map<Integer, String> badgeNames = new HashMap<>();
+        Object rawBadges = container.get("badges");
+        if (rawBadges instanceof JSONObject) {
+            for (Map.Entry<String, Object> entry : ((JSONObject) rawBadges).entrySet()) {
+                if (!(entry.getValue() instanceof JSONObject)) continue;
+                try {
+                    badgeNames.put(Integer.parseInt(entry.getKey()),
+                            ((JSONObject) entry.getValue()).getString("name"));
+                } catch (NumberFormatException ignored) { }
+            }
+        } else if (rawBadges instanceof JSONArray) {
+            JSONArray badges = (JSONArray) rawBadges;
+            for (int index = 0; index < badges.size(); index++) {
+                JSONObject badge = badges.getJSONObject(index);
+                if (badge != null) badgeNames.put(
+                        badge.getIntValue("id"), badge.getString("name"));
+            }
+        }
+        Object rawUsers = container.get("users");
+        if (rawUsers instanceof JSONObject) {
+            for (Map.Entry<String, Object> entry : ((JSONObject) rawUsers).entrySet()) {
+                try {
+                    addUserBadges(snapshot, Integer.parseInt(entry.getKey()),
+                            entry.getValue(), badgeNames);
+                } catch (NumberFormatException ignored) { }
+            }
+        } else if (rawUsers instanceof JSONArray) {
+            JSONArray users = (JSONArray) rawUsers;
+            for (int index = 0; index < users.size(); index++) {
+                JSONObject user = users.getJSONObject(index);
+                if (user != null) addUserBadges(snapshot, user.getIntValue("id"), user, badgeNames);
+            }
+        }
+    }
+
+    private static void addUserBadges(
+            TopicSnapshot snapshot, int userId, Object rawUser, Map<Integer, String> names) {
+        if (!(rawUser instanceof JSONObject) || userId <= 0) return;
+        JSONArray ids = ((JSONObject) rawUser).getJSONArray("badge_ids");
+        if (ids == null) return;
+        List<String> badges = new ArrayList<>();
+        for (int index = 0; index < ids.size() && badges.size() < 5; index++) {
+            String name = names.get(ids.getIntValue(index));
+            if (!TextUtils.isEmpty(name)) badges.add(name);
+        }
+        if (!badges.isEmpty()) snapshot.badgesByUser.put(userId, badges);
+    }
+
+    private static void addNonBlank(Set<String> values, String value) {
+        if (!TextUtils.isEmpty(value)) values.add(value.trim());
+    }
+
+    private static String escapeText(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    private static String escapeAttribute(String value) {
+        return escapeText(value).replace("'", "&#39;").replace("\"", "&quot;");
     }
 
     private static String wrapCooked(String cooked) {
@@ -420,6 +627,7 @@ public final class LinuxDoRepository {
         String title;
         final List<Integer> stream = new ArrayList<>();
         final Map<Integer, JSONObject> posts = new HashMap<>();
+        final Map<Integer, List<String>> badgesByUser = new HashMap<>();
     }
 
     private static final class ArticleWaiter {

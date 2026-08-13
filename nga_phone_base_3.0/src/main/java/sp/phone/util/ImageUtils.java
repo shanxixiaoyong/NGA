@@ -16,6 +16,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.DisplayMetrics;
+import android.util.LruCache;
 import android.util.TypedValue;
 import android.widget.ImageView;
 
@@ -26,6 +27,12 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -33,6 +40,8 @@ import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.util.GlideApp;
 import sp.phone.common.PhoneConfiguration;
+import sp.phone.linuxdo.LinuxDoHttpSession;
+import sp.phone.linuxdo.LinuxDoWebSession;
 
 public class ImageUtils {
     static final String LOG_TAG = ImageUtils.class.getSimpleName();
@@ -41,6 +50,18 @@ public class ImageUtils {
     public static ZipFile zf;
 
     private static Drawable sDefaultAvatar;
+    private static final Object sLinuxDoAvatarLock = new Object();
+    private static final LruCache<String, byte[]> sLinuxDoAvatarCache =
+            new LruCache<String, byte[]>(4 * 1024 * 1024) {
+                @Override
+                protected int sizeOf(String key, byte[] value) {
+                    return value == null ? 0 : value.length;
+                }
+            };
+    private static final Map<String, List<WeakReference<ImageView>>>
+            sLinuxDoAvatarInFlight = new HashMap<>();
+    private static final WeakHashMap<ImageView, String> sLinuxDoAvatarExpected =
+            new WeakHashMap<>();
 
     // Convert to pixels
     public static int DtoP(int dValue) {
@@ -450,6 +471,76 @@ public class ImageUtils {
 
     public static void loadRoundCornerAvatar(ImageView imageView, String url) {
         loadRoundCornerAvatar(imageView, url, false);
+    }
+
+    public static void loadLinuxDoAvatar(ImageView imageView, String url) {
+        if (StringUtils.isEmpty(url)) {
+            loadRoundCornerAvatar(imageView, null, false);
+            return;
+        }
+        Context context = ContextUtils.getContext();
+        if (sDefaultAvatar == null) {
+            Bitmap defaultAvatar = BitmapFactory.decodeResource(
+                    context.getResources(),
+                    com.justwen.androidnga.module.message.R.drawable.default_avatar);
+            sDefaultAvatar = new BitmapDrawable(
+                    context.getResources(), ImageUtils.toRoundCorner(defaultAvatar, 2));
+        }
+        imageView.setImageDrawable(sDefaultAvatar);
+        byte[] cached;
+        boolean startRequest = false;
+        synchronized (sLinuxDoAvatarLock) {
+            sLinuxDoAvatarExpected.put(imageView, url);
+            cached = sLinuxDoAvatarCache.get(url);
+            if (cached == null) {
+                List<WeakReference<ImageView>> targets = sLinuxDoAvatarInFlight.get(url);
+                if (targets == null) {
+                    targets = new ArrayList<>();
+                    sLinuxDoAvatarInFlight.put(url, targets);
+                    startRequest = true;
+                }
+                targets.add(new WeakReference<>(imageView));
+            }
+        }
+        if (cached != null) {
+            displayLinuxDoAvatar(imageView, url, cached);
+            return;
+        }
+        if (!startRequest) return;
+        LinuxDoHttpSession.getInstance().fetchAvatar(url, new LinuxDoHttpSession.ByteCallback() {
+            @Override
+            public void onSuccess(byte[] bytes) {
+                List<WeakReference<ImageView>> targets;
+                synchronized (sLinuxDoAvatarLock) {
+                    sLinuxDoAvatarCache.put(url, bytes);
+                    targets = sLinuxDoAvatarInFlight.remove(url);
+                }
+                if (targets == null) return;
+                for (WeakReference<ImageView> target : targets) {
+                    ImageView view = target.get();
+                    if (view != null) displayLinuxDoAvatar(view, url, bytes);
+                }
+            }
+
+            @Override
+            public void onFailure(LinuxDoWebSession.Failure failure) {
+                synchronized (sLinuxDoAvatarLock) {
+                    sLinuxDoAvatarInFlight.remove(url);
+                }
+            }
+        });
+    }
+
+    private static void displayLinuxDoAvatar(ImageView imageView, String url, byte[] bytes) {
+        synchronized (sLinuxDoAvatarLock) {
+            if (!url.equals(sLinuxDoAvatarExpected.get(imageView))) return;
+        }
+        GlideApp.with(ContextUtils.getContext())
+                .load(bytes)
+                .placeholder(sDefaultAvatar)
+                .circleCrop()
+                .diskCacheStrategy(DiskCacheStrategy.DATA)
+                .into(imageView);
     }
 
     @Deprecated

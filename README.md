@@ -12,7 +12,7 @@
 当前个人增强版相较原版的完整功能清单、使用限制和技术实现见：
 
 - [个人增强版功能与使用说明](docs/personal-edition.md)
-- [5.5.0-personal.29 发布说明](release-notes/5.5.0-personal.29.md)
+- [5.5.0-personal.35 发布说明](release-notes/5.5.0-personal.35.md)
 
 ### 新增
 
@@ -24,8 +24,8 @@
 - 列表页点标题回顶刷新
 - 全板块阅读状态、未读提示和帖子/板块屏蔽
 - 自动恢复上次阅读位置与页末继续上滑翻页
-- NGA 异常 JSON 容错和受控浏览器回退
-- 原生 NGA 风格的只读 `LINUX DO` 板块
+- NGA 截断 JSON 的网页恢复与受控浏览器回退
+- 原生 NGA 风格的 `LINUX DO` 板块，支持登录、回复、Boost 和点赞
 - `LINUX DO` 独立 DoH 与 QUIC 访问通道
 
 ### 调整

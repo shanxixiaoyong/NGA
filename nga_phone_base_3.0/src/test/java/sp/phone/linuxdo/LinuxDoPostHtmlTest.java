@@ -13,10 +13,14 @@ public class LinuxDoPostHtmlTest {
 
         assertTrue(html.contains("name='viewport'"));
         assertTrue(html.contains("padding:0 8px"));
-        assertTrue(html.contains("img:not(.emoji)"));
+        assertTrue(html.contains("img:not(.emoji):not(.linuxdo-boost-avatar)"));
         assertTrue(html.contains("width:auto!important"));
         assertTrue(html.contains("height:auto!important"));
         assertTrue(html.contains("object-fit:contain!important"));
+        assertTrue(html.contains("rel='preconnect'"));
+        assertTrue(html.contains(".lightbox-wrapper .meta"));
+        assertTrue(html.contains(".linuxdo-boosts"));
+        assertTrue(html.contains(".linuxdo-boost img.linuxdo-boost-avatar{width:1em!important;height:1em!important;"));
         assertTrue(html.contains("body>:first-child{margin-top:0!important;}"));
         assertTrue(html.contains("body *:last-child{margin-bottom:0!important;"));
         assertTrue(html.contains("p{margin-top:.55em;margin-bottom:0;}"));

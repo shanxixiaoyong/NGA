@@ -27,10 +27,12 @@
 
         <TextView
             android:id="@+id/author"
-            android:layout_width="140dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
+            android:layout_marginEnd="8dp"
             android:layout_toEndOf="@id/iv_person"
+            android:layout_toStartOf="@id/last_reply"
             android:gravity="bottom"
             android:maxLines="2"
             android:text="@string/sample_nick_name"
@@ -40,7 +42,7 @@
 
         <TextView
             android:id="@+id/last_reply"
-            android:layout_width="140dp"
+            android:layout_width="80dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_toStartOf="@+id/im3"

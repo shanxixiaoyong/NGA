@@ -42,6 +42,8 @@ public class ThreadPageInfo implements JavaBean {
 
     private String mBoard;
 
+    private String mTags;
+
     private int mParentFid;
 
     /**
@@ -196,6 +198,14 @@ public class ThreadPageInfo implements JavaBean {
     public void setBoard(String parentBoard) {
         mBoard = parentBoard;
         mMirrorBoard = "版面镜像".equals(parentBoard);
+    }
+
+    public String getTags() {
+        return mTags;
+    }
+
+    public void setTags(String tags) {
+        mTags = tags;
     }
 
     public int getParentFid() {

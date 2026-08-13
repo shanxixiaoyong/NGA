@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="240dp"
+    android:layout_width="330dp"
     android:layout_height="52dp"
     android:background="@drawable/bg_topic_block_dialog"
     android:orientation="horizontal"
@@ -14,6 +14,23 @@
         android:background="?attr/selectableItemBackground"
         android:gravity="center"
         android:text="@string/hide_topic"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="15sp" />
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="28dp"
+        android:layout_gravity="center_vertical"
+        android:background="?android:attr/listDivider" />
+
+    <TextView
+        android:id="@+id/action_follow_topic"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:text="@string/follow_topic"
         android:textColor="?android:attr/textColorPrimary"
         android:textSize="15sp" />
 

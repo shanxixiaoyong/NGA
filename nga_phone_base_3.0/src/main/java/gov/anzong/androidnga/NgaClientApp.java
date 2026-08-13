@@ -26,6 +26,7 @@ import gov.anzong.androidnga.db.AppDatabase;
 import sp.phone.common.UserManagerImpl;
 import sp.phone.common.VersionUpgradeHelper;
 import sp.phone.linuxdo.LinuxDoWebSession;
+import sp.phone.mvp.model.web.NgaWebArticleFallbackSession;
 import sp.phone.task.CheckInTask;
 
 public class NgaClientApp extends Application {
@@ -35,6 +36,8 @@ public class NgaClientApp extends Application {
     private static boolean sNewVersion;
 
     private LinuxDoWebSession mLinuxDoWebSession;
+
+    private NgaWebArticleFallbackSession mNgaWebArticleFallbackSession;
 
     @Override
     public void onCreate() {
@@ -148,6 +151,14 @@ public class NgaClientApp extends Application {
             mLinuxDoWebSession = new LinuxDoWebSession();
         }
         return mLinuxDoWebSession;
+    }
+
+    /** Application-owned; its WebView exists only while one recovery request is active. */
+    public synchronized NgaWebArticleFallbackSession getNgaWebArticleFallbackSession() {
+        if (mNgaWebArticleFallbackSession == null) {
+            mNgaWebArticleFallbackSession = new NgaWebArticleFallbackSession();
+        }
+        return mNgaWebArticleFallbackSession;
     }
 
 }

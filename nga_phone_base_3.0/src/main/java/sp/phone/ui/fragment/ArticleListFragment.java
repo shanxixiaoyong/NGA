@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -20,9 +21,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.alibaba.android.arouter.launcher.ARouter;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -34,9 +32,10 @@ import io.reactivex.annotations.NonNull;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.common.User;
 import sp.phone.common.UserManagerImpl;
-import sp.phone.data.ArticleLocalityRepository;
 import sp.phone.http.bean.ThreadData;
 import sp.phone.http.bean.ThreadRowInfo;
+import sp.phone.linuxdo.LinuxDoActionDialogs;
+import sp.phone.linuxdo.LinuxDoRepository;
 import sp.phone.mvp.contract.ArticleListContract;
 import sp.phone.mvp.presenter.ArticleListPresenter;
 import sp.phone.mvp.viewmodel.ArticleShareViewModel;
@@ -52,8 +51,8 @@ import sp.phone.util.ActivityUtils;
 import sp.phone.util.FunctionUtils;
 import gov.anzong.androidnga.common.util.NLog;
 import sp.phone.util.StringUtils;
+import sp.phone.theme.ThemeManager;
 import sp.phone.view.RecyclerViewEx;
-import sp.phone.linuxdo.LinuxDoLocalityRepository;
 
 /*
  * MD 帖子详情每一页
@@ -61,6 +60,8 @@ import sp.phone.linuxdo.LinuxDoLocalityRepository;
 public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> implements ArticleListContract.View {
 
     private static final String TAG = ArticleListFragment.class.getSimpleName();
+    private static final int MENU_LINUXDO_REPLY = 10_001;
+    private static final int MENU_LINUXDO_BOOST = 10_002;
 
     @BindView(R.id.list)
     public RecyclerViewEx mListView;
@@ -72,22 +73,6 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     public SwipeRefreshLayout mSwipeRefreshLayout;
 
     private ArticleListAdapter mArticleAdapter;
-
-    private final Set<Integer> mLocalityRequestedAuthors = new HashSet<>();
-
-    private final ArticleLocalityRepository.Callback mLocalityCallback =
-            (authorId, locality) -> {
-                if (mArticleAdapter != null) {
-                    mArticleAdapter.applyLocality(authorId, locality);
-                }
-            };
-
-    private final LinuxDoLocalityRepository.Callback mLinuxDoLocalityCallback =
-            (authorId, locality) -> {
-                if (mArticleAdapter != null) {
-                    mArticleAdapter.applyLocality(authorId, locality);
-                }
-            };
 
     private BottomPageAdvanceGesture mBottomPageAdvanceGesture;
 
@@ -190,7 +175,24 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         @Override
         public void onClick(View view) {
             if (mRequestParam.source == ContentSource.LINUX_DO) {
-                showToast("LINUX DO 当前为只读浏览");
+                ThreadRowInfo row = (ThreadRowInfo) view.getTag();
+                PopupMenu popupMenu = new PopupMenu(getContext(), view);
+                popupMenu.getMenu().add(Menu.NONE, MENU_LINUXDO_REPLY, 0, "回复本楼");
+                popupMenu.getMenu().add(Menu.NONE, MENU_LINUXDO_BOOST, 1, "Boost 回复");
+                popupMenu.setOnMenuItemClickListener(item -> {
+                    if (item.getItemId() == MENU_LINUXDO_REPLY) {
+                        showLinuxDoReply(row);
+                        return true;
+                    }
+                    if (item.getItemId() == MENU_LINUXDO_BOOST) {
+                        LinuxDoActionDialogs.showBoost(
+                                requireContext(), row.getTid(), row.getPid(),
+                                ArticleListFragment.this::loadPage);
+                        return true;
+                    }
+                    return false;
+                });
+                popupMenu.show();
                 return;
             }
             mMenuItemClickListener.setThreadRowInfo((ThreadRowInfo) view.getTag());
@@ -233,7 +235,21 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         @Override
         public void onClick(View view) {
             if (mRequestParam.source == ContentSource.LINUX_DO) {
-                showToast("LINUX DO 当前为只读浏览");
+                ThreadRowInfo row = (ThreadRowInfo) view.getTag();
+                LinuxDoRepository.getInstance().likePost(
+                        row.getTid(), row.getPid(), new LinuxDoRepository.MutationCallback() {
+                            @Override
+                            public void onSuccess() {
+                                row.setScore(row.getScore() + 1);
+                                mArticleAdapter.notifyDataSetChanged();
+                                showToast("点赞成功");
+                            }
+
+                            @Override
+                            public void onError(String message) {
+                                showToast(message);
+                            }
+                        });
                 return;
             }
             ThreadRowInfo row = ((ThreadRowInfo) view.getTag());
@@ -245,7 +261,7 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         @Override
         public void onClick(View view) {
             if (mRequestParam.source == ContentSource.LINUX_DO) {
-                showToast("LINUX DO 当前为只读浏览");
+                showToast("LINUX DO 暂不支持点踩");
                 return;
             }
             ThreadRowInfo row = ((ThreadRowInfo) view.getTag());
@@ -323,6 +339,12 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         mArticleAdapter.setSupportListener(mSupportListener);
         mArticleAdapter.setOpposeListener(mOpposeListener);
         mArticleAdapter.setMenuTogglerListener(mMenuTogglerListener);
+        mArticleAdapter.setExternalReplyListener(view1 -> {
+            ThreadRowInfo row = (ThreadRowInfo) view1.getTag();
+            if (row == null) return;
+            LinuxDoActionDialogs.showBoost(
+                    requireContext(), row.getTid(), row.getPid(), this::loadPage);
+        });
         mListView.setLayoutManager(new LinearLayoutManager(getContext()));
         mListView.setItemViewCacheSize(20);
         mListView.setAdapter(mArticleAdapter);
@@ -332,7 +354,6 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
                     @androidx.annotation.NonNull RecyclerView recyclerView, int newState) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     recordHighestExposedFloor();
-                    requestVisibleLocalities();
                 }
             }
         });
@@ -349,8 +370,19 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
                 loadPage();
             }
         });
+        mSwipeRefreshLayout.setColorSchemeColors(
+                ThemeManager.getInstance().getAccentColor(requireContext()));
+        TextView sayingView = mLoadingView.findViewById(R.id.saying);
+        sayingView.setText(StringUtils.getSaying());
         super.onViewCreated(view, savedInstanceState);
         notifyArticlePageReady();
+    }
+
+    private void showLinuxDoReply(ThreadRowInfo row) {
+        if (row == null) return;
+        LinuxDoActionDialogs.showReply(
+                requireContext(), row.getTid(), row.getLou() + 1,
+                this::loadPage);
     }
 
     private boolean isReadProgressEligible() {
@@ -432,31 +464,6 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     private void requestNextArticlePage() {
         if (getParentFragment() instanceof ArticleTabFragment) {
             ((ArticleTabFragment) getParentFragment()).requestNextPageFromBottom();
-        }
-    }
-
-    private void requestVisibleLocalities() {
-        if (mListView == null || mArticleAdapter == null
-                || !(mListView.getLayoutManager() instanceof LinearLayoutManager)) {
-            return;
-        }
-        LinearLayoutManager manager = (LinearLayoutManager) mListView.getLayoutManager();
-        int first = manager.findFirstVisibleItemPosition();
-        int last = manager.findLastVisibleItemPosition();
-        if (first == RecyclerView.NO_POSITION || last == RecyclerView.NO_POSITION) return;
-        for (int position = first; position <= last; position++) {
-            ThreadRowInfo row = mArticleAdapter.getRowAt(position);
-            if (row == null || row.getAuthorid() <= 0 || !StringUtils.isEmpty(row.getIpLoc())
-                    || !mLocalityRequestedAuthors.add(row.getAuthorid())) {
-                continue;
-            }
-            if (mRequestParam.source == ContentSource.LINUX_DO) {
-                LinuxDoLocalityRepository.getInstance().request(
-                        row.getAuthorid(), row.getAuthor(), mLinuxDoLocalityCallback);
-            } else {
-                ArticleLocalityRepository.getInstance().request(
-                        row.getAuthorid(), mLocalityCallback);
-            }
         }
     }
 
@@ -562,15 +569,11 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         mHasArticleData = data != null && data.getRowList() != null;
         mListView.invalidateItemDecorations();
         positionPendingRestoreFloor();
-        mListView.post(this::requestVisibleLocalities);
-
     }
 
     @Override
     public void onDestroyView() {
         mHasArticleData = false;
-        ArticleLocalityRepository.getInstance().removeCallback(mLocalityCallback);
-        LinuxDoLocalityRepository.getInstance().removeCallback(mLinuxDoLocalityCallback);
         mBottomPageAdvanceGesture = null;
         super.onDestroyView();
     }

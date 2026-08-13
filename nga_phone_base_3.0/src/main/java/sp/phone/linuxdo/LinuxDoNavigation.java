@@ -10,11 +10,21 @@ import sp.phone.param.ParamKey;
 import sp.phone.param.TopicListParam;
 
 public final class LinuxDoNavigation {
+    public static final String EXTRA_LOGIN_ONLY = "linuxdo_login_only";
     private LinuxDoNavigation() {
     }
 
     public static void openVerification(Context context) {
         Intent intent = new Intent(context, LinuxDoSessionActivity.class);
+        if (!(context instanceof android.app.Activity)) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        context.startActivity(intent);
+    }
+
+    public static void openLogin(Context context) {
+        Intent intent = new Intent(context, LinuxDoSessionActivity.class);
+        intent.putExtra(EXTRA_LOGIN_ONLY, true);
         if (!(context instanceof android.app.Activity)) {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }

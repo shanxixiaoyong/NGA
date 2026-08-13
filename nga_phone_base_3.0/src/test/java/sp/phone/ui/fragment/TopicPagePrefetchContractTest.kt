@@ -72,7 +72,7 @@ class TopicPagePrefetchContractTest {
     fun prefetchUsesTheExistingModelPathAndHasNoForegroundFailureSideEffects() {
         assertTrue(
             presenterSource.contains(
-                "mBaseModel.loadPage(mRequestParam, mHeaderMap, mPrefetchCallback);",
+                "mBaseModel.loadPage(mRequestParam, mPrefetchCallback);",
             ),
         )
         assertFalse(presenterSource.contains("RetrofitService"))
@@ -80,7 +80,7 @@ class TopicPagePrefetchContractTest {
 
         val silentCallback = presenterSource
             .substringAfter("private class PrefetchCallback")
-            .substringBefore("private final OnHttpCallBack<ThreadData> mRetryCallback")
+            .substringBefore("private final OnHttpCallBack<ThreadData> mDataCallBack")
         assertFalse(silentCallback.contains("showToast"))
         assertFalse(silentCallback.contains("showWithWebView"))
         assertFalse(silentCallback.contains("retryWithNewAccount"))
@@ -107,12 +107,16 @@ class TopicPagePrefetchContractTest {
     }
 
     @Test
-    fun normalRefreshRetriesAnAccountThenFallsBackOnlyOnClassifiedServerFailure() {
+    fun foregroundParseFailureUsesWebRecoveryBeforeBrowserMode() {
         assertTrue(listFragmentSource.contains("mSwipeRefreshLayout.setOnRefreshListener"))
         assertTrue(listFragmentSource.contains("mPresenter.loadPage(mRequestParam);"))
         assertTrue(presenterSource.contains("requestForegroundLoad(true);"))
-        assertTrue(presenterSource.contains("private class RetryCallback extends ArticleCallback"))
-        assertTrue(presenterSource.contains("retryWithNewAccount()"))
+        assertFalse(presenterSource.contains("retryWithNewAccount()"))
+        assertFalse(presenterSource.contains("getNextCookie()"))
+        assertTrue(presenterSource.contains("startWebFallback()"))
+        assertTrue(presenterSource.contains("loadWebFallbackPage"))
+        assertTrue(presenterSource.contains("finishWebFallbackWithBrowser()"))
+        assertTrue(presenterSource.contains("t instanceof ArticleListModel.ArticleParseException"))
         assertTrue(presenterSource.contains("t instanceof ArticleListModel.ServerException"))
         assertTrue(presenterSource.contains("showWithWebView()"))
         assertTrue(presenterSource.contains("ForumWebFragment.class.getName()"))
@@ -125,12 +129,14 @@ class TopicPagePrefetchContractTest {
                 "\"/read.php?\" + \"&page=\" + page + \"&__output=8&noprefix&v2\"",
             ),
         )
-        assertTrue(modelSource.contains("mService.get(url, header)"))
+        assertTrue(modelSource.contains("header == null || header.isEmpty()"))
+        assertTrue(modelSource.contains("? mService.get(url)"))
+        assertTrue(modelSource.contains(": mService.get(url, header)"))
+        assertFalse(modelSource.contains("mService.get(url, null)"))
         assertTrue(modelSource.contains("ArticleConvertFactory.parseArticleInfo(s)"))
         assertTrue(modelSource.contains("outcome.getDiagnostic()"))
-        assertEquals(
-            2,
-            Regex("bindUntilEvent\\(FragmentEvent\\.DETACH\\)").findAll(modelSource).count(),
-        )
+        assertTrue(modelSource.contains("ArticleConvertFactory.parseWebArticleInfo(snapshot)"))
+        assertTrue(modelSource.contains("NgaWebArticleFallbackSession.getInstance().load"))
+        assertEquals(4, Regex("bindUntilEvent\\(FragmentEvent\\.DETACH\\)").findAll(modelSource).count())
     }
 }

@@ -1,4 +1,4 @@
-# LINUX DO Read-Only Source Contract
+# LINUX DO Source Contract
 
 ## 1. Scope / Trigger
 
@@ -17,6 +17,9 @@ LinuxDoWebSession.fetch(String relativePath, Callback)
 LinuxDoWebSession.acquire()
 LinuxDoWebSession.release()
 LinuxDoHttpSession.fetch(String relativePath, LinuxDoWebSession.Callback)
+LinuxDoHttpSession.fetchAvatar(String httpsUrl, LinuxDoHttpSession.ByteCallback)
+LinuxDoHttpSession.post(String relativePath, Map<String, String> fields,
+                        LinuxDoWebSession.Callback)
 LinuxDoCronetSession.fetch(String relativePath, String cookie, String userAgent,
                            LinuxDoWebSession.Callback)
 LinuxDoDohConfig.currentUrl()
@@ -68,17 +71,36 @@ appended to their Parcels and default to `ContentSource.NGA` when absent.
   `/categories.json`, `/t/{id}.json`, bounded `post_ids[]` topic slices, and
   `/u/{username}.json`. Requests are serialized, use browser credentials, cap
   response text at 8 MiB, read 64 KiB chunks, and time out after 20 seconds.
+- Native Linux DO author avatars must use the same source-isolated DNS client,
+  not Glide's process-global resolver. Accept only HTTPS `linux.do` or its true
+  subdomains, cap each image at 2 MiB, merge identical in-flight downloads,
+  and keep a 4 MiB byte cache. On the Cloudflare Android 14+ path, both DNS and
+  image bytes use the mapped Cronet/QUIC transport; resolving through DoH and
+  then returning to ordinary OkHttp/TCP is forbidden. Send browser Cookie only
+  to exact `linux.do`.
+- Inline Boost avatars use a fixed synthetic same-document URL intercepted by
+  the article WebView client, decoded only on a WebView background resource
+  thread, and loaded through the same bounded avatar transport. Arbitrary
+  document media and unmarked URLs are never intercepted.
+- User-triggered writes are limited to Discourse reply (`/posts.json`), like
+  (`/post_actions`), and Boost (`/discourse-boosts/posts/{id}/boosts`). They
+  require an exact-origin browser Cookie plus a fresh `/session/csrf.json`
+  token, use the isolated LINUX DO resolver transport, and are never retried
+  automatically after submission.
 - Decode category/latest payloads off the main thread. A topic-list page number
   never becomes an article page number; a newly selected topic opens at page
   one and source-scoped read progress performs restoration.
 - Topic detail supplies `post_stream.stream`; fetch absent page IDs through
   `/t/{id}/posts.json`. Cache at most eight topic snapshots and deduplicate the
   initial detail request per topic.
-- Reuse the existing NGA article adapter and floor layout. Linux DO remains
-  read-only, but its floor chrome keeps the NGA like, oppose, reply, and more
-  affordances in their normal positions so row geometry does not jump between
-  sources. Intercept every mutation before the NGA presenter/task layer and
-  explain the read-only state; display projected like counts without posting.
+- Reuse the existing NGA article adapter and floor layout. Its floor chrome
+  keeps the NGA like, oppose, reply, and more affordances in their normal
+  positions so row geometry does not jump between sources. Route only reply,
+  like and Boost through the isolated LINUX DO mutation boundary; never let an
+  external-source action fall through to the NGA presenter/task layer.
+- In a LINUX DO floor, the visible quick-reply icon opens the Boost composer
+  for that exact post ID by default. The floor's more menu retains explicit
+  ordinary reply and Boost choices. NGA quick reply remains unchanged.
 - Wrap Discourse `cooked` HTML only at the LINUX DO source boundary. Reset the
   document and first/last nested block vertical margins to avoid duplicated
   vertical whitespace, while retaining comfortable horizontal body padding. Add a
@@ -117,6 +139,8 @@ appended to their Parcels and default to `ContentSource.NGA` when absent.
 | Non-2xx/malformed/non-object response | Classified load error; native UI remains safe |
 | Response exceeds 8 MiB | `RESPONSE_TOO_LARGE` |
 | Request exceeds 20 seconds | `TIMEOUT`; stale callbacks cannot affect the next generation |
+| Write has no Cookie/CSRF token | Stop before mutation and request login; never submit anonymously |
+| Mutation response is lost after send | Report failure/unknown outcome and never retry automatically |
 | Missing/changed required Discourse fields | Chinese parse error; never bind partial invalid rows |
 | Profile has no `location` | Cache absence and omit locality text |
 | Final owner leaves | Destroy after the idle grace period |
@@ -141,6 +165,8 @@ appended to their Parcels and default to `ContentSource.NGA` when absent.
   category lookup, author mapping, timestamps, and malformed payload rejection.
 - Unit-test path allowlisting and JSON/challenge/status classification without
   live network access.
+- Unit-test the exact/subdomain avatar-host boundary; reject lookalike and
+  suffix-confusion hosts.
 - Unit-test DoH URL validation and Discourse like projection from direct
   `like_count` plus like action type `2` in `actions_summary`.
 - Unit-test the LINUX DO HTML wrapper's viewport, edge-margin reset, and
@@ -152,7 +178,7 @@ appended to their Parcels and default to `ContentSource.NGA` when absent.
 - Audit `releaseRuntimeClasspath` so `okhttp` and `okhttp-dnsoverhttps` resolve
   to the same version; device-smoke the first LINUX DO request after R8.
 - Source-contract-test explicit source propagation, unexported session
-  Activity, read-only menu/action guards, bounded caches/concurrency, and no
+  Activity, mutation route guards, bounded caches/concurrency, and no
   adapter-time requests.
 - Run app unit tests, Debug compile/lint, Release R8 build, APK manifest audit,
   and signer continuity. Live/device testing requires separate authorization.

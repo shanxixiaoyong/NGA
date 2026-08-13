@@ -2,15 +2,11 @@ package sp.phone.mvp.presenter;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.ArrayMap;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.OnLifecycleEvent;
 
 import com.justwen.androidnga.base.activity.ARouterConstants;
-
-import java.util.Map;
 
 import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.Utils;
@@ -23,6 +19,7 @@ import sp.phone.http.bean.ThreadData;
 import sp.phone.http.bean.ThreadRowInfo;
 import sp.phone.mvp.contract.ArticleListContract;
 import sp.phone.mvp.model.ArticleListModel;
+import sp.phone.mvp.model.web.NgaWebArticleFallbackPolicy;
 import sp.phone.param.ArticleListParam;
 import sp.phone.param.ContentSource;
 import sp.phone.linuxdo.LinuxDoNavigation;
@@ -46,9 +43,11 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
 
     private ArticleListParam mRequestParam;
 
-    private final Map<String, String> mHeaderMap = new ArrayMap<>();
-
     private final ArticlePageRequestState mPageRequestState = new ArticlePageRequestState();
+
+    private boolean mWebFallbackInFlight;
+
+    private boolean mBrowserFallbackStarted;
 
     private class ArticleCallback implements OnHttpCallBack<ThreadData> {
         @Override
@@ -73,16 +72,17 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
 
         @Override
         public void onError(String msg, Throwable t) {
-            onError(msg);
-            if (t instanceof ArticleListModel.ArticleParseException) {
-                showParseDiagnostic(msg);
-            } else if (t instanceof ArticleListModel.ServerException) {
-                showWithWebView();
+            if ((t instanceof ArticleListModel.ArticleParseException
+                    || t instanceof ArticleListModel.ServerException)
+                    && startWebFallback()) {
+                return;
             }
+            onError(msg);
         }
 
         @Override
         public void onSuccess(ThreadData data) {
+            mWebFallbackInFlight = false;
             mThreadData = data;
             mPageRequestState.completeForegroundLoad();
             if (mBaseView != null) {
@@ -99,16 +99,6 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
             }
         }
     };
-
-    private class RetryCallback extends ArticleCallback {
-
-        @Override
-        public void onError(String msg, Throwable t) {
-            if (!(t instanceof ArticleListModel.ServerException) || !retryWithNewAccount()) {
-                super.onError(msg, t);
-            }
-        }
-    }
 
     private class PrefetchCallback implements OnHttpCallBack<ThreadData> {
 
@@ -136,34 +126,38 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         }
     }
 
-    private final OnHttpCallBack<ThreadData> mRetryCallback = new RetryCallback();
-
     private final OnHttpCallBack<ThreadData> mDataCallBack = new ArticleCallback();
 
     private final OnHttpCallBack<ThreadData> mPrefetchCallback = new PrefetchCallback();
+
+    private final OnHttpCallBack<ThreadData> mWebFallbackCallback =
+            new OnHttpCallBack<ThreadData>() {
+                @Override
+                public void onError(String text) {
+                    finishWebFallbackWithBrowser();
+                }
+
+                @Override
+                public void onError(String msg, Throwable t) {
+                    finishWebFallbackWithBrowser();
+                }
+
+                @Override
+                public void onSuccess(ThreadData data) {
+                    mWebFallbackInFlight = false;
+                    mDataCallBack.onSuccess(data);
+                }
+            };
 
     @Override
     protected ArticleListModel onCreateModel() {
         return new ArticleListModel();
     }
 
-    private boolean retryWithNewAccount() {
-        if (mBaseView == null) {
-            return false;
-        }
-        String cookie = UserManagerImpl.getInstance().getNextCookie();
-        if (cookie == null) {
-            return false;
-        }
-        Map<String, String> header = new ArrayMap<>();
-        header.put("Cookie", cookie);
-        mBaseModel.loadPage(mRequestParam, header, mDataCallBack);
-        return true;
-    }
-
     @Override
     public void loadPage(ArticleListParam param) {
         mRequestParam = param;
+        mBrowserFallbackStarted = false;
         requestForegroundLoad(true);
     }
 
@@ -176,7 +170,7 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
                 || !mPageRequestState.beginPrefetch()) {
             return;
         }
-        mBaseModel.loadPage(mRequestParam, mHeaderMap, mPrefetchCallback);
+        mBaseModel.loadPage(mRequestParam, mPrefetchCallback);
     }
 
     private void handlePrefetchFailure() {
@@ -196,8 +190,29 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
             mBaseView.setRefreshing(true);
         } else if (decision == ArticlePageRequestState.ForegroundLoadDecision.START) {
             mBaseView.setRefreshing(true);
-            mBaseModel.loadPage(mRequestParam, mHeaderMap, mRetryCallback);
+            mBaseModel.loadPage(mRequestParam, mDataCallBack);
         }
+    }
+
+    private boolean startWebFallback() {
+        if (mWebFallbackInFlight || mBaseView == null || mRequestParam == null
+                || mRequestParam.source == ContentSource.LINUX_DO) {
+            return false;
+        }
+        mWebFallbackInFlight = true;
+        mBaseModel.loadWebFallbackPage(mRequestParam, mWebFallbackCallback);
+        return true;
+    }
+
+    private void finishWebFallbackWithBrowser() {
+        if (!mWebFallbackInFlight) return;
+        mWebFallbackInFlight = false;
+        mPageRequestState.failForegroundLoad(mThreadData != null);
+        if (mBaseView != null) {
+            mBaseView.setRefreshing(false);
+            mBaseView.hideLoadingView();
+        }
+        showWithWebView();
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
@@ -213,9 +228,10 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
     }
 
     private void showWithWebView() {
-        if (mBaseView == null || mRequestParam == null) {
+        if (mBrowserFallbackStarted || mBaseView == null || mRequestParam == null) {
             return;
         }
+        mBrowserFallbackStarted = true;
         ARouterUtils.build(ARouterConstants.ACTIVITY_FRAGMENT_TEMPLATE)
                 .withString("url", getCurrentUrl())
                 .withString("title", mRequestParam.title)
@@ -224,28 +240,13 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         mBaseView.finish();
     }
 
-    private void showParseDiagnostic(String message) {
-        if (mBaseView == null || mBaseView.getContext() == null) {
-            return;
-        }
-        new AlertDialog.Builder(mBaseView.getContext())
-                .setTitle(R.string.article_parse_diagnostic_title)
-                .setMessage(message)
-                .setPositiveButton(R.string.open_browser_mode,
-                        (dialog, which) -> showWithWebView())
-                .setNegativeButton(R.string.close, null)
-                .show();
-    }
-
     private String getCurrentUrl() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(Utils.getNGAHost()).append("read.php?");
-        if (mRequestParam.pid != 0) {
-            builder.append("pid=").append(mRequestParam.pid);
-        } else {
-            builder.append("tid=").append(mRequestParam.tid);
+        try {
+            return NgaWebArticleFallbackPolicy.buildReadUrl(
+                    Utils.getNGAHost(), mRequestParam);
+        } catch (IllegalArgumentException ignored) {
+            return Utils.getNGAHost() + "read.php?tid=" + mRequestParam.tid;
         }
-        return builder.toString();
     }
 
     public ArticleListPresenter() {

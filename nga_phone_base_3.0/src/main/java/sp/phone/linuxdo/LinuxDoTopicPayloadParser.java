@@ -47,6 +47,7 @@ final class LinuxDoTopicPayloadParser {
             row.categoryId = topic.getIntValue("category_id");
             row.categoryName = categories.get(row.categoryId);
             row.title = topic.getString("title");
+            row.tags = parseTags(topic.getJSONArray("tags"));
             row.replyCount = Math.max(0, topic.getIntValue("posts_count") - 1);
             row.createdAt = epochSeconds(topic.getString("created_at"));
             row.lastPostedAt = epochSeconds(firstNonBlank(
@@ -62,6 +63,24 @@ final class LinuxDoTopicPayloadParser {
             result.add(row);
         }
         return result;
+    }
+
+    private static String parseTags(JSONArray tags) {
+        if (tags == null || tags.isEmpty()) return null;
+        StringBuilder result = new StringBuilder();
+        for (int index = 0; index < tags.size() && index < 5; index++) {
+            Object raw = tags.get(index);
+            String tag;
+            if (raw instanceof JSONObject) {
+                tag = ((JSONObject) raw).getString("name");
+            } else {
+                tag = raw == null ? null : String.valueOf(raw);
+            }
+            if (tag == null || tag.trim().isEmpty()) continue;
+            if (result.length() > 0) result.append("  ");
+            result.append('#').append(tag.trim());
+        }
+        return result.length() == 0 ? null : result.toString();
     }
 
     private static Map<Integer, JSONObject> usersById(JSONArray users) {
@@ -97,6 +116,7 @@ final class LinuxDoTopicPayloadParser {
         int authorId;
         String author;
         String lastPoster;
+        String tags;
     }
 
     private LinuxDoTopicPayloadParser() {

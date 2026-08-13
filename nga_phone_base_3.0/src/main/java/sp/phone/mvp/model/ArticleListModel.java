@@ -22,11 +22,14 @@ import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import sp.phone.common.UserManagerImpl;
 import sp.phone.http.bean.ThreadData;
+import sp.phone.http.bean.ThreadRowInfo;
 import com.justwen.androidnga.base.network.retrofit.RetrofitHelper;
 import com.justwen.androidnga.base.network.retrofit.RetrofitService;
 import sp.phone.mvp.contract.ArticleListContract;
 import sp.phone.mvp.model.convert.ArticleConvertFactory;
 import sp.phone.mvp.model.convert.ErrorConvertFactory;
+import sp.phone.mvp.model.web.NgaWebArticleFallbackPolicy;
+import sp.phone.mvp.model.web.NgaWebArticleFallbackSession;
 import sp.phone.param.ArticleListParam;
 import sp.phone.param.ContentSource;
 import sp.phone.linuxdo.LinuxDoRepository;
@@ -84,7 +87,10 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
             return;
         }
         String url = getUrl(param);
-        mService.get(url, header)
+        Observable<String> request = header == null || header.isEmpty()
+                ? mService.get(url)
+                : mService.get(url, header);
+        request
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.newThread())
                 .compose(getLifecycleProvider().<String>bindUntilEvent(FragmentEvent.DETACH))
@@ -126,6 +132,83 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
     }
 
     @Override
+    public void loadWebFallbackPage(
+            ArticleListParam param, OnHttpCallBack<ThreadData> callBack) {
+        if (param == null || param.source == ContentSource.LINUX_DO) {
+            callBack.onError("网页恢复不可用", new WebFallbackException());
+            return;
+        }
+        final String url;
+        try {
+            url = NgaWebArticleFallbackPolicy.buildReadUrl(getAvailableDomain(), param);
+        } catch (IllegalArgumentException error) {
+            callBack.onError("网页恢复不可用", new WebFallbackException());
+            return;
+        }
+        final int requestedTid = param.tid;
+        final int requestedPid = param.pid;
+        Observable.<String>create(emitter -> {
+                    NgaWebArticleFallbackSession.RequestHandle handle =
+                            NgaWebArticleFallbackSession.getInstance().load(
+                                    url, new NgaWebArticleFallbackSession.Callback() {
+                                        @Override
+                                        public void onSuccess(String snapshot) {
+                                            if (emitter.isDisposed()) return;
+                                            emitter.onNext(snapshot);
+                                            emitter.onComplete();
+                                        }
+
+                                        @Override
+                                        public void onFailure(
+                                                NgaWebArticleFallbackSession.Failure failure) {
+                                            if (!emitter.isDisposed()) {
+                                                emitter.onError(new WebFallbackException());
+                                            }
+                                        }
+                                    });
+                    emitter.setCancellable(handle::cancel);
+                })
+                .compose(getLifecycleProvider().<String>bindUntilEvent(FragmentEvent.DETACH))
+                .observeOn(Schedulers.computation())
+                .map(snapshot -> {
+                    ArticleConvertFactory.ParseOutcome outcome =
+                            ArticleConvertFactory.parseWebArticleInfo(snapshot);
+                    ThreadData data = outcome.getData();
+                    if (!isExpectedWebSnapshot(data, requestedTid, requestedPid)) {
+                        throw new WebFallbackException();
+                    }
+                    return data;
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .compose(getLifecycleProvider().<ThreadData>bindUntilEvent(FragmentEvent.DETACH))
+                .subscribe(new BaseSubscriber<ThreadData>() {
+                    @Override
+                    public void onNext(@NonNull ThreadData threadData) {
+                        callBack.onSuccess(threadData);
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable throwable) {
+                        callBack.onError("网页恢复失败", throwable);
+                    }
+                });
+    }
+
+    private static boolean isExpectedWebSnapshot(
+            ThreadData data, int requestedTid, int requestedPid) {
+        if (data == null || data.getThreadInfo() == null
+                || data.getRowList() == null || data.getRowList().isEmpty()) {
+            return false;
+        }
+        if (requestedTid > 0 && data.getThreadInfo().getTid() != requestedTid) return false;
+        if (requestedPid <= 0) return true;
+        for (ThreadRowInfo row : data.getRowList()) {
+            if (row != null && row.getPid() == requestedPid) return true;
+        }
+        return false;
+    }
+
+    @Override
     public void cachePage(ArticleListParam param, String rawData) {
 
         if (TextUtils.isEmpty(param.topicInfo)) {
@@ -154,7 +237,9 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
                     + "/cache/" + param.tid + "/" + param.page + ".json";
             File cacheFile = new File(cachePath);
             String rawData = FileUtils.readFileToString(cacheFile);
-            ThreadData threadData = ArticleConvertFactory.getArticleInfo(rawData);
+            ThreadData threadData = rawData.contains("\"__WEB_FALLBACK_HTML\":true")
+                    ? ArticleConvertFactory.parseWebArticleInfo(rawData).getData()
+                    : ArticleConvertFactory.getArticleInfo(rawData);
             if (threadData != null) {
                 emitter.onNext(threadData);
             } else {
@@ -186,6 +271,13 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
 
         public ArticleParseException(String message) {
             super(message);
+        }
+    }
+
+    public static class WebFallbackException extends Exception {
+
+        public WebFallbackException() {
+            super("NGA 网页恢复失败");
         }
     }
 

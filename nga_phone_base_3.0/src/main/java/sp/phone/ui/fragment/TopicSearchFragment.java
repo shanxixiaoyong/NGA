@@ -45,6 +45,7 @@ import sp.phone.ui.adapter.ReplyListAdapter;
 import sp.phone.ui.adapter.TopicListAdapter;
 import sp.phone.util.ARouterUtils;
 import sp.phone.util.StringUtils;
+import sp.phone.theme.ThemeManager;
 import sp.phone.view.RecyclerViewEx;
 
 public class TopicSearchFragment extends BaseFragment implements View.OnClickListener, View.OnLongClickListener {
@@ -165,12 +166,17 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
         }
 
         mSwipeRefreshLayout.setVisibility(View.GONE);
+        mSwipeRefreshLayout.setColorSchemeColors(
+                ThemeManager.getInstance().getAccentColor(requireContext()));
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 mPresenter.loadPage(1, mRequestParam);
             }
         });
+
+        TextView sayingView = mLoadingView.findViewById(R.id.saying);
+        sayingView.setText(StringUtils.getSaying());
 
         super.onViewCreated(view, savedInstanceState);
 
@@ -286,10 +292,17 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(content);
         TextView hideTopic = content.findViewById(R.id.action_hide_topic);
+        TextView followTopic = content.findViewById(R.id.action_follow_topic);
         TextView hideBoard = content.findViewById(R.id.action_hide_board);
         hideTopic.setOnClickListener(ignored -> {
             dialog.dismiss();
             adapter.hideTopic(topic);
+        });
+        followTopic.setText(adapter.isTopicFollowed(topic)
+                ? R.string.unfollow_topic : R.string.follow_topic);
+        followTopic.setOnClickListener(ignored -> {
+            dialog.dismiss();
+            adapter.toggleFollowTopic(topic);
         });
         hideBoard.setEnabled(topic.getFid() != 0);
         hideBoard.setAlpha(topic.getFid() == 0 ? 0.38f : 1f);

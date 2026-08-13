@@ -115,6 +115,14 @@ public final class LinuxDoWebSession {
         });
     }
 
+    public void showLoginPage() {
+        runOnMain(() -> {
+            if (mWebView != null) {
+                mWebView.loadUrl(LinuxDoConstants.ORIGIN + "/login");
+            }
+        });
+    }
+
     public void destroyNow() {
         runOnMain(this::destroy);
     }

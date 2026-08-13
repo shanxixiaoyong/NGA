@@ -6,6 +6,8 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.style.AbsoluteSizeSpan;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
+import android.graphics.Typeface;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -42,9 +44,11 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
     private final TopicLocalState mLocalState;
     private Set<Integer> mHiddenTopics = Collections.emptySet();
     private Set<Integer> mHiddenBoards = Collections.emptySet();
+    private Set<Integer> mFollowedTopics = Collections.emptySet();
     private Map<Integer, TopicReadProgress> mReadProgress = Collections.emptyMap();
     private String mFallbackBoardName;
     private boolean mLocalProjectionEnabled;
+    private final int mSource;
 
     public TopicListAdapter(Context context) {
         this(context, ContentSource.NGA);
@@ -52,6 +56,7 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
 
     public TopicListAdapter(Context context, int source) {
         super(context);
+        mSource = source;
         mLocalState = new TopicLocalState(source);
         setHasStableIds(true);
         loadLocalSnapshots();
@@ -104,6 +109,7 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
 
     public void hideTopic(ThreadPageInfo topic) {
         if (topic == null) return;
+        mLocalState.setTopicFollowed(topic.getTid(), false);
         mLocalState.hideTopic(topic.getTid());
         mHiddenTopics = mLocalState.hiddenTopicSnapshot();
         removeVisibleTopic(topic);
@@ -120,6 +126,19 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
                 notifyItemRemoved(index);
             }
         }
+    }
+
+    public boolean isTopicFollowed(ThreadPageInfo topic) {
+        return topic != null && mFollowedTopics.contains(topic.getTid());
+    }
+
+    public void toggleFollowTopic(ThreadPageInfo topic) {
+        if (topic == null) return;
+        boolean followed = !mFollowedTopics.contains(topic.getTid());
+        mLocalState.setTopicFollowed(topic.getTid(), followed);
+        mFollowedTopics = mLocalState.followedTopicSnapshot();
+        int position = mDataList == null ? -1 : mDataList.indexOf(topic);
+        if (position >= 0) notifyItemChanged(position);
     }
 
     public String boardName(ThreadPageInfo entry) {
@@ -146,6 +165,7 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
         mLocalState.reloadHiddenState();
         mHiddenTopics = mLocalState.hiddenTopicSnapshot();
         mHiddenBoards = mLocalState.hiddenBoardSnapshot();
+        mFollowedTopics = mLocalState.followedTopicSnapshot();
         mReadProgress = mLocalState.readProgressSnapshot();
     }
 
@@ -163,7 +183,15 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
                 projected.add(row);
             }
         }
+        projected.sort((left, right) -> Boolean.compare(
+                isFollowedWithUnread(right), isFollowedWithUnread(left)));
         return projected;
+    }
+
+    private boolean isFollowedWithUnread(ThreadPageInfo row) {
+        return row != null && mFollowedTopics.contains(row.getTid())
+                && TopicLocalStateKt.projectTopicReadState(
+                        row.getReplies(), mReadProgress.get(row.getTid())).getHasUnreadReplies();
     }
 
     @Override
@@ -184,7 +212,7 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
         if (entry == null) {
             return;
         }
-        holder.author.setText(boardName(entry));
+        holder.author.setText(buildBoardAndTags(entry));
         holder.lastReply.setText(TopicLocalStateKt.relativeReplyTime(
                 entry.getLastPost(), System.currentTimeMillis()));
         holder.num.setText(String.valueOf(entry.getReplies()));
@@ -193,7 +221,9 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
 
     private CharSequence buildTitle(ThreadPageInfo entry) {
         SpannableStringBuilder title = new SpannableStringBuilder(
-                TopicTitleHelper.handleTitleFormat(entry));
+                TopicTitleHelper.handleTitleFormat(entry, mSource != ContentSource.LINUX_DO));
+        boolean followed = mFollowedTopics.contains(entry.getTid());
+        if (followed) title.insert(0, "★ ");
         TopicReadState readState = TopicLocalStateKt.projectTopicReadState(
                 entry.getReplies(), mReadProgress.get(entry.getTid()));
         if (readState.getHasBeenOpened() && title.length() > 0) {
@@ -208,7 +238,7 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
             int markerStart = title.length();
             title.append("\u00A0●");
             title.setSpan(
-                    new ForegroundColorSpan(ContextCompat.getColor(mContext, R.color.title_green)),
+                    new ForegroundColorSpan(ThemeManager.getInstance().getAccentColor(mContext)),
                     markerStart,
                     title.length(),
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -218,7 +248,23 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
                     title.length(),
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+        if (followed) {
+            title.setSpan(
+                    new ForegroundColorSpan(ThemeManager.getInstance().getAccentColor(mContext)),
+                    0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
         return title;
+    }
+
+    private CharSequence buildBoardAndTags(ThreadPageInfo entry) {
+        SpannableStringBuilder line = new SpannableStringBuilder(boardName(entry));
+        if (mSource == ContentSource.LINUX_DO && !TextUtils.isEmpty(entry.getTags())) {
+            int start = line.length();
+            line.append("  ").append(entry.getTags());
+            line.setSpan(new StyleSpan(Typeface.BOLD), start, line.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return line;
     }
 
     private static final Object PAYLOAD_READ_STATE = new Object();

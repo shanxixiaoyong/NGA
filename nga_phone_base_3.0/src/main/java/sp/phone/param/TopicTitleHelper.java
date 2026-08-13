@@ -96,6 +96,11 @@ public class TopicTitleHelper {
 
     public static CharSequence handleTitleFormat(ThreadPageInfo entry) {
 
+        return handleTitleFormat(entry, true);
+    }
+
+    public static CharSequence handleTitleFormat(ThreadPageInfo entry, boolean includeBoard) {
+
         String title = StringUtils.removeBrTag(StringUtils.unEscapeHtml(entry.getSubject()));
         SpannableStringBuilder builder = new SpannableStringBuilder(title);
         int type = entry.getType();
@@ -129,7 +134,7 @@ public class TopicTitleHelper {
             }
         }
 
-        if (!TextUtils.isEmpty(entry.getBoard())) {
+        if (includeBoard && !TextUtils.isEmpty(entry.getBoard())) {
             SpannableStringBuilder boardBuilder = new SpannableStringBuilder();
             boardBuilder.append("  [").append(entry.getBoard()).append("]");
             boardBuilder.setSpan(new ForegroundColorSpan(ContextUtils.getColor(R.color.text_color_disabled)), 0, boardBuilder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);

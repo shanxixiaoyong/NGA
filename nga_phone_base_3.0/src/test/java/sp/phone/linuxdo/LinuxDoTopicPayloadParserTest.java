@@ -20,6 +20,7 @@ public class LinuxDoTopicPayloadParserTest {
                 + "\"id\":42,\"category_id\":2,\"title\":\"Hello Linux\","
                 + "\"posts_count\":6,\"created_at\":\"2026-08-10T10:00:00Z\","
                 + "\"bumped_at\":\"2026-08-11T11:12:13Z\","
+                + "\"tags\":[\"人工智能\",{\"name\":\"纯水\"}],"
                 + "\"posters\":[{\"user_id\":7}],"
                 + "\"last_poster_username\":\"bob\"}]}}";
 
@@ -37,6 +38,7 @@ public class LinuxDoTopicPayloadParserTest {
         assertEquals(5, topic.replyCount);
         assertEquals("Alice", topic.author);
         assertEquals("bob", topic.lastPoster);
+        assertEquals("#人工智能  #纯水", topic.tags);
         assertEquals((int) Instant.parse("2026-08-11T11:12:13Z").getEpochSecond(),
                 topic.lastPostedAt);
     }
