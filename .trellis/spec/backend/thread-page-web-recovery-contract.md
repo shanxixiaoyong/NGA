@@ -50,6 +50,12 @@ strict native JSON -> transient web-page recovery -> native ThreadData
 
 Background Pager prefetch calls only the native model path.
 
+Foreground derived views that combine multiple `THREAD.PAGE` responses (for
+example a client-generated high-liked page) must apply the same ordered
+transition independently to every constituent server page. They must not add a
+second native-only parser path where one truncated constituent response aborts
+the whole derived view or silently omits that page.
+
 ## 3. Contracts
 
 ### Native parser
@@ -139,6 +145,7 @@ Background Pager prefetch calls only the native model path.
 | --- | --- |
 | Complete valid native JSON | Return native `ThreadData`; do not create a WebView |
 | Native JSON prefix/truncation or parser-rejected root | Start one foreground web-page recovery; do not repair or rotate accounts |
+| One constituent of a foreground derived page has truncated native JSON | Recover that exact server page through the web transport, validate it, and continue the derived-page assembly |
 | Recognized NGA business/auth/session error | Preserve the existing typed/display error; do not disguise it as recovered data |
 | Background prefetch parse/network failure | Stay silent and update prefetch state only; never start WebView/browser UI |
 | Web page yields matching sanitized snapshot | Convert with `parseWebArticleInfo` and continue in the native reader |
@@ -181,6 +188,10 @@ Background Pager prefetch calls only the native model path.
 - Prefetch source/state tests must assert that only foreground classified
   failures call `loadWebFallbackPage` and that prefetch failure cannot open a
   WebView or browser.
+- Derived-page source/flow tests must assert that every constituent page uses
+  the shared strict-native/web-recovery operation rather than a native-only
+  request helper, and that unrecoverable web failure reaches the final browser
+  fallback.
 - Required gates are App `testDebugUnitTest`, `assembleDebug`, and `lintDebug`,
   followed by repository lint XML audit and the documented repository-wide
   diagnostic tests.
