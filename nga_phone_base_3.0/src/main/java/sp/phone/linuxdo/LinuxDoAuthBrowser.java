@@ -75,7 +75,7 @@ public final class LinuxDoAuthBrowser {
                 if (request.isForMainFrame() && !closed) {
                     failed = true;
                     listener.onError("网页连接失败（" + error.getErrorCode()
-                            + "）。可重试或检查专用 DNS；不会清除登录状态。");
+                            + "）。请确认 sing-box 已启动且本地登录代理可用；不会清除登录状态。");
                 }
             }
             @Override public void onReceivedSslError(WebView webView,

@@ -24,6 +24,7 @@ public final class LinuxDoSessionActivity extends BaseActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final LinuxDoAuthFlow flow = new LinuxDoAuthFlow();
     private LinuxDoAuthFlow.Mode mode;
+    private LinuxDoLoginProxyController loginProxy;
     private LinuxDoAuthBrowser browser;
     private FrameLayout container;
     private TextView hint;
@@ -73,6 +74,8 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         switchMode.setOnClickListener(v -> {
             LinuxDoAuthFlow.Mode next = mode == LinuxDoAuthFlow.Mode.VERIFICATION
                     ? LinuxDoAuthFlow.Mode.LOGIN : LinuxDoAuthFlow.Mode.VERIFICATION;
+            boolean proxyModeChanged = (mode == LinuxDoAuthFlow.Mode.BROWSER)
+                    != (next == LinuxDoAuthFlow.Mode.BROWSER);
             if (next == LinuxDoAuthFlow.Mode.VERIFICATION && !verificationLease) {
                 if (!LinuxDoChallengeCoordinator.tryBeginVerification()) {
                     hint.setText("网络验证已在另一个页面进行中。");
@@ -85,7 +88,7 @@ public final class LinuxDoSessionActivity extends BaseActivity {
             }
             mode = next;
             target = null;
-            if (ready) openPage(); else connect();
+            if (ready && !proxyModeChanged) openPage(); else connect();
         });
         retry.setOnLongClickListener(v -> { LinuxDoNavigation.editDoh(this); return true; });
         connect();
@@ -101,16 +104,33 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         ready = false;
         autofilled = false;
         if (browser != null) { browser.close(); browser = null; }
+        if (loginProxy != null) { loginProxy.close(); loginProxy = null; }
         labels();
-        hint.setText("正在连接 LINUX DO…");
         progress.setVisibility(View.VISIBLE);
         progress.setIndeterminate(true);
         action.setEnabled(false);
-        // Do not put the official login/challenge page behind the old
-        // process-wide CONNECT tunnel.  The tunnel used a Java socket and
-        // could not preserve Chromium's TLS/HTTP3/challenge behaviour.  Let
-        // WebView own the complete browser network stack; native feed requests
-        // continue to use LinuxDoHttpSession's DoH/Cronet path.
+        if (mode == LinuxDoAuthFlow.Mode.BROWSER) {
+            hint.setText("正在直接连接 LINUX DO…");
+            createBrowser(attempt);
+            return;
+        }
+        hint.setText("正在连接登录代理 127.0.0.1:7891…");
+        loginProxy = new LinuxDoLoginProxyController();
+        loginProxy.start(new LinuxDoLoginProxyController.Listener() {
+            @Override public void onReady() {
+                if (alive(attempt)) createBrowser(attempt);
+            }
+            @Override public void onUnsupported() {
+                if (alive(attempt)) fail("Android System WebView 不支持应用内代理，请更新 Android System WebView。");
+            }
+            @Override public void onFailure(String message) {
+                if (alive(attempt)) fail(message);
+            }
+        });
+    }
+
+    private void createBrowser(long attempt) {
+        if (!alive(attempt)) return;
         browser = new LinuxDoAuthBrowser(LinuxDoSessionActivity.this, container,
                 new LinuxDoAuthBrowser.Listener() {
                     @Override public void onPage() {
@@ -149,7 +169,7 @@ public final class LinuxDoSessionActivity extends BaseActivity {
     }
 
     private String instructions() {
-        if (mode == LinuxDoAuthFlow.Mode.BROWSER) return "原版网页 · 专用连接";
+        if (mode == LinuxDoAuthFlow.Mode.BROWSER) return "原版网页 · 直接连接";
         return mode == LinuxDoAuthFlow.Mode.LOGIN
                 ? "请在官方页面登录并验证；需要记住密码请点“账号”。完成后会自动检查。"
                 : "仅验证当前网络，不会退出账号。完成后自动检查，也可点下方按钮确认。";
@@ -361,7 +381,8 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         }
         flow.close();
         handler.removeCallbacksAndMessages(null);
-        if (browser != null) browser.close();
+        if (browser != null) { browser.close(); browser = null; }
+        if (loginProxy != null) { loginProxy.close(); loginProxy = null; }
         super.onDestroy();
     }
 }
