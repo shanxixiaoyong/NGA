@@ -26,15 +26,26 @@ public final class LinuxDoNavigation {
     public static final String EXTRA_SESSION_HANDOFF = "linuxdo_session_handoff";
     public static final String EXTRA_RESET_SESSION = "linuxdo_reset_session";
     public static final String EXTRA_BROWSER_URL = "linuxdo_browser_url";
+    public static final String EXTRA_VERIFICATION_LEASE = "linuxdo_verification_lease";
     private LinuxDoNavigation() {
     }
 
     public static void openVerification(Context context) {
+        if (!LinuxDoChallengeCoordinator.tryBeginVerification()) {
+            ToastUtils.showShortToast("网络验证已在进行中");
+            return;
+        }
         Intent intent = sessionIntent(context, false, false);
+        intent.putExtra(EXTRA_VERIFICATION_LEASE, true);
         if (!(context instanceof android.app.Activity)) {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
-        context.startActivity(intent);
+        try {
+            context.startActivity(intent);
+        } catch (RuntimeException error) {
+            LinuxDoChallengeCoordinator.cancelVerification();
+            throw error;
+        }
     }
 
     public static void openLogin(Context context) {

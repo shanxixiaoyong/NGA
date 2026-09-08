@@ -493,6 +493,10 @@ public final class LinuxDoWebSession {
                 LinuxDoTransportPolicy.ResponseKind kind =
                         LinuxDoTransportPolicy.classify(status, body);
                 if (kind != LinuxDoTransportPolicy.ResponseKind.JSON) {
+                    if (kind == LinuxDoTransportPolicy.ResponseKind.VERIFICATION_REQUIRED) {
+                        LinuxDoSessionState.setReady(false);
+                        LinuxDoChallengeCoordinator.markRequired();
+                    }
                     finishFailure(generation,
                             kind == LinuxDoTransportPolicy.ResponseKind.VERIFICATION_REQUIRED
                             ? Failure.VERIFICATION_REQUIRED : Failure.HTTP_OR_PROTOCOL);

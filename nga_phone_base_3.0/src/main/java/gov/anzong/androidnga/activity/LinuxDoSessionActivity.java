@@ -33,6 +33,7 @@ public final class LinuxDoSessionActivity extends BaseActivity {
     private long token, automaticUntil;
     private int checkGeneration;
     private boolean ready, checking, visible, autofilled;
+    private boolean verificationLease;
     private String target;
 
     @Override protected boolean shouldRunMainProcessResumeTasks() { return false; }
@@ -53,6 +54,16 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         mode = target != null ? LinuxDoAuthFlow.Mode.BROWSER
                 : getIntent().getBooleanExtra(LinuxDoNavigation.EXTRA_LOGIN_ONLY, true)
                 ? LinuxDoAuthFlow.Mode.LOGIN : LinuxDoAuthFlow.Mode.VERIFICATION;
+        verificationLease = getIntent().getBooleanExtra(
+                LinuxDoNavigation.EXTRA_VERIFICATION_LEASE, false);
+        if (mode == LinuxDoAuthFlow.Mode.VERIFICATION && !verificationLease) {
+            // Defensive path for older callers that launch the Activity directly.
+            verificationLease = LinuxDoChallengeCoordinator.tryBeginVerification();
+            if (!verificationLease) {
+                finish();
+                return;
+            }
+        }
         if (mode == LinuxDoAuthFlow.Mode.BROWSER && !LinuxDoAuthFlow.isFirstParty(target)) {
             finish(); return;
         }
@@ -61,8 +72,19 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         account.setOnClickListener(v -> credentials());
         account.setOnLongClickListener(v -> { switchAccount(); return true; });
         switchMode.setOnClickListener(v -> {
-            mode = mode == LinuxDoAuthFlow.Mode.VERIFICATION
+            LinuxDoAuthFlow.Mode next = mode == LinuxDoAuthFlow.Mode.VERIFICATION
                     ? LinuxDoAuthFlow.Mode.LOGIN : LinuxDoAuthFlow.Mode.VERIFICATION;
+            if (next == LinuxDoAuthFlow.Mode.VERIFICATION && !verificationLease) {
+                if (!LinuxDoChallengeCoordinator.tryBeginVerification()) {
+                    hint.setText("网络验证已在另一个页面进行中。");
+                    return;
+                }
+                verificationLease = true;
+            } else if (mode == LinuxDoAuthFlow.Mode.VERIFICATION && verificationLease) {
+                LinuxDoChallengeCoordinator.cancelVerification();
+                verificationLease = false;
+            }
+            mode = next;
             target = null;
             if (ready) openPage(); else connect();
         });
@@ -237,6 +259,12 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         checking = false;
         if (!visible) { flow.move(token, LinuxDoAuthFlow.State.WEB); return; }
         flow.move(token, LinuxDoAuthFlow.State.COMPLETE);
+        if (verificationLease) {
+            LinuxDoChallengeCoordinator.finishVerification(true);
+            verificationLease = false;
+        } else if (mode == LinuxDoAuthFlow.Mode.LOGIN) {
+            LinuxDoChallengeCoordinator.clearIfIdle();
+        }
         handler.removeCallbacksAndMessages(null);
         LinuxDoSessionState.setReady(true);
         setResult(RESULT_OK);
@@ -251,6 +279,10 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         automaticUntil = 0;
         handler.removeCallbacks(autoCheck);
         flow.move(token, LinuxDoAuthFlow.State.ERROR);
+        if (mode == LinuxDoAuthFlow.Mode.VERIFICATION && verificationLease) {
+            LinuxDoChallengeCoordinator.cancelVerification();
+            verificationLease = false;
+        }
         progress.setVisibility(View.GONE);
         hint.setText(message);
         action.setEnabled(true);
@@ -332,6 +364,10 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         super.onPause();
     }
     @Override protected void onDestroy() {
+        if (verificationLease) {
+            LinuxDoChallengeCoordinator.cancelVerification();
+            verificationLease = false;
+        }
         flow.close();
         handler.removeCallbacksAndMessages(null);
         if (browser != null) browser.close();

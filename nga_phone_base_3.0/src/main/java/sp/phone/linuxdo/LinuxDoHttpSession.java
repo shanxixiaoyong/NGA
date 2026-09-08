@@ -146,7 +146,7 @@ public final class LinuxDoHttpSession {
             if (!cookie.trim().isEmpty()) builder.header("Cookie", cookie);
             client().newCall(builder.build()).enqueue(new Callback() {
                 @Override public void onFailure(Call call, IOException error) {
-                    postFailure(callback, LinuxDoWebSession.Failure.HTTP_OR_PROTOCOL);
+                    postFailure(callback, classifyTransportFailure(error));
                 }
 
                 @Override public void onResponse(Call call, Response response) {
@@ -496,7 +496,7 @@ public final class LinuxDoHttpSession {
             client().newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException error) {
-                    postFailure(callback, LinuxDoWebSession.Failure.HTTP_OR_PROTOCOL);
+                    postFailure(callback, classifyTransportFailure(error));
                 }
 
                 @Override
@@ -517,6 +517,7 @@ public final class LinuxDoHttpSession {
                             if (failure == LinuxDoWebSession.Failure.VERIFICATION_REQUIRED) {
                                 mCsrfToken = null;
                                 LinuxDoSessionState.setReady(false);
+                                LinuxDoChallengeCoordinator.markRequired();
                             }
                             postFailure(callback, failure);
                         }
@@ -546,6 +547,8 @@ public final class LinuxDoHttpSession {
             public void onFailure(LinuxDoWebSession.Failure failure) {
                 if (failure == LinuxDoWebSession.Failure.VERIFICATION_REQUIRED) {
                     mCsrfToken = null;
+                    LinuxDoSessionState.setReady(false);
+                    LinuxDoChallengeCoordinator.markRequired();
                 }
                 callback.onFailure(failure);
             }
@@ -589,7 +592,7 @@ public final class LinuxDoHttpSession {
             client().newCall(requestBuilder.build()).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException error) {
-                    postFailure(callback, LinuxDoWebSession.Failure.HTTP_OR_PROTOCOL);
+                    postFailure(callback, classifyTransportFailure(error));
                 }
 
                 @Override
@@ -762,7 +765,7 @@ public final class LinuxDoHttpSession {
         client().newCall(request).enqueue(new Callback() {
             @Override
                 public void onFailure(Call call, IOException error) {
-                postFailure(callback, LinuxDoWebSession.Failure.HTTP_OR_PROTOCOL);
+                postFailure(callback, classifyTransportFailure(error));
             }
 
             @Override
@@ -782,6 +785,7 @@ public final class LinuxDoHttpSession {
                                 : LinuxDoWebSession.Failure.HTTP_OR_PROTOCOL;
                         if (failure == LinuxDoWebSession.Failure.VERIFICATION_REQUIRED) {
                             LinuxDoSessionState.setReady(false);
+                            LinuxDoChallengeCoordinator.markRequired();
                         }
                         postFailure(callback, failure);
                     }
@@ -821,6 +825,7 @@ public final class LinuxDoHttpSession {
                 closePlatformDns();
                 mPlatformDns = new LinuxDoHttpEngineDns(ContextUtils.getApplication());
                 mClient = bootstrap.newBuilder()
+                        .addInterceptor(new CloudflareChallengeInterceptor())
                         .dns(mPlatformDns)
                         .followRedirects(false)
                         .followSslRedirects(false)
@@ -843,6 +848,7 @@ public final class LinuxDoHttpSession {
             }
             DnsOverHttps dns = dnsBuilder.build();
             mClient = bootstrap.newBuilder()
+                    .addInterceptor(new CloudflareChallengeInterceptor())
                     .dns(dns)
                     .followRedirects(false)
                     .followSslRedirects(false)
@@ -916,6 +922,15 @@ public final class LinuxDoHttpSession {
     private void postFailure(
             LinuxDoWebSession.Callback callback, LinuxDoWebSession.Failure failure) {
         mMainHandler.post(() -> callback.onFailure(failure));
+    }
+
+    private static LinuxDoWebSession.Failure classifyTransportFailure(IOException error) {
+        if (error instanceof CloudflareChallengeException) {
+            LinuxDoSessionState.setReady(false);
+            LinuxDoChallengeCoordinator.markRequired();
+            return LinuxDoWebSession.Failure.VERIFICATION_REQUIRED;
+        }
+        return LinuxDoWebSession.Failure.HTTP_OR_PROTOCOL;
     }
 
     private void postAvatarFailure(ByteCallback callback) {

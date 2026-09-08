@@ -611,6 +611,7 @@ final class LinuxDoCronetSession {
                                 : LinuxDoWebSession.Failure.HTTP_OR_PROTOCOL;
                 if (failure == LinuxDoWebSession.Failure.VERIFICATION_REQUIRED) {
                     LinuxDoSessionState.setReady(false);
+                    LinuxDoChallengeCoordinator.markRequired();
                 }
                 postFailure(mCallback, failure);
             }
@@ -635,6 +636,7 @@ final class LinuxDoCronetSession {
                     ? LinuxDoWebSession.Failure.HTTP_OR_PROTOCOL : mCanceledFailure;
             if (failure == LinuxDoWebSession.Failure.VERIFICATION_REQUIRED) {
                 LinuxDoSessionState.setReady(false);
+                LinuxDoChallengeCoordinator.markRequired();
             }
             postFailure(mCallback, failure);
             finish(this);
