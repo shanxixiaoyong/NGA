@@ -14,6 +14,11 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import androidx.webkit.Profile;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+import java.util.HashSet;
+import java.util.Set;
 import org.json.JSONObject;
 
 /** One browser/cookie/TLS context for the complete official login and managed challenge. */
@@ -35,6 +40,7 @@ public final class LinuxDoAuthBrowser {
     public LinuxDoAuthBrowser(Activity activity, FrameLayout parent, Listener listener) {
         container = parent;
         view = new WebView(activity);
+        configureQuicHints(view);
         WebSettings settings = view.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -88,6 +94,30 @@ public final class LinuxDoAuthBrowser {
             }
         });
         container.addView(view, new FrameLayout.LayoutParams(-1, -1));
+    }
+
+    /**
+     * Let Chromium prefer HTTP/3 for the first-party site and the challenge
+     * origin.  This is deliberately a hint only: older Android System WebView
+     * providers simply ignore it and keep their normal HTTP/2/TLS path.
+     */
+    @Profile.ExperimentalAddQuicHints
+    private static void configureQuicHints(WebView webView) {
+        try {
+            if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)
+                    || !WebViewFeature.isFeatureSupported(WebViewFeature.ADD_QUIC_HINTS_V1)) {
+                return;
+            }
+            Profile profile = WebViewCompat.getProfile(webView);
+            if (profile == null) return;
+            Set<String> origins = new HashSet<>();
+            origins.add("https://linux.do");
+            origins.add("https://challenges.cloudflare.com");
+            profile.addQuicHints(origins);
+        } catch (RuntimeException | LinkageError ignored) {
+            // Feature checks are provider-dependent; native WebView networking
+            // remains the safe fallback when a provider does not expose QUIC.
+        }
     }
 
     private static boolean allowedNavigation(Uri uri) {

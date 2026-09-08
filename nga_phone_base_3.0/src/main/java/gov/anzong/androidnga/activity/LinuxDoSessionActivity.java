@@ -24,7 +24,6 @@ public final class LinuxDoSessionActivity extends BaseActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final LinuxDoAuthFlow flow = new LinuxDoAuthFlow();
     private LinuxDoAuthFlow.Mode mode;
-    private LinuxDoLoginProxyController connection;
     private LinuxDoAuthBrowser browser;
     private FrameLayout container;
     private TextView hint;
@@ -102,50 +101,42 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         ready = false;
         autofilled = false;
         if (browser != null) { browser.close(); browser = null; }
-        if (connection != null) connection.close();
         labels();
-        hint.setText("正在准备专用连接…  长按重试可修改 DNS");
+        hint.setText("正在连接 LINUX DO…");
         progress.setVisibility(View.VISIBLE);
         progress.setIndeterminate(true);
         action.setEnabled(false);
-        connection = new LinuxDoLoginProxyController();
-        // Read current settings on every explicit retry, not an out-of-date Intent snapshot.
-        connection.start(this, LinuxDoDohConfig.currentUrl(), new LinuxDoLoginProxyController.Listener() {
-            @Override public void onReady() {
-                if (!alive(attempt)) return;
-                ready = true;
-                browser = new LinuxDoAuthBrowser(LinuxDoSessionActivity.this, container,
-                        new LinuxDoAuthBrowser.Listener() {
-                            @Override public void onPage() {
-                                if (!alive(attempt)) return;
-                                checking = false;
-                                ++checkGeneration;
-                                flow.move(token, LinuxDoAuthFlow.State.WEB);
-                                action.setEnabled(true);
-                                hint.setText(instructions());
-                                if (mode == LinuxDoAuthFlow.Mode.LOGIN && !autofilled) fillRemembered();
-                                automaticUntil = android.os.SystemClock.elapsedRealtime() + 120_000;
-                                scheduleCheck();
-                            }
-                            @Override public void onError(String message) {
-                                if (alive(attempt)) fail(message);
-                            }
-                            @Override public void onProgress(int value) {
-                                if (!alive(attempt)) return;
-                                progress.setIndeterminate(false);
-                                progress.setProgress(value);
-                                progress.setVisibility(value == 100 ? View.GONE : View.VISIBLE);
-                            }
-                        });
-                openPage();
-            }
-            @Override public void onUnsupported() {
-                if (alive(attempt)) fail("系统网页组件不支持专用连接，请更新 Android System WebView。");
-            }
-            @Override public void onFailure() {
-                if (alive(attempt)) fail("专用连接未能建立。点重试；长按重试可检查 DNS 配置。");
-            }
-        });
+        // Do not put the official login/challenge page behind the old
+        // process-wide CONNECT tunnel.  The tunnel used a Java socket and
+        // could not preserve Chromium's TLS/HTTP3/challenge behaviour.  Let
+        // WebView own the complete browser network stack; native feed requests
+        // continue to use LinuxDoHttpSession's DoH/Cronet path.
+        browser = new LinuxDoAuthBrowser(LinuxDoSessionActivity.this, container,
+                new LinuxDoAuthBrowser.Listener() {
+                    @Override public void onPage() {
+                        if (!alive(attempt)) return;
+                        ready = true;
+                        checking = false;
+                        ++checkGeneration;
+                        flow.move(token, LinuxDoAuthFlow.State.WEB);
+                        action.setEnabled(true);
+                        hint.setText(instructions());
+                        if (mode == LinuxDoAuthFlow.Mode.LOGIN && !autofilled) fillRemembered();
+                        automaticUntil = android.os.SystemClock.elapsedRealtime() + 120_000;
+                        scheduleCheck();
+                    }
+                    @Override public void onError(String message) {
+                        if (alive(attempt)) fail(message);
+                    }
+                    @Override public void onProgress(int value) {
+                        if (!alive(attempt)) return;
+                        progress.setIndeterminate(false);
+                        progress.setProgress(value);
+                        progress.setVisibility(value == 100 ? View.GONE : View.VISIBLE);
+                    }
+                });
+        ready = true;
+        openPage();
     }
 
     private void labels() {
@@ -371,7 +362,6 @@ public final class LinuxDoSessionActivity extends BaseActivity {
         flow.close();
         handler.removeCallbacksAndMessages(null);
         if (browser != null) browser.close();
-        if (connection != null) connection.close();
         super.onDestroy();
     }
 }
