@@ -16,8 +16,6 @@ import androidx.viewpager.widget.ViewPager;
 import com.justwen.androidnga.cloud.CloudServerManager;
 
 import java.io.File;
-import java.util.Arrays;
-
 import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.activity.BaseActivity;
 import gov.anzong.androidnga.base.util.ShareUtils;
@@ -34,6 +32,9 @@ public class ImageZoomActivity extends BaseActivity {
     public static final String KEY_GALLERY_RECT = "keyGalleryRect";
 
     public static final String KEY_GALLERY_CUR_URL = "keyGalleryCurUrl";
+
+    /** Explicit clicked-item position; avoids relying on URL spelling after WebView navigation. */
+    public static final String KEY_GALLERY_INDEX = "keyGalleryIndex";
 
     private String[] mGalleryUrls;
 
@@ -86,14 +87,18 @@ public class ImageZoomActivity extends BaseActivity {
         Intent intent = getIntent();
         mGalleryUrls = intent.getStringArrayExtra(KEY_GALLERY_URLS);
         mCurrentUrl = intent.getStringExtra(KEY_GALLERY_CUR_URL);
-        if (mGalleryUrls == null ) {
-            mGalleryUrls = new String[1];
-            mGalleryUrls[0] = mCurrentUrl;
+        java.util.List<String> source = mGalleryUrls == null
+                ? null : java.util.Arrays.asList(mGalleryUrls);
+        mGalleryUrls = ImageGalleryPolicy.copyUrls(source, mCurrentUrl);
+        int explicitIndex = intent.getIntExtra(KEY_GALLERY_INDEX, -1);
+        if (explicitIndex >= 0 && explicitIndex < mGalleryUrls.length) {
+            mPageIndex = explicitIndex;
+        } else {
+            mPageIndex = ImageGalleryPolicy.findIndex(
+                    java.util.Arrays.asList(mGalleryUrls), mCurrentUrl);
+            if (mPageIndex < 0) mPageIndex = 0;
         }
-        mPageIndex = Arrays.asList(mGalleryUrls).indexOf(mCurrentUrl);
-        if (mPageIndex < 0) {
-            mPageIndex = 0;
-        }
+        mCurrentUrl = mGalleryUrls[mPageIndex];
         mDownloadResults = new SaveImageTask.DownloadResult[mGalleryUrls.length];
     }
 

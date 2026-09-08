@@ -101,7 +101,12 @@ public class ArticleListActivity extends BaseActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        getSupportFragmentManager().findFragmentById(android.R.id.content).onActivityResult(requestCode, resultCode, data);
+        // A browser/link activity can return while this activity's fragment transaction is
+        // still being restored.  Do not dereference the transiently absent fragment.
+        Fragment fragment = getSupportFragmentManager().findFragmentById(android.R.id.content);
+        if (fragment != null) {
+            fragment.onActivityResult(requestCode, resultCode, data);
+        }
         super.onActivityResult(requestCode, resultCode, data);
     }
 }

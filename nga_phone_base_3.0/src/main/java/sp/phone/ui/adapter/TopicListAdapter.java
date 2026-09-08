@@ -12,6 +12,7 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Locale;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -34,10 +36,12 @@ import gov.anzong.androidnga.activity.compose.topic.TopicReadProgress;
 import gov.anzong.androidnga.activity.compose.topic.TopicReadState;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.mvp.model.entity.ThreadPageInfo;
+import sp.phone.mvp.model.entity.TopicListInfo;
 import sp.phone.param.ContentSource;
 import sp.phone.param.TopicTitleHelper;
 import sp.phone.rxjava.RxUtils;
 import sp.phone.theme.ThemeManager;
+import sp.phone.util.ImageUtils;
 
 public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, TopicListAdapter.TopicViewHolder> {
 
@@ -45,7 +49,10 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
     private Set<Integer> mHiddenTopics = Collections.emptySet();
     private Set<Integer> mHiddenBoards = Collections.emptySet();
     private Set<Integer> mFollowedTopics = Collections.emptySet();
+    private Set<Integer> mHiddenCategories = Collections.emptySet();
     private Map<Integer, TopicReadProgress> mReadProgress = Collections.emptyMap();
+    private Set<String> mHiddenTags = Collections.emptySet();
+    private Set<String> mBlockedTitleTerms = Collections.emptySet();
     private String mFallbackBoardName;
     private boolean mLocalProjectionEnabled;
     private final int mSource;
@@ -83,8 +90,31 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
             super.setData(null);
         } else {
             loadLocalSnapshots();
+            migrateLegacyLinuxDoBoardIds(dataList);
             super.appendData(projectRows(dataList));
         }
+    }
+
+    /** Applies delayed LinuxDo category/Lv metadata without replacing or jumping the list. */
+    public void updateMetadata(TopicListInfo metadata) {
+        if (metadata == null || mDataList == null || mDataList.isEmpty()) return;
+        migrateLegacyLinuxDoBoardIds(metadata.getThreadPageList());
+        Map<Integer, ThreadPageInfo> updates = new java.util.HashMap<>();
+        for (ThreadPageInfo row : metadata.getThreadPageList()) {
+            if (row != null) updates.put(row.getTid(), row);
+        }
+        boolean changed = false;
+        for (ThreadPageInfo row : mDataList) {
+            ThreadPageInfo update = updates.get(row.getTid());
+            if (update == null) continue;
+            row.setBoard(update.getBoard());
+            row.setBoardIconUrl(update.getBoardIconUrl());
+            row.setVisibility(update.getVisibility());
+            row.setParentFid(update.getParentFid());
+            changed = true;
+        }
+        if (changed && mLocalProjectionEnabled) reprojectVisibleRows();
+        if (changed && !mDataList.isEmpty()) notifyItemRangeChanged(0, mDataList.size());
     }
 
     public void setFallbackBoardName(String fallbackBoardName) {
@@ -116,16 +146,35 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
     }
 
     public void hideBoard(ThreadPageInfo topic, String boardName) {
-        if (topic == null || topic.getFid() == 0) return;
-        mLocalState.hideBoard(topic.getFid(), boardName);
+        if (topic == null) return;
+        int boardFid = boardStorageFid(topic);
+        if (boardFid == 0) return;
+        mLocalState.hideBoard(boardFid, boardName);
         mHiddenBoards = mLocalState.hiddenBoardSnapshot();
         if (mDataList == null) return;
         for (int index = mDataList.size() - 1; index >= 0; index--) {
-            if (mDataList.get(index).getFid() == topic.getFid()) {
+            if (boardStorageFid(mDataList.get(index)) == boardFid) {
                 mDataList.remove(index);
                 notifyItemRemoved(index);
             }
         }
+    }
+
+    public List<String> tagNames(ThreadPageInfo topic) {
+        if (topic == null || TextUtils.isEmpty(topic.getTags())) return Collections.emptyList();
+        List<String> result = new ArrayList<>();
+        for (String raw : topic.getTags().split("\\s{2,}")) {
+            String tag = raw.trim();
+            if (tag.startsWith("#")) tag = tag.substring(1);
+            if (!tag.isEmpty()) result.add(tag);
+        }
+        return result;
+    }
+
+    public void hideTag(String tag) {
+        mLocalState.hideTag(tag);
+        mHiddenTags = mLocalState.hiddenTagSnapshot();
+        reprojectVisibleRows();
     }
 
     public boolean isTopicFollowed(ThreadPageInfo topic) {
@@ -137,8 +186,32 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
         boolean followed = !mFollowedTopics.contains(topic.getTid());
         mLocalState.setTopicFollowed(topic.getTid(), followed);
         mFollowedTopics = mLocalState.followedTopicSnapshot();
-        int position = mDataList == null ? -1 : mDataList.indexOf(topic);
-        if (position >= 0) notifyItemChanged(position);
+        mHiddenCategories = mLocalState.hiddenCategorySnapshot();
+        if (mLocalProjectionEnabled) {
+            // Apply the same projection used on refresh immediately. A followed
+            // topic with unread replies therefore moves to the top at once,
+            // while cancelling the follow restores server order.
+            reprojectVisibleRows();
+        } else {
+            int position = mDataList == null ? -1 : mDataList.indexOf(topic);
+            if (position >= 0) notifyItemChanged(position);
+        }
+    }
+
+    @Override
+    public void appendData(List<ThreadPageInfo> dataList) {
+        if (!mLocalProjectionEnabled) {
+            super.appendData(dataList);
+            return;
+        }
+        loadLocalSnapshots();
+        migrateLegacyLinuxDoBoardIds(dataList);
+        super.appendData(projectRows(dataList == null
+                ? Collections.emptyList() : dataList));
+        if (mDataList == null || mDataList.size() < 2) return;
+        mDataList.sort((left, right) -> Boolean.compare(
+                isFollowedWithUnread(right), isFollowedWithUnread(left)));
+        notifyDataSetChanged();
     }
 
     public String boardName(ThreadPageInfo entry) {
@@ -166,7 +239,10 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
         mHiddenTopics = mLocalState.hiddenTopicSnapshot();
         mHiddenBoards = mLocalState.hiddenBoardSnapshot();
         mFollowedTopics = mLocalState.followedTopicSnapshot();
+        mHiddenCategories = mLocalState.hiddenCategorySnapshot();
         mReadProgress = mLocalState.readProgressSnapshot();
+        mHiddenTags = mLocalState.hiddenTagSnapshot();
+        mBlockedTitleTerms = mLocalState.blockedTitleTermsSnapshot();
     }
 
     private List<ThreadPageInfo> projectRows(List<ThreadPageInfo> rows) {
@@ -174,9 +250,13 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
         List<ThreadPageInfo> projected = new ArrayList<>(rows.size());
         for (ThreadPageInfo row : rows) {
             if (row == null || mHiddenTopics.contains(row.getTid())
-                    || mHiddenBoards.contains(row.getFid())) {
+                    || mHiddenBoards.contains(row.getFid())
+                    || mHiddenBoards.contains(boardStorageFid(row))) {
                 continue;
             }
+            if (mSource == ContentSource.LINUX_DO
+                    && (isHiddenLinuxDoCategory(row)
+                    || hasBlockedTag(row) || hasBlockedTitleTerm(row))) continue;
             TopicReadState readState = TopicLocalStateKt.projectTopicReadState(
                     row.getReplies(), mReadProgress.get(row.getTid()));
             if (!readState.isFullyRead()) {
@@ -186,6 +266,63 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
         projected.sort((left, right) -> Boolean.compare(
                 isFollowedWithUnread(right), isFollowedWithUnread(left)));
         return projected;
+    }
+
+    private int boardStorageFid(ThreadPageInfo row) {
+        if (row == null) return 0;
+        if (mSource == ContentSource.LINUX_DO && row.getParentFid() != 0) {
+            return row.getParentFid();
+        }
+        return row.getFid();
+    }
+
+    /** Upgrades child-partition blocks written before LinuxDo exposed canonical parent IDs. */
+    private void migrateLegacyLinuxDoBoardIds(List<ThreadPageInfo> rows) {
+        if (mSource != ContentSource.LINUX_DO || rows == null || rows.isEmpty()) return;
+        boolean migrated = false;
+        for (ThreadPageInfo row : rows) {
+            if (row == null || row.getParentFid() == 0 || row.getParentFid() == row.getFid()
+                    || !mHiddenBoards.contains(row.getFid())) continue;
+            mLocalState.hideBoard(row.getParentFid(), boardName(row));
+            mLocalState.unhideBoard(row.getFid());
+            migrated = true;
+        }
+        if (migrated) loadLocalSnapshots();
+    }
+
+    private void reprojectVisibleRows() {
+        if (mDataList == null) return;
+        List<ThreadPageInfo> oldRows = new ArrayList<>(mDataList);
+        List<ThreadPageInfo> newRows = projectRows(oldRows);
+        mDataList = new ArrayList<>(newRows);
+        DiffUtil.calculateDiff(new TopicDiff(oldRows, newRows), false).dispatchUpdatesTo(this);
+        if (!mDataList.isEmpty()) {
+            notifyItemRangeChanged(0, mDataList.size(), PAYLOAD_READ_STATE);
+        }
+    }
+
+    private boolean hasBlockedTag(ThreadPageInfo row) {
+        for (String tag : tagNames(row)) {
+            if (mHiddenTags.contains(tag.trim().toLowerCase(Locale.ROOT))) return true;
+        }
+        return false;
+    }
+
+    /**
+     * A category directory can contain a parent board and its access partitions
+     * (for example "开发调优" and "开发调优, Lv1").  Store both ids in the
+     * local projection so hiding a parent also removes its child partitions,
+     * while hiding a single partition remains precise.
+     */
+    private boolean isHiddenLinuxDoCategory(ThreadPageInfo row) {
+        return row != null && (mHiddenCategories.contains(row.getFid())
+                || (row.getParentFid() != 0 && mHiddenCategories.contains(row.getParentFid())));
+    }
+
+    private boolean hasBlockedTitleTerm(ThreadPageInfo row) {
+        String title = row.getSubject() == null ? "" : row.getSubject().toLowerCase(Locale.ROOT);
+        for (String term : mBlockedTitleTerms) if (!term.isEmpty() && title.contains(term)) return true;
+        return false;
     }
 
     private boolean isFollowedWithUnread(ThreadPageInfo row) {
@@ -202,6 +339,7 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
         holder.itemView.setTag(info);
 
         handleJsonList(holder, info);
+        bindBoardIcon(holder.boardIcon, info);
         if (!PhoneConfiguration.getInstance().useSolidColorBackground()) {
             holder.itemView.setBackgroundResource(ThemeManager.getInstance().getBackgroundColor(position));
         }
@@ -217,6 +355,21 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
                 entry.getLastPost(), System.currentTimeMillis()));
         holder.num.setText(String.valueOf(entry.getReplies()));
         holder.title.setText(buildTitle(entry));
+    }
+
+    private void bindBoardIcon(ImageView boardIcon, ThreadPageInfo entry) {
+        if (boardIcon == null || entry == null) return;
+        if (mSource == ContentSource.LINUX_DO
+                && !TextUtils.isEmpty(entry.getBoardIconUrl())) {
+            ImageUtils.loadLinuxDoBoardIcon(boardIcon, entry.getBoardIconUrl());
+            return;
+        }
+        int fid = entry.getFid();
+        String resourceName = fid > 0 ? "p" + fid : "p_" + Math.abs(fid);
+        int resourceId = mContext.getResources().getIdentifier(
+                resourceName, "drawable", mContext.getPackageName());
+        boardIcon.setImageResource(resourceId > 0
+                ? resourceId : R.drawable.default_board_icon);
     }
 
     private CharSequence buildTitle(ThreadPageInfo entry) {
@@ -258,6 +411,17 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
 
     private CharSequence buildBoardAndTags(ThreadPageInfo entry) {
         SpannableStringBuilder line = new SpannableStringBuilder(boardName(entry));
+        if (mSource == ContentSource.LINUX_DO && !TextUtils.isEmpty(entry.getVisibility())) {
+            int start = line.length();
+            line.append(", ").append(entry.getVisibility());
+            line.setSpan(new StyleSpan(Typeface.BOLD), start, line.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            line.setSpan(new ForegroundColorSpan(
+                            ThemeManager.getInstance().getAccentColor(mContext)),
+                    start, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            line.setSpan(new AbsoluteSizeSpan(11, true), start, line.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
         if (mSource == ContentSource.LINUX_DO && !TextUtils.isEmpty(entry.getTags())) {
             int start = line.length();
             line.append("  ").append(entry.getTags());
@@ -293,6 +457,9 @@ public class TopicListAdapter extends BaseAppendableAdapter<ThreadPageInfo, Topi
     }
 
     public class TopicViewHolder extends RecyclerView.ViewHolder {
+
+        @BindView(R.id.iv_person)
+        public ImageView boardIcon;
 
         @BindView(R.id.num)
         public TextView num;

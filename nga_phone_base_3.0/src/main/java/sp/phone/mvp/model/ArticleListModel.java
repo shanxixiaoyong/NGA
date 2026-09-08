@@ -6,8 +6,11 @@ import com.trello.rxlifecycle2.android.FragmentEvent;
 
 import org.apache.commons.io.FileUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.Map;
 
 import gov.anzong.androidnga.base.util.ContextUtils;
@@ -18,9 +21,7 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
-import sp.phone.common.UserManagerImpl;
 import sp.phone.http.bean.ThreadData;
 import sp.phone.http.bean.ThreadRowInfo;
 import com.justwen.androidnga.base.network.retrofit.RetrofitHelper;
@@ -28,12 +29,15 @@ import com.justwen.androidnga.base.network.retrofit.RetrofitService;
 import sp.phone.mvp.contract.ArticleListContract;
 import sp.phone.mvp.model.convert.ArticleConvertFactory;
 import sp.phone.mvp.model.convert.ErrorConvertFactory;
+import sp.phone.mvp.model.web.NgaNativeArticleRequestPolicy;
+import sp.phone.mvp.model.web.NgaNativeArticleRequestPolicy.WireFormat;
 import sp.phone.mvp.model.web.NgaWebArticleFallbackPolicy;
 import sp.phone.mvp.model.web.NgaWebArticleFallbackSession;
 import sp.phone.param.ArticleListParam;
 import sp.phone.param.ContentSource;
 import sp.phone.linuxdo.LinuxDoRepository;
 import sp.phone.rxjava.BaseSubscriber;
+import okhttp3.ResponseBody;
 
 /**
  * 加载帖子内容
@@ -42,8 +46,7 @@ import sp.phone.rxjava.BaseSubscriber;
 
 public class ArticleListModel extends BaseModel implements ArticleListContract.Model {
 
-    private static final String TAG = ArticleListModel.class.getSimpleName();
-
+    private static final int MAX_JSON_RESPONSE_BYTES = 8 * 1024 * 1024;
     private RetrofitService mService;
 
     public ArticleListModel() {
@@ -51,24 +54,12 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
     }
 
     public String getUrl(ArticleListParam param) {
-        int page = param.page;
-        int tid = param.tid;
-        int pid = param.pid;
-        int authorId = param.authorId;
-        String url = getAvailableDomain() + "/read.php?" + "&page=" + page + "&__output=8&noprefix&v2";
-        if (tid != 0) {
-            url = url + "&tid=" + tid;
-        }
-        if (pid != 0) {
-            url = url + "&pid=" + pid;
-        }
+        return getUrl(param, param.page, WireFormat.LEGACY_GB18030);
+    }
 
-        if (authorId != 0) {
-            url = url + "&authorid=" + authorId;
-        }
-
-        return url;
-
+    private String getUrl(ArticleListParam param, int page, WireFormat format) {
+        return NgaNativeArticleRequestPolicy.buildReadUrl(
+                getAvailableDomain(), param, Math.max(1, page), format);
     }
 
     @Override
@@ -80,41 +71,18 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
     public void loadPage(ArticleListParam param, Map<String, String> header, OnHttpCallBack<ThreadData> callBack) {
         if (param.source == ContentSource.LINUX_DO) {
             try {
-                LinuxDoRepository.getInstance().loadArticle(param.tid, param.page, callBack);
+                LinuxDoRepository.getInstance().loadArticle(param.tid, Math.max(1, param.page), callBack);
             } catch (RuntimeException | LinkageError error) {
                 callBack.onError("LINUX DO 初始化失败，请稍后重试");
             }
             return;
         }
-        String url = getUrl(param);
-        Observable<String> request = header == null || header.isEmpty()
-                ? mService.get(url)
-                : mService.get(url, header);
-        request
+        if (param.topLikedPage) {
+            loadTopLikedPage(param, header, callBack);
+            return;
+        }
+        requestNgaPageWithRetry(param, header, param.page)
                 .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.newThread())
-                .compose(getLifecycleProvider().<String>bindUntilEvent(FragmentEvent.DETACH))
-                .map(new Function<String, ThreadData>() {
-                    @Override
-                    public ThreadData apply(@NonNull String s) throws Exception {
-                        ArticleConvertFactory.ParseOutcome outcome =
-                                ArticleConvertFactory.parseArticleInfo(s);
-                        ThreadData data = outcome.getData();
-                        if (data == null) {
-                            String errorMsg = ErrorConvertFactory.getErrorMessage(s);
-                            if (errorMsg != null) {
-                                throw new Exception(errorMsg);
-                            } else if (outcome.getDiagnostic() != null) {
-                                throw new ArticleParseException(
-                                        outcome.getDiagnostic().toUserMessage(param.tid, param.page));
-                            } else {
-                                throw new ServerException("NGA后台抽风了，请尝试右上角菜单中的使用内置浏览器打开");
-                            }
-                        } else {
-                            return data;
-                        }
-                    }
-                })
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(getLifecycleProvider().<ThreadData>bindUntilEvent(FragmentEvent.DETACH))
                 .subscribe(new BaseSubscriber<ThreadData>() {
@@ -131,6 +99,49 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
                 });
     }
 
+    private void loadTopLikedPage(
+            ArticleListParam param,
+            Map<String, String> header,
+            OnHttpCallBack<ThreadData> callBack) {
+        requestNgaPageWithRetry(param, header, 1)
+                .flatMap(firstPage -> {
+                    NgaTopLikedPageAssembler assembler = new NgaTopLikedPageAssembler();
+                    assembler.add(firstPage);
+                    java.util.List<Integer> pages =
+                            NgaTopLikedRequestPlanner.additionalPages(firstPage);
+                    if (pages.isEmpty()) {
+                        return Observable.just(assembler.finish());
+                    }
+                    return Observable.fromIterable(pages)
+                            .concatMap(page -> requestNgaPageWithRetry(
+                                    param, header, page))
+                            .doOnNext(assembler::add)
+                            .ignoreElements()
+                            .andThen(Observable.fromCallable(assembler::finish));
+                })
+                .subscribeOn(Schedulers.io())
+                .compose(getLifecycleProvider().<ThreadData>bindUntilEvent(FragmentEvent.DETACH))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new BaseSubscriber<ThreadData>() {
+                    @Override
+                    public void onNext(@NonNull ThreadData threadData) {
+                        callBack.onSuccess(threadData);
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable throwable) {
+                        callBack.onError(ErrorConvertFactory.getErrorMessage(throwable), throwable);
+                    }
+                });
+    }
+
+    /**
+     * Bounded recovery for a truncated/malformed native JSON response. NGA's
+     * web endpoint can return the same page with {@code noBBCode}; the
+     * WebView-side extractor turns that page into ordinary THREAD.PAGE-shaped
+     * rows containing raw UBB, and this method deliberately sends those rows
+     * through parseArticleInfo (never the rendered HTML parser).
+     */
     @Override
     public void loadWebFallbackPage(
             ArticleListParam param, OnHttpCallBack<ThreadData> callBack) {
@@ -172,7 +183,7 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
                 .observeOn(Schedulers.computation())
                 .map(snapshot -> {
                     ArticleConvertFactory.ParseOutcome outcome =
-                            ArticleConvertFactory.parseWebArticleInfo(snapshot);
+                            ArticleConvertFactory.parseArticleInfo(snapshot);
                     ThreadData data = outcome.getData();
                     if (!isExpectedWebSnapshot(data, requestedTid, requestedPid)) {
                         throw new WebFallbackException();
@@ -206,6 +217,72 @@ public class ArticleListModel extends BaseModel implements ArticleListContract.M
             if (row != null && row.getPid() == requestedPid) return true;
         }
         return false;
+    }
+
+    private Observable<ThreadData> requestNgaPageWithRetry(
+            ArticleListParam param, Map<String, String> header, int page) {
+        return requestNgaPageOnce(param, header, page, WireFormat.LEGACY_GB18030)
+                .onErrorResumeNext(error -> {
+                    if (!isRetryableNgaReadFailure(error)) {
+                        return Observable.error(error);
+                    }
+                    return requestNgaPageOnce(param, header, page, WireFormat.UTF8_ARRAYS);
+                });
+    }
+
+    private Observable<ThreadData> requestNgaPageOnce(
+            ArticleListParam param, Map<String, String> header, int page, WireFormat format) {
+        return Observable.defer(() -> {
+            String url = getUrl(param, page, format);
+            Observable<ResponseBody> request = header == null || header.isEmpty()
+                    ? mService.getRaw(url)
+                    : mService.getRaw(url, header);
+            return request.map(body -> parseNgaResponse(
+                    readBody(body, format.charset()), param.tid, Math.max(1, page)));
+        });
+    }
+
+    private static boolean isRetryableNgaReadFailure(Throwable error) {
+        return error instanceof ArticleParseException
+                || error instanceof ServerException
+                || error instanceof IOException;
+    }
+
+    private static ThreadData parseNgaResponse(String response, int tid, int page)
+            throws Exception {
+        ArticleConvertFactory.ParseOutcome outcome =
+                ArticleConvertFactory.parseArticleInfo(response);
+        ThreadData data = outcome.getData();
+        if (data != null) return data;
+        String errorMsg = ErrorConvertFactory.getErrorMessage(response);
+        if (errorMsg != null) throw new Exception(errorMsg);
+        if (outcome.getDiagnostic() != null) {
+            throw new ArticleParseException(outcome.getDiagnostic().toUserMessage(tid, page));
+        }
+        throw new ServerException("NGA后台抽风了，请稍后重试第 " + page + " 页");
+    }
+
+    private static String readBody(ResponseBody body, Charset charset) throws IOException {
+        try (ResponseBody closeable = body;
+             InputStream input = closeable.byteStream();
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int total = 0;
+            int count;
+            while ((count = input.read(buffer)) != -1) {
+                total += count;
+                if (total > MAX_JSON_RESPONSE_BYTES) {
+                    throw new IOException("NGA JSON response is too large");
+                }
+                output.write(buffer, 0, count);
+            }
+            String response = new String(output.toByteArray(), charset);
+            String trimmed = response.trim();
+            if (trimmed.startsWith("<") || trimmed.startsWith("<!DOCTYPE")) {
+                throw new IOException("NGA native endpoint returned HTML");
+            }
+            return response;
+        }
     }
 
     @Override

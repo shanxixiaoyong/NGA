@@ -65,6 +65,8 @@ public class TopicListPresenter extends ViewModel implements LifecycleObserver {
 
     private MutableLiveData<TopicListInfo> mFirstTopicList = new MutableLiveData<>();
 
+    private MutableLiveData<TopicListInfo> mTopicListMetadata = new MutableLiveData<>();
+
     private MutableLiveData<TopicListInfo> mNextTopicList = new MutableLiveData<>();
 
     private MutableLiveData<String> mErrorMsg = new MutableLiveData<>();
@@ -85,7 +87,11 @@ public class TopicListPresenter extends ViewModel implements LifecycleObserver {
         @Override
         public void onSuccess(TopicListInfo data) {
             mRefreshingState.setValue(false);
-            mFirstTopicList.setValue(data);
+            if (data != null && data.isMetadataOnly()) {
+                mTopicListMetadata.setValue(data);
+            } else {
+                mFirstTopicList.setValue(data);
+            }
         }
     };
 
@@ -147,6 +153,10 @@ public class TopicListPresenter extends ViewModel implements LifecycleObserver {
 
     public MutableLiveData<TopicListInfo> getFirstTopicList() {
         return mFirstTopicList;
+    }
+
+    public MutableLiveData<TopicListInfo> getTopicListMetadata() {
+        return mTopicListMetadata;
     }
 
     public MutableLiveData<TopicListInfo> getNextTopicList() {

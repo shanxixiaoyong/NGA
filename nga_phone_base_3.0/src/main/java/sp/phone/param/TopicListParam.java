@@ -39,6 +39,14 @@ public class TopicListParam implements Cloneable, Parcelable {
 
     public int source = ContentSource.NGA;
 
+    /** Native LINUX DO category target used by search/category deep links. */
+    public int linuxDoCategoryId;
+
+    public String linuxDoCategorySlug;
+
+    /** Native LINUX DO global stream; zero keeps the chronological latest feed. */
+    public int linuxDoFeed;
+
     public TopicListParam() {
     }
 
@@ -58,6 +66,9 @@ public class TopicListParam implements Cloneable, Parcelable {
         loadCache = in.readInt() == 1;
         boardHead = in.readString();
         source = in.dataAvail() > 0 ? in.readInt() : ContentSource.NGA;
+        linuxDoCategoryId = in.dataAvail() > 0 ? in.readInt() : 0;
+        linuxDoCategorySlug = in.dataAvail() > 0 ? in.readString() : null;
+        linuxDoFeed = in.dataAvail() > 0 ? in.readInt() : 0;
     }
 
     @Override
@@ -77,6 +88,9 @@ public class TopicListParam implements Cloneable, Parcelable {
         dest.writeInt(loadCache ? 1 : 0);
         dest.writeString(boardHead);
         dest.writeInt(source);
+        dest.writeInt(linuxDoCategoryId);
+        dest.writeString(linuxDoCategorySlug);
+        dest.writeInt(linuxDoFeed);
     }
 
     @Override

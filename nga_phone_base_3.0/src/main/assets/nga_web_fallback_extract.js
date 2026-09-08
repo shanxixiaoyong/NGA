@@ -274,8 +274,26 @@
         }
     }
 
-    function sanitize(source) {
-        if (!source) return {html: '', images: []};
+    function nativeImageUbbUrl(rawUrl) {
+        if (!rawUrl) return null;
+        var value = String(rawUrl).trim();
+        // NGA's native image decoder intentionally resolves ./path through
+        // its attachment host. Keep that form instead of turning it into the
+        // web host's HTML path.
+        if (value.indexOf('./') === 0) return value;
+        if (value.charAt(0) === '/') return '.' + value;
+        return allowedUrl(value);
+    }
+
+    /*
+     * The noBBCode page deliberately leaves postcontent as UBB text.  Do not
+     * serialize its rendered DOM: that loses [img]/emotion tokens and makes
+     * the fallback take a different rendering path from THREAD.PAGE.  Walk
+     * the small DOM shell only to recover text and line breaks, and leave all
+     * UBB untouched for ForumDecoder on Android.
+     */
+    function rawBbcode(source) {
+        if (!source) return '';
         var root = source.cloneNode(true);
         var forbidden = root.querySelectorAll(
             'script,style,iframe,object,embed,form,input,button,textarea,select,link,meta,base,template,svg,canvas'
@@ -283,50 +301,75 @@
         for (var forbiddenIndex = forbidden.length - 1; forbiddenIndex >= 0; forbiddenIndex--) {
             forbidden[forbiddenIndex].remove();
         }
-        var images = [];
-        var elements = [root].concat(Array.prototype.slice.call(root.querySelectorAll('*')));
-        elements.forEach(function (element) {
-            var tag = (element.tagName || '').toLowerCase();
-            var lazySource = tag === 'img'
-                ? (element.getAttribute('data-src') || element.getAttribute('data-original'))
-                : null;
-            var attributes = Array.prototype.slice.call(element.attributes || []);
-            attributes.forEach(function (attribute) {
-                var name = attribute.name.toLowerCase();
-                var keep = name === 'class' || name === 'title'
-                    || (tag === 'a' && name === 'href')
-                    || (tag === 'img' && (name === 'src' || name === 'alt'))
-                    || ((tag === 'video' || tag === 'audio')
-                        && (name === 'src' || name === 'poster' || name === 'controls' || name === 'preload'))
-                    || (tag === 'source' && (name === 'src' || name === 'type'))
-                    || ((tag === 'td' || tag === 'th') && (name === 'colspan' || name === 'rowspan'));
-                if (!keep || name.indexOf('on') === 0 || name === 'srcdoc' || name === 'style') {
-                    element.removeAttribute(attribute.name);
-                }
-            });
-            if (tag === 'img' && !element.getAttribute('src') && lazySource) {
-                element.setAttribute('src', lazySource);
+
+        function walk(node) {
+            if (!node) return '';
+            if (node.nodeType === 3 || node.nodeType === 4) {
+                // The DOM has already decoded entities. Re-escape ordinary
+                // text before it enters the reader HTML, otherwise a user
+                // string such as "<b>" could become active markup. UBB tags
+                // are bracket-delimited and remain untouched.
+                return (node.nodeValue || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
             }
-            ['href', 'src', 'poster'].forEach(function (name) {
-                if (!element.hasAttribute || !element.hasAttribute(name)) return;
-                var normalized = allowedUrl(element.getAttribute(name));
-                if (normalized) element.setAttribute(name, normalized);
-                else element.removeAttribute(name);
-            });
-            if (tag === 'a' && element.hasAttribute('href')) {
-                element.setAttribute('rel', 'noopener noreferrer');
+            if (node.nodeType !== 1) return '';
+            var tag = (node.tagName || '').toLowerCase();
+            // THREAD.PAGE content commonly carries literal <br/> tags; keep
+            // that small amount of markup so the shared decoder preserves
+            // line breaks exactly like the native response.
+            if (tag === 'br') return '<br/>';
+            if (tag === 'img') {
+                var rawSource = node.getAttribute('data-src')
+                    || node.getAttribute('data-original')
+                    || node.getAttribute('src');
+                var normalizedSource = nativeImageUbbUrl(rawSource);
+                return normalizedSource
+                    ? '[img]' + normalizedSource.replace(/&/g, '&amp;') + '[/img]'
+                    : '';
             }
-            if (tag === 'video' || tag === 'audio') {
-                element.setAttribute('controls', 'controls');
-                element.setAttribute('preload', 'metadata');
+            var value = '';
+            var children = node.childNodes || [];
+            for (var index = 0; index < children.length; index++) {
+                value += walk(children[index]);
             }
-            if (tag === 'img' && element.hasAttribute('src')) {
-                images.push(element.getAttribute('src'));
-            }
-        });
-        var html = root.innerHTML || '';
-        if (html.length > MAX_STRING) throw new Error('content-size');
-        return {html: html, images: images.slice(0, 200)};
+            return value;
+        }
+
+        var value = walk(root)
+            .replace(/\u00a0/g, ' ')
+            .replace(/\r\n?/g, '\n');
+        if (value.length > MAX_STRING) throw new Error('content-size');
+        return value;
+    }
+
+    function looksLikeImage(rawUrl) {
+        return !!rawUrl && (
+            /\.(?:png|jpe?g|gif|webp|bmp)(?:[?#].*)?$/i.test(rawUrl)
+            || /(?:img\d*\.nga\.cn|attachments?\.)/i.test(rawUrl));
+    }
+
+    /* Attachments are normally already present as UBB in noBBCode.  This
+     * small bridge only recovers an image URL when the page keeps it in the
+     * separate postattach shell, and never copies its buttons/HTML labels. */
+    function attachmentBbcode(source) {
+        if (!source) return '';
+        var result = [];
+        var seen = Object.create(null);
+        var elements = source.querySelectorAll('img[src],img[data-src],a[href]');
+        for (var index = 0; index < elements.length && result.length < 50; index++) {
+            var element = elements[index];
+            var rawUrl = element.getAttribute('data-src')
+                || element.getAttribute('data-original')
+                || element.getAttribute('src')
+                || element.getAttribute('href');
+            var url = nativeImageUbbUrl(rawUrl);
+            if (!url || !looksLikeImage(url) || seen[url]) continue;
+            seen[url] = true;
+            result.push('[img]' + url.replace(/&/g, '&amp;') + '[/img]');
+        }
+        return result.join('<br/>');
     }
 
     function textOf(id) {
@@ -397,17 +440,20 @@
             if (!subject && floor === 0) subject = cleanTitle(document.title);
             var contentElement = document.getElementById('postcontent' + floor);
             if (!contentElement) return;
-            var content = sanitize(contentElement);
+            var rawContent = rawBbcode(contentElement);
             var attachmentElement = document.getElementById('postattach' + floor);
-            if (attachmentElement) {
-                var attachment = sanitize(attachmentElement);
-                content.html += attachment.html;
-                content.images = content.images.concat(attachment.images).slice(0, 200);
+            var attachmentContent = attachmentBbcode(attachmentElement);
+            if (attachmentContent) {
+                if (rawContent && rawContent.slice(-5) !== '<br/>') {
+                    rawContent += '<br/>';
+                }
+                rawContent += attachmentContent;
             }
             var signatureElement = document.getElementById('postsigncontent' + floor);
-            var signature = signatureElement ? sanitize(signatureElement).html : '';
+            var signature = signatureElement ? rawBbcode(signatureElement) : '';
 
             var user = users[String(authorId)] || {};
+            if (signature && !user.signature) user.signature = signature;
             var author = safeString(user.username, 512) || authorFromDom(floor);
             var postTime = Math.max(0, integer(args[14], 0));
             var recommend = scalar(args[15]);
@@ -428,15 +474,12 @@
                 postdate: postDate,
                 lou: floor,
                 subject: subject || null,
-                content: content.html,
+                content: rawContent,
                 score: Math.trunc(score),
                 from_client: safeString(scalar(args[19]), 2048),
                 ipLoc: locality,
                 js_escap_avatar: safeString(user.avatar, 8192),
-                isanonymous: authorId < 0 || (author || '').indexOf('#anony_') === 0,
-                __WEB_FALLBACK_HTML: true,
-                __WEB_IMAGE_URLS: content.images,
-                __WEB_SIGNATURE_HTML: signature
+                isanonymous: authorId < 0 || (author || '').indexOf('#anony_') === 0
             };
             rows[String(accepted++)] = row;
             if (!firstSubject && subject) firstSubject = subject;

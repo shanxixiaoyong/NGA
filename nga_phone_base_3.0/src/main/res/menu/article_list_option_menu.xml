@@ -13,6 +13,12 @@
         androidnga:showAsAction="never"/>
 
     <item
+        android:id="@+id/menu_jump_to_board"
+        android:title="跳到本板块"
+        android:visible="false"
+        androidnga:showAsAction="never"/>
+
+    <item
         android:id="@+id/menu_add_bookmark"
         android:icon="@drawable/btn_ic_star_on"
         android:title="@string/bookmark"

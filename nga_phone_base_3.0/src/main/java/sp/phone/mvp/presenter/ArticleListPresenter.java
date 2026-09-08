@@ -6,11 +6,9 @@ import android.os.Bundle;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.OnLifecycleEvent;
 
-import com.justwen.androidnga.base.activity.ARouterConstants;
+import java.io.IOException;
 
 import gov.anzong.androidnga.R;
-import gov.anzong.androidnga.Utils;
-import gov.anzong.androidnga.activity.fragment.ForumWebFragment;
 import gov.anzong.androidnga.base.util.ToastUtils;
 import gov.anzong.androidnga.http.OnHttpCallBack;
 import sp.phone.common.UserManager;
@@ -19,15 +17,14 @@ import sp.phone.http.bean.ThreadData;
 import sp.phone.http.bean.ThreadRowInfo;
 import sp.phone.mvp.contract.ArticleListContract;
 import sp.phone.mvp.model.ArticleListModel;
-import sp.phone.mvp.model.web.NgaWebArticleFallbackPolicy;
 import sp.phone.param.ArticleListParam;
 import sp.phone.param.ContentSource;
 import sp.phone.linuxdo.LinuxDoNavigation;
+import sp.phone.linuxdo.LinuxDoRepository;
 import sp.phone.rxjava.BaseSubscriber;
 import sp.phone.rxjava.RxUtils;
 import sp.phone.task.LikeTask;
 import sp.phone.ui.fragment.ArticleListFragment;
-import sp.phone.util.ARouterUtils;
 import sp.phone.util.FunctionUtils;
 import sp.phone.util.StringUtils;
 
@@ -46,10 +43,19 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
     private final ArticlePageRequestState mPageRequestState = new ArticlePageRequestState();
 
     private boolean mWebFallbackInFlight;
+    private String mNativeFailureMessage;
 
-    private boolean mBrowserFallbackStarted;
+    private class ArticleCallback implements OnHttpCallBack<ThreadData>,
+            LinuxDoRepository.ProgressiveArticleCallback {
+        @Override
+        public void onFirstFloor(ThreadData preview) {
+            mThreadData = preview;
+            if (mBaseView != null) {
+                mBaseView.setRefreshing(false);
+                mBaseView.setData(preview);
+            }
+        }
 
-    private class ArticleCallback implements OnHttpCallBack<ThreadData> {
         @Override
         public void onError(String text) {
             mPageRequestState.failForegroundLoad(mThreadData != null);
@@ -58,8 +64,10 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
                     && text != null
                     && text.contains("会话已失效")
                     && mBaseView != null) {
-                LinuxDoNavigation.openVerification(mBaseView.getContext());
-                mBaseView.finish();
+                mBaseView.hideLoadingView();
+                mBaseView.setRefreshing(false);
+                mBaseView.onLoadFailed();
+                mBaseView.showToast("访问被网络盾拦截；请返回后从右上角“网络验证”手动验证");
                 return;
             }
             if (mBaseView != null) {
@@ -72,9 +80,7 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
 
         @Override
         public void onError(String msg, Throwable t) {
-            if ((t instanceof ArticleListModel.ArticleParseException
-                    || t instanceof ArticleListModel.ServerException)
-                    && startWebFallback()) {
+            if (isNativeRecoveryFailure(t) && startWebFallback(msg)) {
                 return;
             }
             onError(msg);
@@ -82,12 +88,19 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
 
         @Override
         public void onSuccess(ThreadData data) {
-            mWebFallbackInFlight = false;
             mThreadData = data;
             mPageRequestState.completeForegroundLoad();
             if (mBaseView != null) {
                 mBaseView.setRefreshing(false);
                 mBaseView.setData(data);
+                if (mRequestParam != null
+                        && mRequestParam.source == ContentSource.LINUX_DO) {
+                    // LinuxDo article bodies are rendered asynchronously by the detached
+                    // WebViews owned by ArticleListAdapter. The adapter hides the initial
+                    // loading layer after the current page's bodies finish instead of
+                    // exposing empty floor shells after a fixed delay.
+                    return;
+                }
                 RxUtils.postDelay(300, new BaseSubscriber<Long>() {
                     @Override
                     public void onNext(Long aLong) {
@@ -100,7 +113,14 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         }
     };
 
-    private class PrefetchCallback implements OnHttpCallBack<ThreadData> {
+    private class PrefetchCallback implements OnHttpCallBack<ThreadData>,
+            LinuxDoRepository.ProgressiveArticleCallback {
+
+        @Override
+        public void onFirstFloor(ThreadData preview) {
+            mThreadData = preview;
+            if (mBaseView != null) mBaseView.setData(preview);
+        }
 
         @Override
         public void onError(String text) {
@@ -121,6 +141,12 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
                     mBaseView.setRefreshing(false);
                 }
                 mBaseView.setData(data);
+                if (mRequestParam != null
+                        && mRequestParam.source == ContentSource.LINUX_DO) {
+                    // The external adapter owns first-visible WebView readiness. Hiding here
+                    // would briefly expose empty floor shells on a prefetched page.
+                    return;
+                }
                 mBaseView.hideLoadingView();
             }
         }
@@ -134,17 +160,18 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
             new OnHttpCallBack<ThreadData>() {
                 @Override
                 public void onError(String text) {
-                    finishWebFallbackWithBrowser();
+                    finishWebFallback(text);
                 }
 
                 @Override
                 public void onError(String msg, Throwable t) {
-                    finishWebFallbackWithBrowser();
+                    finishWebFallback(msg);
                 }
 
                 @Override
                 public void onSuccess(ThreadData data) {
                     mWebFallbackInFlight = false;
+                    mNativeFailureMessage = null;
                     mDataCallBack.onSuccess(data);
                 }
             };
@@ -157,7 +184,8 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
     @Override
     public void loadPage(ArticleListParam param) {
         mRequestParam = param;
-        mBrowserFallbackStarted = false;
+        mWebFallbackInFlight = false;
+        mNativeFailureMessage = null;
         requestForegroundLoad(true);
     }
 
@@ -194,25 +222,39 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         }
     }
 
-    private boolean startWebFallback() {
+    private boolean startWebFallback(String nativeMessage) {
         if (mWebFallbackInFlight || mBaseView == null || mRequestParam == null
                 || mRequestParam.source == ContentSource.LINUX_DO) {
             return false;
         }
         mWebFallbackInFlight = true;
+        mNativeFailureMessage = nativeMessage;
         mBaseModel.loadWebFallbackPage(mRequestParam, mWebFallbackCallback);
         return true;
     }
 
-    private void finishWebFallbackWithBrowser() {
+    private void finishWebFallback(String ignoredMessage) {
         if (!mWebFallbackInFlight) return;
         mWebFallbackInFlight = false;
-        mPageRequestState.failForegroundLoad(mThreadData != null);
-        if (mBaseView != null) {
-            mBaseView.setRefreshing(false);
-            mBaseView.hideLoadingView();
+        String nativeMessage = mNativeFailureMessage;
+        mNativeFailureMessage = null;
+        // Keep the original redacted native diagnostic if the web extractor
+        // also fails; never expose page HTML or a second parser's exception.
+        mDataCallBack.onError(nativeMessage == null ? ignoredMessage : nativeMessage);
+    }
+
+    private static boolean isNativeRecoveryFailure(Throwable throwable) {
+        Throwable current = throwable;
+        for (int depth = 0; current != null && depth < 8; depth++) {
+            if (current instanceof ArticleListModel.ArticleParseException
+                    || current instanceof ArticleListModel.ServerException
+                    || current instanceof IOException) {
+                return true;
+            }
+            if (current instanceof ArticleListModel.WebFallbackException) return false;
+            current = current.getCause();
         }
-        showWithWebView();
+        return false;
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
@@ -225,28 +267,6 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
 
     public ArticleListPresenter(ArticleListParam articleListParam) {
         mRequestParam = articleListParam;
-    }
-
-    private void showWithWebView() {
-        if (mBrowserFallbackStarted || mBaseView == null || mRequestParam == null) {
-            return;
-        }
-        mBrowserFallbackStarted = true;
-        ARouterUtils.build(ARouterConstants.ACTIVITY_FRAGMENT_TEMPLATE)
-                .withString("url", getCurrentUrl())
-                .withString("title", mRequestParam.title)
-                .withString("fragment", ForumWebFragment.class.getName())
-                .navigation(mBaseView.getContext());
-        mBaseView.finish();
-    }
-
-    private String getCurrentUrl() {
-        try {
-            return NgaWebArticleFallbackPolicy.buildReadUrl(
-                    Utils.getNGAHost(), mRequestParam);
-        } catch (IllegalArgumentException ignored) {
-            return Utils.getNGAHost() + "read.php?tid=" + mRequestParam.tid;
-        }
     }
 
     public ArticleListPresenter() {
@@ -287,7 +307,7 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         if (row.getPid() != 0) {
             postPrefix.append("[quote][pid=")
                     .append(row.getPid())
-                    .append(',').append(tidStr).append(",").append(param.page)
+                    .append(',').append(tidStr).append(",").append(serverPageForRow(param, row))
                     .append("]")// Topic
                     .append("Reply");
             if (row.getISANONYMOUS()) {// 是匿名的人
@@ -331,6 +351,13 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
         mLikeTask.execute(tid, pid, LikeTask.SUPPORT, ToastUtils::success);
     }
 
+    private static int serverPageForRow(ArticleListParam param, ThreadRowInfo row) {
+        if (param != null && param.topLikedPage && row != null && row.getLou() >= 0) {
+            return row.getLou() / 20 + 1;
+        }
+        return param == null ? 1 : Math.max(1, param.page);
+    }
+
     @Override
     public void postOpposeTask(int tid, int pid) {
         if (mLikeTask == null) {
@@ -358,7 +385,7 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
             mention = name;
             postPrefix.append("[quote][pid=")
                     .append(row.getPid())
-                    .append(',').append(tidStr).append(",").append(param.page)
+                    .append(',').append(tidStr).append(",").append(serverPageForRow(param, row))
                     .append("]")// Topic
                     .append("Reply");
             if (row.getISANONYMOUS()) {// 是匿名的人

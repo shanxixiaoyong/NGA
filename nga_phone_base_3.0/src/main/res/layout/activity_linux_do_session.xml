@@ -1,34 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical">
-
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize" />
-
-    <TextView
-        android:id="@+id/session_hint"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:padding="8dp"
-        android:text="@string/linuxdo_session_hint"
-        android:textColor="?android:attr/textColorSecondary"
-        android:textSize="13sp" />
-
-    <FrameLayout
-        android:id="@+id/web_container"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <Button
-        android:id="@+id/enter_linux_do"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:text="@string/linuxdo_enter_read_only" />
-
+    <androidx.appcompat.widget.Toolbar android:id="@+id/toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" />
+    <TextView android:id="@+id/session_hint"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp" android:paddingVertical="8dp"
+        android:textSize="13sp" android:textColor="?android:attr/textColorSecondary" />
+    <ProgressBar android:id="@+id/session_progress" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="3dp"
+        android:progressTint="?attr/colorAccent" android:indeterminateTint="?attr/colorAccent" />
+    <FrameLayout android:id="@+id/web_container" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp"
+        android:orientation="horizontal" android:paddingHorizontal="8dp">
+        <Button android:id="@+id/session_account" style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:text="账号" />
+        <Button android:id="@+id/session_switch" style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:text="网络验证" />
+        <Button android:id="@+id/session_retry" style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:text="重试" />
+    </LinearLayout>
+    <Button android:id="@+id/enter_linux_do" android:layout_width="match_parent"
+        android:layout_height="48dp" android:layout_marginHorizontal="12dp"
+        android:layout_marginBottom="6dp" android:text="检查登录结果" />
 </LinearLayout>

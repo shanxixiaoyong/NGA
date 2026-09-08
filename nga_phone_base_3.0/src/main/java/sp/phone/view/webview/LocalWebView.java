@@ -76,6 +76,7 @@ public class LocalWebView extends WebViewEx implements DownloadListener {
 
     public void setEagerNetworkImages(boolean eager) {
         getSettings().setBlockNetworkImage(!eager);
+        getWebViewClientEx().setEagerNetworkImages(eager);
     }
 
     public void setLinuxDoMediaTransport(boolean enabled) {

@@ -43,5 +43,11 @@ img {
     max-width: 100%;
 }
 
+video, audio {
+    max-width: 100%;
+    width: auto;
+    height: auto;
+}
+
 img.invertFilter {
 }

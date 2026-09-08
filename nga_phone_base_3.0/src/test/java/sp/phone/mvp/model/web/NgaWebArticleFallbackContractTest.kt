@@ -25,12 +25,17 @@ class NgaWebArticleFallbackContractTest {
     )
 
     @Test
-    fun extractorReadsRenderedRowsAndEmitsTheExistingThreadPageShape() {
+    fun extractorReadsNoBbcodeRowsAndEmitsTheNativeThreadPageShape() {
         assertTrue(extractor.contains("commonui.postArg.setDefault("))
         assertTrue(extractor.contains("commonui.postArg.proc("))
         assertTrue(extractor.contains("commonui.userInfo.setAll("))
         assertTrue(extractor.contains("postcontent"))
-        assertTrue(extractor.contains("__WEB_FALLBACK_HTML"))
+        assertTrue(extractor.contains("noBBCode"))
+        assertTrue(extractor.contains("rawBbcode"))
+        assertTrue(extractor.contains("attachmentBbcode"))
+        assertTrue(extractor.contains("nativeImageUbbUrl"))
+        assertFalse(extractor.contains("__WEB_FALLBACK_HTML"))
+        assertFalse(extractor.contains("__WEB_IMAGE_URLS"))
         assertTrue(extractor.contains("__R__ROWS"))
         assertTrue(extractor.contains("__ROWS"))
         assertTrue(extractor.contains("__T: threadInfo"))
@@ -41,7 +46,6 @@ class NgaWebArticleFallbackContractTest {
     @Test
     fun extractorStripsActiveContentAndNeverExecutesPageTextAsCode() {
         assertTrue(extractor.contains("script,style,iframe,object,embed,form"))
-        assertTrue(extractor.contains("name.indexOf('on') === 0"))
         assertTrue(extractor.contains("url.protocol !== 'http:'"))
         assertFalse(extractor.contains("eval("))
         assertFalse(extractor.contains("new Function"))

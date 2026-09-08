@@ -1,6 +1,7 @@
 package gov.anzong.androidnga;
 
 import android.app.Application;
+import android.content.Context;
 import android.os.Process;
 import android.webkit.WebView;
 
@@ -39,10 +40,29 @@ public class NgaClientApp extends Application {
 
     private NgaWebArticleFallbackSession mNgaWebArticleFallbackSession;
 
+    private boolean mLinuxDoLoginProcess;
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        mLinuxDoLoginProcess = isLinuxDoLoginProcess();
+        if (mLinuxDoLoginProcess) {
+            // WebView storage is process-exclusive. The suffix must be assigned before any
+            // WebView API is touched in the dedicated browser-login process.
+            WebView.setDataDirectorySuffix("linuxdo_login");
+        }
+    }
+
     @Override
     public void onCreate() {
         ContextUtils.setApplication(this);
         initLogger();
+        if (mLinuxDoLoginProcess) {
+            // The login process needs only resources, preferences, WebView and the isolated
+            // resolver. Avoid opening the main database/router or scheduling NGA work here.
+            super.onCreate();
+            return;
+        }
         PreferenceUtils.transfer(this);
         checkNewVersion();
         VersionUpgradeHelper.upgrade();
@@ -55,6 +75,11 @@ public class NgaClientApp extends Application {
         // fixWebViewMultiProcessException();
         CloudServerManager.init(this);
         Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandlerProxy(Thread.getDefaultUncaughtExceptionHandler()));
+    }
+
+    private static boolean isLinuxDoLoginProcess() {
+        String processName = getProcessName();
+        return processName != null && processName.endsWith(":linuxdo_login");
     }
 
     private void initLogger() {

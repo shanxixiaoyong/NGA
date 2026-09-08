@@ -13,6 +13,13 @@ public class ThreadData implements JavaBean {
     private int rowNum;
 
     /**
+     * True when this payload is the lightweight LinuxDo first-floor preview.  The
+     * reader must not finalize page-count/read-position restoration from this
+     * partial payload; the following full page replaces it shortly afterwards.
+     */
+    private boolean progressivePreview;
+
+    /**
      * 从服务端获取的原始数据
      */
     private String mRawData;
@@ -47,6 +54,14 @@ public class ThreadData implements JavaBean {
 
     public void setRowNum(int rowNum) {
         this.rowNum = rowNum;
+    }
+
+    public boolean isProgressivePreview() {
+        return progressivePreview;
+    }
+
+    public void setProgressivePreview(boolean progressivePreview) {
+        this.progressivePreview = progressivePreview;
     }
 
     public String getRawData() {

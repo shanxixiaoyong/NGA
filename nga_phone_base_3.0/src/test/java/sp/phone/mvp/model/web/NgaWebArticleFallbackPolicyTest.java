@@ -19,7 +19,7 @@ public class NgaWebArticleFallbackPolicyTest {
         param.authorId = 42;
 
         assertEquals(
-                "https://bbs.nga.cn/read.php?page=3&tid=47348853&authorid=42",
+                "https://bbs.nga.cn/read.php?page=3&noBBCode&tid=47348853&authorid=42",
                 NgaWebArticleFallbackPolicy.buildReadUrl("https://bbs.nga.cn/", param));
     }
 
@@ -30,7 +30,7 @@ public class NgaWebArticleFallbackPolicyTest {
         param.pid = 456;
 
         assertEquals(
-                "https://ngabbs.com/read.php?page=1&tid=123&pid=456",
+                "https://ngabbs.com/read.php?page=1&noBBCode&tid=123&pid=456",
                 NgaWebArticleFallbackPolicy.buildReadUrl("https://ngabbs.com", param));
     }
 

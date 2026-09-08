@@ -14,7 +14,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -684,9 +683,14 @@ public class StringUtils {
     }
 
     public static String getSaying() {
-        String[] sayings = ContextUtils.getResources().getStringArray(R.array.saying);
-        String saying = sayings[new Random().nextInt(sayings.length)];
+        String[] sayings = SayingHolder.SAYINGS;
+        String saying = sayings[java.util.concurrent.ThreadLocalRandom.current().nextInt(sayings.length)];
         return saying.contains(";") ? saying.replace(";", "-----") : saying;
+    }
+
+    private static final class SayingHolder {
+        private static final String[] SAYINGS =
+                ContextUtils.getResources().getStringArray(R.array.saying);
     }
 
     public static StringFindResult getStringBetween(String data, int begPosition, String startStr, String endStr) {

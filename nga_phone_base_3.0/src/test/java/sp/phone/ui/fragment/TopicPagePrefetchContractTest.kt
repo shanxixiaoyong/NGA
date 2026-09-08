@@ -32,18 +32,43 @@ class TopicPagePrefetchContractTest {
         source("nga_phone_base_3.0/src/main/java/sp/phone/mvp/presenter/ArticleListPresenter.java")
     private val modelSource =
         source("nga_phone_base_3.0/src/main/java/sp/phone/mvp/model/ArticleListModel.java")
+    private val nativePolicySource =
+        source(
+            "nga_phone_base_3.0/src/main/java/sp/phone/mvp/model/web/" +
+                "NgaNativeArticleRequestPolicy.java",
+        )
+    private val localStateSource =
+        source("nga_phone_base_3.0/src/main/java/gov/anzong/androidnga/activity/compose/topic/TopicLocalState.kt")
 
     @Test
     fun pagerKeepsTwoOffscreenPagesAndReplansFromRowsAndSelection() {
-        assertTrue(tabFragmentSource.contains("mViewPager.setOffscreenPageLimit(2);"))
-        assertTrue(tabFragmentSource.contains("mTotalPages = count;"))
-        assertTrue(tabFragmentSource.contains("mCurrentPage = position + 1;"))
         assertTrue(
             tabFragmentSource.contains(
-                "ArticlePagePrefetchPlanner.plan(mCurrentPage, mTotalPages)",
+                "mRequestParam != null && mRequestParam.source == ContentSource.LINUX_DO ? 1 : 2",
+            ),
+        )
+        assertTrue(tabFragmentSource.contains("mTotalPages = count;"))
+        assertTrue(
+            tabFragmentSource.contains(
+                "mCurrentPage = mPagerAdapter.getServerPageAt(position);",
+            ),
+        )
+        assertTrue(
+            tabFragmentSource.contains(
+                "ArticlePagePrefetchPlanner.plan(",
             ),
         )
         assertTrue(tabFragmentSource.split("publishPrefetchPages();").size - 1 >= 3)
+    }
+
+    @Test
+    fun linuxDoKeepsPageLoadingDemandDriven() {
+        val plannerSource = source(
+            "nga_phone_base_3.0/src/main/java/sp/phone/mvp/viewmodel/ArticlePagePrefetchPlanner.java",
+        )
+        assertTrue(plannerSource.contains("if (source == ContentSource.LINUX_DO) {"))
+        assertTrue(plannerSource.contains("return Collections.emptyList();"))
+        assertTrue(listFragmentSource.contains("mPresenter.prefetchPage();"))
     }
 
     @Test
@@ -66,6 +91,21 @@ class TopicPagePrefetchContractTest {
         assertFalse(searchFragmentSource.contains("prefetchPage"))
         assertFalse(cacheActivitySource.contains("getPrefetchPages"))
         assertFalse(cacheActivitySource.contains("prefetchPage"))
+    }
+
+    @Test
+    fun virtualPageZeroDoesNotAdvanceChronologicalReadProgress() {
+        assertTrue(listFragmentSource.contains("!mRequestParam.topLikedPage"))
+        assertTrue(tabFragmentSource.contains("mPagerAdapter.hasTopLikedPage()"))
+        assertTrue(
+            tabFragmentSource.contains(
+                "mHighestReadFloor != UnreadJumpPolicy.NO_TARGET",
+            ),
+        )
+        assertTrue(listFragmentSource.contains("recordTopLikedPage("))
+        assertTrue(listFragmentSource.contains("markChronologicalPageOpened("))
+        assertTrue(localStateSource.contains("KEY_TOP_LIKED_ONLY_PREFIX"))
+        assertTrue(tabFragmentSource.contains("|| mTopLikedPageOnly) return;"))
     }
 
     @Test
@@ -97,7 +137,7 @@ class TopicPagePrefetchContractTest {
         assertTrue(presenterSource.contains("@OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)"))
         val backgroundTransition = presenterSource
             .substringAfter("@OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)")
-            .substringBefore("private void showWithWebView")
+            .substringBefore("public ArticleListPresenter(")
         assertTrue(
             backgroundTransition.contains(
                 "boolean wasPromoted = mPageRequestState.movePrefetchToBackground();",
@@ -107,35 +147,39 @@ class TopicPagePrefetchContractTest {
     }
 
     @Test
-    fun foregroundParseFailureUsesWebRecoveryBeforeBrowserMode() {
+    fun foregroundUsesBoundedNativeChannelsAndUsesNativeWebRecoveryWithoutBrowserMode() {
         assertTrue(listFragmentSource.contains("mSwipeRefreshLayout.setOnRefreshListener"))
         assertTrue(listFragmentSource.contains("mPresenter.loadPage(mRequestParam);"))
         assertTrue(presenterSource.contains("requestForegroundLoad(true);"))
         assertFalse(presenterSource.contains("retryWithNewAccount()"))
         assertFalse(presenterSource.contains("getNextCookie()"))
-        assertTrue(presenterSource.contains("startWebFallback()"))
-        assertTrue(presenterSource.contains("loadWebFallbackPage"))
-        assertTrue(presenterSource.contains("finishWebFallbackWithBrowser()"))
-        assertTrue(presenterSource.contains("t instanceof ArticleListModel.ArticleParseException"))
-        assertTrue(presenterSource.contains("t instanceof ArticleListModel.ServerException"))
-        assertTrue(presenterSource.contains("showWithWebView()"))
-        assertTrue(presenterSource.contains("ForumWebFragment.class.getName()"))
+        assertFalse(presenterSource.contains("startJsonFallback()"))
+        assertFalse(presenterSource.contains("loadJsonFallbackPage"))
+        assertFalse(presenterSource.contains("showWithWebView()"))
+        assertFalse(presenterSource.contains("ForumWebFragment.class.getName()"))
+        assertTrue(modelSource.contains("requestNgaPageWithRetry"))
+        assertTrue(modelSource.contains("WireFormat.LEGACY_GB18030"))
+        assertTrue(modelSource.contains("WireFormat.UTF8_ARRAYS"))
+        assertTrue(modelSource.contains("isRetryableNgaReadFailure"))
+        assertTrue(modelSource.contains("loadWebFallbackPage"))
+        assertTrue(modelSource.contains("NgaWebArticleFallbackPolicy.buildReadUrl"))
+        assertTrue(modelSource.contains("ArticleConvertFactory.parseArticleInfo(snapshot)"))
+        assertFalse(modelSource.contains("ArticleConvertFactory.parseWebArticleInfo(snapshot)"))
+        assertFalse(presenterSource.contains("showWithWebView()"))
     }
 
     @Test
-    fun threadPageWireParserAndDetachCancellationStayInTheSingleModelPath() {
-        assertTrue(
-            modelSource.contains(
-                "\"/read.php?\" + \"&page=\" + page + \"&__output=8&noprefix&v2\"",
-            ),
-        )
+    fun threadPageWireParserAndWebRecoveryStayBoundedToDetachLifecycle() {
+        assertTrue(nativePolicySource.contains("LEGACY_GB18030(8"))
+        assertTrue(nativePolicySource.contains("UTF8_ARRAYS(11"))
         assertTrue(modelSource.contains("header == null || header.isEmpty()"))
-        assertTrue(modelSource.contains("? mService.get(url)"))
-        assertTrue(modelSource.contains(": mService.get(url, header)"))
-        assertFalse(modelSource.contains("mService.get(url, null)"))
-        assertTrue(modelSource.contains("ArticleConvertFactory.parseArticleInfo(s)"))
+        assertTrue(modelSource.contains("? mService.getRaw(url)"))
+        assertTrue(modelSource.contains(": mService.getRaw(url, header)"))
+        assertFalse(modelSource.contains("mService.getRaw(url, null)"))
+        assertTrue(modelSource.contains("ArticleConvertFactory.parseArticleInfo(response)"))
         assertTrue(modelSource.contains("outcome.getDiagnostic()"))
-        assertTrue(modelSource.contains("ArticleConvertFactory.parseWebArticleInfo(snapshot)"))
+        assertTrue(modelSource.contains("readBody(body, format.charset())"))
+        assertTrue(modelSource.contains("parseArticleInfo(snapshot)"))
         assertTrue(modelSource.contains("NgaWebArticleFallbackSession.getInstance().load"))
         assertEquals(4, Regex("bindUntilEvent\\(FragmentEvent\\.DETACH\\)").findAll(modelSource).count())
     }

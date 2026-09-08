@@ -1,8 +1,3 @@
-# AI tooling directories (.trellis/ .claude/ .agents/ .codex/ .grok/) are
-# intentionally TRACKED — do not add blanket rules for them here. Doing so
-# hides new task artifacts from `git status` and forces `git add -f` on every
-# file. Runtime state is scoped out by .trellis/.gitignore instead.
-
 # ---- Build output ----
 build/
 /dist/

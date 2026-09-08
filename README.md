@@ -71,7 +71,6 @@
 
 **AI相关**
 - [LINUX DO 社区](https://linux.do/)
-- 给 AI 立规矩的开源框架：[trellis](https://github.com/mindfold-ai/Trellis)
 
 ## 风险说明
 

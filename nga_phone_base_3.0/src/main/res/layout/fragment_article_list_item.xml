@@ -83,6 +83,15 @@
             android:visibility="gone" />
     </RelativeLayout>
 
+    <sp.phone.linuxdo.LinuxDoReplyRelationsLayout
+        android:id="@+id/linuxdo_reply_target"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="5dp"
+        android:visibility="gone" />
+
     <FrameLayout
         android:id="@+id/wv_container"
         android:layout_width="match_parent"
@@ -102,54 +111,138 @@
 
     </FrameLayout>
 
-
-    <LinearLayout
+    <sp.phone.linuxdo.LinuxDoPollLayout
+        android:id="@+id/linuxdo_polls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="end|center"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="4dp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/article_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="10dp">
 
-        <ImageView
-            android:id="@+id/iv_support"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginEnd="4dp"
-            android:padding="3dp"
+        <TextView
+            android:id="@+id/tv_reactions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_baseline_thumb_up_24" />
+            android:ellipsize="end"
+            android:gravity="center_vertical|start"
+            android:maxWidth="220dp"
+            android:maxLines="1"
+            android:paddingStart="4dp"
+            android:paddingEnd="8dp"
+            android:textColor="?attr/colorAccent"
+            android:textSize="14sp"
+            android:visibility="gone" />
 
         <TextView
-            android:id="@+id/tv_score"
+            android:id="@+id/tv_direct_reply_count"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="4dp"
-            android:textIsSelectable="false" />
-
-        <ImageView
-            android:id="@+id/iv_oppose"
-            android:layout_width="24dp"
             android:layout_height="24dp"
-            android:layout_marginStart="4dp"
-            android:padding="3dp"
+            android:layout_marginStart="2dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_baseline_thumb_down_24" />
+            android:gravity="center"
+            android:minWidth="28dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:textColor="?attr/colorAccent"
+            android:textSize="13sp"
+            android:visibility="gone" />
 
-        <ImageView
-            android:id="@+id/iv_reply"
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:id="@+id/article_footer_actions"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:contentDescription="@string/quote_subject"
-            android:src="@drawable/ic_reply_24dp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <ImageView
-            android:id="@+id/iv_more"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:src="@drawable/ic_more_ver_24dp" />
+            <ImageView
+                android:id="@+id/iv_support"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="4dp"
+                android:padding="3dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_baseline_thumb_up_24" />
+
+            <TextView
+                android:id="@+id/tv_score"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="4dp"
+                android:text="0"
+                android:textIsSelectable="false" />
+
+            <ImageView
+                android:id="@+id/iv_oppose"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="4dp"
+                android:padding="3dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_baseline_thumb_down_24" />
+
+            <TextView
+                android:id="@+id/tv_boost"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="4dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/linuxdo_boost_reply"
+                android:gravity="center"
+                android:text="🚀"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/iv_reply"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:contentDescription="@string/quote_subject"
+                android:src="@drawable/ic_reply_24dp" />
+
+            <ImageView
+                android:id="@+id/iv_more"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_more_ver_24dp" />
+
+        </LinearLayout>
 
     </LinearLayout>
-</LinearLayout>
 
+    <sp.phone.linuxdo.LinuxDoReplyRelationsLayout
+        android:id="@+id/linuxdo_direct_replies"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="4dp"
+        android:visibility="gone" />
+
+    <sp.phone.linuxdo.LinuxDoBoostLayout
+        android:id="@+id/linuxdo_boosts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="10dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="10dp"
+        android:visibility="gone" />
+</LinearLayout>

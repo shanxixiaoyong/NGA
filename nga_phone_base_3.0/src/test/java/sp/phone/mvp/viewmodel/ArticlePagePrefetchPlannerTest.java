@@ -9,6 +9,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import sp.phone.param.ContentSource;
+
 public class ArticlePagePrefetchPlannerTest {
 
     @Test
@@ -46,6 +48,14 @@ public class ArticlePagePrefetchPlannerTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void linuxDoDoesNotPrefetchBeforeTheReaderAdvances() {
+        assertEquals(Collections.emptyList(),
+                ArticlePagePrefetchPlanner.plan(ContentSource.LINUX_DO, 1, 8));
+        assertEquals(Collections.emptyList(),
+                ArticlePagePrefetchPlanner.plan(ContentSource.LINUX_DO, 2, 8));
     }
 
     @Test(expected = UnsupportedOperationException.class)

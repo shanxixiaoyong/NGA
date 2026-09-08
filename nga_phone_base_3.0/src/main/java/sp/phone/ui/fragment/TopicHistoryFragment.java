@@ -23,6 +23,8 @@ import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.base.widget.DividerItemDecorationEx;
 import gov.anzong.androidnga.common.ui.dialog.ConfirmDialog;
+import gov.anzong.androidnga.activity.compose.topic.TopicLocalState;
+import gov.anzong.androidnga.activity.compose.topic.TopicReadProgress;
 import gov.anzong.androidnga.ui.widget.ToolbarUtils;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.common.TopicHistoryManager;
@@ -30,6 +32,8 @@ import sp.phone.mvp.model.entity.ThreadPageInfo;
 import sp.phone.mvp.model.entity.TopicListInfo;
 import sp.phone.param.ArticleListParam;
 import sp.phone.param.ParamKey;
+import sp.phone.param.ContentSource;
+import sp.phone.linuxdo.LinuxDoRepository;
 import sp.phone.ui.adapter.TopicListAdapter;
 import sp.phone.view.RecyclerViewEx;
 
@@ -125,10 +129,28 @@ public class TopicHistoryFragment extends BaseFragment implements View.OnClickLi
     public void onClick(View view) {
         ThreadPageInfo info = (ThreadPageInfo) view.getTag();
         ArticleListParam param = new ArticleListParam();
+        param.source = info.getSource();
         param.tid = info.getTid();
         param.page = info.getPage();
         param.title = info.getSubject();
         param.topicInfo = JSON.toJSONString(info);
+        if (param.source == ContentSource.LINUX_DO) {
+            // History rows only retain the topic's original list page. Re-open the
+            // source-scoped read position explicitly so a LinuxDo topic opened from
+            // history follows the same restore route as a topic opened from the list.
+            TopicReadProgress progress = new TopicLocalState(ContentSource.LINUX_DO)
+                    .readProgress(info.getTid());
+            if (progress != null) {
+                int knownReplies = Math.max(Math.max(0, info.getReplies()),
+                        Math.max(progress.getObservedReplies(), progress.getHighestReadFloor()));
+                int targetFloor = knownReplies > progress.getHighestReadFloor()
+                        ? progress.getHighestReadFloor() + 1
+                        : progress.getHighestReadFloor();
+                param.targetFloor = Math.max(0, targetFloor);
+                param.page = param.targetFloor / 20 + 1;
+            }
+            LinuxDoRepository.getInstance().prefetchArticle(param.tid, param.page);
+        }
         Intent intent = new Intent();
         Bundle bundle = new Bundle();
         bundle.putParcelable(ParamKey.KEY_PARAM, param);

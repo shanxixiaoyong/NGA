@@ -41,6 +41,7 @@ import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.util.GlideApp;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.linuxdo.LinuxDoHttpSession;
+import sp.phone.linuxdo.LinuxDoReactionAssets;
 import sp.phone.linuxdo.LinuxDoWebSession;
 
 public class ImageUtils {
@@ -61,6 +62,9 @@ public class ImageUtils {
     private static final Map<String, List<WeakReference<ImageView>>>
             sLinuxDoAvatarInFlight = new HashMap<>();
     private static final WeakHashMap<ImageView, String> sLinuxDoAvatarExpected =
+            new WeakHashMap<>();
+    private static final Object sLinuxDoBoardIconLock = new Object();
+    private static final WeakHashMap<ImageView, String> sLinuxDoBoardIconExpected =
             new WeakHashMap<>();
 
     // Convert to pixels
@@ -529,6 +533,115 @@ public class ImageUtils {
                 }
             }
         });
+    }
+
+    /**
+     * Loads a LINUX DO category logo through the source-isolated media session.
+     * Unlike avatars, board logos keep their original shape and are fit inside
+     * the compact topic-row slot rather than being circle-cropped.
+     */
+    public static void loadLinuxDoBoardIcon(ImageView imageView, String url) {
+        if (imageView == null) return;
+        imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        if (StringUtils.isEmpty(url)) {
+            synchronized (sLinuxDoBoardIconLock) {
+                sLinuxDoBoardIconExpected.remove(imageView);
+            }
+            imageView.setImageResource(R.drawable.default_board_icon);
+            return;
+        }
+        imageView.setImageResource(R.drawable.default_board_icon);
+        synchronized (sLinuxDoBoardIconLock) {
+            sLinuxDoBoardIconExpected.put(imageView, url);
+        }
+        LinuxDoHttpSession session = LinuxDoHttpSession.getInstance();
+        byte[] cached = session.getCachedAvatar(url);
+        if (cached != null && cached.length > 0) {
+            displayLinuxDoBoardIcon(imageView, url, cached);
+            return;
+        }
+        session.fetchMedia(url, new LinuxDoHttpSession.ByteCallback() {
+            @Override
+            public void onSuccess(byte[] bytes) {
+                if (bytes == null || bytes.length == 0) return;
+                displayLinuxDoBoardIcon(imageView, url, bytes);
+            }
+
+            @Override
+            public void onFailure(LinuxDoWebSession.Failure failure) {
+                // Keep the default board icon; a missing logo must not affect list rendering.
+            }
+        });
+    }
+
+    /** Loads the exact Discourse/Twemoji artwork used by LINUX DO for a reaction id. */
+    public static void loadLinuxDoReaction(ImageView imageView, String reactionId) {
+        if (imageView == null || StringUtils.isEmpty(reactionId)) return;
+        byte[] embedded = LinuxDoReactionAssets.bytesFor(reactionId);
+        if (embedded != null && embedded.length > 0) {
+            String assetKey = "linuxdo-reaction-asset:" + reactionId.trim();
+            imageView.setTag(assetKey);
+            displayLinuxDoReaction(imageView, assetKey, embedded);
+            return;
+        }
+        String url = linuxDoReactionArtworkUrl(reactionId);
+        imageView.setImageDrawable(null);
+        imageView.setTag(url);
+        LinuxDoHttpSession session = LinuxDoHttpSession.getInstance();
+        byte[] cached = session.getCachedAvatar(url);
+        if (cached != null && cached.length > 0) {
+            displayLinuxDoReaction(imageView, url, cached);
+            return;
+        }
+        session.fetchMedia(url, new LinuxDoHttpSession.ByteCallback() {
+            @Override public void onSuccess(byte[] bytes) {
+                if (bytes != null && bytes.length > 0) {
+                    displayLinuxDoReaction(imageView, url, bytes);
+                }
+            }
+
+            @Override public void onFailure(LinuxDoWebSession.Failure failure) { }
+        });
+    }
+
+    /** Exact current LINUX DO artwork, including the three site custom reactions. */
+    public static String linuxDoReactionArtworkUrl(String reactionId) {
+        String clean = reactionId == null ? "" : reactionId.trim();
+        if ("tieba_087".equals(clean)) {
+            return "https://cdn3.ldstatic.com/original/3X/2/e/"
+                    + "2e09f3a3c7b27eacbabe9e9614b06b88d5b06343.png?v=15";
+        }
+        if ("bili_057".equals(clean)) {
+            return "https://cdn3.ldstatic.com/original/3X/1/a/"
+                    + "1a9f6c30e88a7901b721fffc1aaeec040f54bdf3.png?v=15";
+        }
+        return "https://cdn.ldstatic.com/images/emoji/twemoji/" + clean + ".png?v=15";
+    }
+
+    /** Returns the embedded canonical artwork without starting a network request. */
+    public static byte[] linuxDoReactionArtworkBytes(String reactionId) {
+        return LinuxDoReactionAssets.bytesFor(reactionId);
+    }
+
+    private static void displayLinuxDoReaction(ImageView imageView, String url, byte[] bytes) {
+        if (!url.equals(imageView.getTag())) return;
+        GlideApp.with(ContextUtils.getContext())
+                .load(bytes)
+                .fitCenter()
+                .diskCacheStrategy(DiskCacheStrategy.DATA)
+                .into(imageView);
+    }
+
+    private static void displayLinuxDoBoardIcon(ImageView imageView, String url, byte[] bytes) {
+        synchronized (sLinuxDoBoardIconLock) {
+            if (!url.equals(sLinuxDoBoardIconExpected.get(imageView))) return;
+        }
+        GlideApp.with(ContextUtils.getContext())
+                .load(bytes)
+                .placeholder(R.drawable.default_board_icon)
+                .fitCenter()
+                .diskCacheStrategy(DiskCacheStrategy.DATA)
+                .into(imageView);
     }
 
     private static void displayLinuxDoAvatar(ImageView imageView, String url, byte[] bytes) {

@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.viewpager.widget.ViewPager;
 
+import com.alibaba.fastjson.JSON;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.justwen.androidnga.base.activity.ARouterConstants;
@@ -39,6 +40,7 @@ import sp.phone.common.PhoneConfiguration;
 import sp.phone.common.UserManagerImpl;
 import sp.phone.mvp.viewmodel.ArticlePagePrefetchPlanner;
 import sp.phone.mvp.viewmodel.ArticleShareViewModel;
+import sp.phone.mvp.model.entity.ThreadPageInfo;
 import sp.phone.param.ArticleListParam;
 import sp.phone.param.ContentSource;
 import sp.phone.param.ParamKey;
@@ -50,6 +52,7 @@ import sp.phone.ui.adapter.ArticlePagerAdapter;
 import sp.phone.ui.fragment.dialog.GotoDialogFragment;
 import sp.phone.linuxdo.LinuxDoConstants;
 import sp.phone.linuxdo.LinuxDoActionDialogs;
+import sp.phone.linuxdo.LinuxDoNavigation;
 import sp.phone.util.ARouterUtils;
 import sp.phone.util.ActivityUtils;
 import sp.phone.util.StringUtils;
@@ -99,9 +102,17 @@ public class ArticleTabFragment extends BaseRxFragment {
 
     private int mHighestReadFloor = UnreadJumpPolicy.NO_TARGET;
 
+    private boolean mTopLikedPageOnly;
+
     private boolean mRestoreInitialized;
 
     private boolean mRestorePending;
+
+    /** LinuxDo publishes a one-floor preview before the complete page. */
+    private boolean mAwaitingCompletePageData;
+
+    /** Board/category header carried by the list row or learned from the article page. */
+    private ThreadPageInfo mTopicBoardInfo;
 
     private int mPendingRestoreFloor = UnreadJumpPolicy.NO_TARGET;
 
@@ -115,6 +126,13 @@ public class ArticleTabFragment extends BaseRxFragment {
         Bundle args = getArguments();
         if (args != null) {
             mRequestParam = getArguments().getParcelable(ParamKey.KEY_PARAM);
+        }
+        if (mRequestParam != null && !TextUtils.isEmpty(mRequestParam.topicInfo)) {
+            try {
+                mTopicBoardInfo = JSON.parseObject(mRequestParam.topicInfo, ThreadPageInfo.class);
+            } catch (RuntimeException ignored) {
+                // Older history rows may not contain a complete board header.
+            }
         }
         mTopicLocalState = new TopicLocalState(
                 mRequestParam == null ? ContentSource.NGA : mRequestParam.source);
@@ -136,9 +154,10 @@ public class ArticleTabFragment extends BaseRxFragment {
             mHasReplyCount = true;
             int count = (int) Math.ceil(mReplyCount / 20.0f);
             mTotalPages = count;
-            if (mPagerAdapter != null && count != mPagerAdapter.getCount()) {
+            if (mPagerAdapter != null && count != mPagerAdapter.getNormalPageCount()) {
                 mPagerAdapter.setCount(count);
-                mTabLayout.setTabOnScreenLimit(count <= 5 ? count : 0);
+                int visibleCount = mPagerAdapter.getCount();
+                mTabLayout.setTabOnScreenLimit(visibleCount <= 5 ? visibleCount : 0);
                 mTabLayout.notifyDataSetChanged();
             }
             publishPrefetchPages();
@@ -159,17 +178,39 @@ public class ArticleTabFragment extends BaseRxFragment {
         ButterKnife.bind(this, view);
         mPagerAdapter = new ArticlePagerAdapter(getChildFragmentManager(), mRequestParam);
         mViewPager.setAdapter(mPagerAdapter);
-        mViewPager.setOffscreenPageLimit(2);
+        // Keep LinuxDo's first page isolated until the reader advances. Its later pages are
+        // demand-driven, so creating distant pager children only adds work and memory pressure.
+        mViewPager.setOffscreenPageLimit(
+                mRequestParam != null && mRequestParam.source == ContentSource.LINUX_DO ? 1 : 2);
+        if (savedInstanceState == null && mRequestParam.source == ContentSource.LINUX_DO
+                && mRequestParam.targetFloor >= 0) {
+            mRestoreInitialized = true;
+            mRestorePending = true;
+            mPendingRestoreFloor = mRequestParam.targetFloor;
+            mRestoreMarkerFloor = mRequestParam.targetFloor > 0
+                    ? mRequestParam.targetFloor : UnreadJumpPolicy.NO_TARGET;
+            mPendingRestorePosition = mPagerAdapter.getAdapterPositionForFloor(
+                    mRequestParam.targetFloor);
+        }
         if (mRestorePending
                 && mPendingRestorePosition >= 0
                 && mPendingRestorePosition < mPagerAdapter.getStandardCount()) {
             mViewPager.setCurrentItem(mPendingRestorePosition, false);
+        } else if (savedInstanceState == null
+                && mPagerAdapter.hasTopLikedPage()
+                && !mTopLikedPageOnly
+                && mHighestReadFloor != UnreadJumpPolicy.NO_TARGET) {
+            // A read thread loads chronological page 1 first so automatic restore is not delayed
+            // by the full-thread scan used to assemble page 0. New threads default to page 0.
+            mViewPager.setCurrentItem(
+                    mPagerAdapter.getAdapterPositionForPageSelection(
+                            Math.max(0, mRequestParam.page - 1)), false);
         }
-        mCurrentPage = mViewPager.getCurrentItem() + 1;
+        mCurrentPage = mPagerAdapter.getServerPageAt(mViewPager.getCurrentItem());
         mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
-                mCurrentPage = position + 1;
+                mCurrentPage = mPagerAdapter.getServerPageAt(position);
                 publishPrefetchPages();
                 if (!mRestorePending) return;
                 if (position != mPendingRestorePosition) {
@@ -214,21 +255,23 @@ public class ArticleTabFragment extends BaseRxFragment {
 
     private void refreshHighestReadFloor() {
         mHighestReadFloor = UnreadJumpPolicy.NO_TARGET;
+        mTopLikedPageOnly = false;
         if (!isAutomaticRestoreRouteEligible() || mTopicLocalState == null) return;
         TopicReadProgress progress = mTopicLocalState.readProgress(mRequestParam.tid);
         if (progress != null) {
             mHighestReadFloor = progress.getHighestReadFloor();
+            mTopLikedPageOnly = mTopicLocalState.isTopLikedPageOnly(mRequestParam.tid);
         }
     }
 
     private void initializeAutomaticRestore() {
         if (mRestoreInitialized || !mHasReplyCount || mPagerAdapter == null
-                || mViewPager == null) {
+                || mViewPager == null || mAwaitingCompletePageData) {
             return;
         }
         mRestoreInitialized = true;
         refreshHighestReadFloor();
-        if (!isAutomaticRestoreRouteEligible()) return;
+        if (!isAutomaticRestoreRouteEligible() || mTopLikedPageOnly) return;
         int replies = Math.max(0, mReplyCount - 1);
         int targetFloor = UnreadJumpPolicy.restoreFloor(mHighestReadFloor, replies);
         if (targetFloor == UnreadJumpPolicy.NO_TARGET) return;
@@ -240,6 +283,26 @@ public class ArticleTabFragment extends BaseRxFragment {
         mPendingRestorePosition = targetPosition;
         mViewPager.setCurrentItem(targetPosition, false);
         mViewPager.post(this::deliverPendingAutomaticRestore);
+    }
+
+    /** Called before a lightweight LinuxDo first-floor preview is published. */
+    public void onArticlePagePreview(ArticleListFragment fragment, int serverPage) {
+        if (mRequestParam != null && mRequestParam.source == ContentSource.LINUX_DO
+                && serverPage == 1) {
+            mAwaitingCompletePageData = true;
+        }
+    }
+
+    /** Called after a complete page replaces the optional LinuxDo preview. */
+    public void onArticlePageDataReady(ArticleListFragment fragment, int serverPage) {
+        updateTopicBoardInfo(fragment);
+        if (mRequestParam != null && mRequestParam.source == ContentSource.LINUX_DO
+                ) {
+            if (serverPage == 1) mAwaitingCompletePageData = false;
+            initializeAutomaticRestore();
+            resumePendingAutomaticRestore();
+            deliverPendingAutomaticRestore();
+        }
     }
 
     private void deliverPendingAutomaticRestore() {
@@ -255,6 +318,7 @@ public class ArticleTabFragment extends BaseRxFragment {
     }
 
     public void onArticlePageReady(ArticleListFragment fragment, int serverPage) {
+        updateTopicBoardInfo(fragment);
         if (mRestoreMarkerFloor != UnreadJumpPolicy.NO_TARGET
                 && serverPage == UnreadJumpPolicy.serverPageForFloor(mRestoreMarkerFloor)) {
             fragment.showRestoreMarkerAtFloor(mRestoreMarkerFloor);
@@ -268,6 +332,16 @@ public class ArticleTabFragment extends BaseRxFragment {
             return;
         }
         fragment.restoreFloorWhenReady(mPendingRestoreFloor, mRestoreMarkerFloor);
+    }
+
+    private void updateTopicBoardInfo(ArticleListFragment fragment) {
+        if (fragment == null) return;
+        ThreadPageInfo info = fragment.getThreadInfo();
+        if (info == null || info.getFid() <= 0) return;
+        if (mTopicBoardInfo == null || mTopicBoardInfo.getFid() <= 0) {
+            mTopicBoardInfo = info;
+            if (getActivity() != null) getActivity().invalidateOptionsMenu();
+        }
     }
 
     public void onAutomaticRestoreFinished(boolean positioned) {
@@ -290,7 +364,9 @@ public class ArticleTabFragment extends BaseRxFragment {
     private void publishPrefetchPages() {
         if (getActivity() != null) {
             getActivityViewModel().setPrefetchPages(
-                    ArticlePagePrefetchPlanner.plan(mCurrentPage, mTotalPages));
+                    ArticlePagePrefetchPlanner.plan(
+                            mRequestParam == null ? ContentSource.NGA : mRequestParam.source,
+                            mCurrentPage, mTotalPages));
         }
     }
 
@@ -328,7 +404,7 @@ public class ArticleTabFragment extends BaseRxFragment {
     public void reply() {
         if (mRequestParam.source == ContentSource.LINUX_DO) {
             LinuxDoActionDialogs.showReply(
-                    requireContext(), mRequestParam.tid, null,
+                    requireContext(), mFab, mRequestParam.tid, null,
                     this::refreshCurrentPage);
             return;
         }
@@ -363,6 +439,9 @@ public class ArticleTabFragment extends BaseRxFragment {
             case R.id.menu_copy_url:
                 copyUrl();
                 break;
+            case R.id.menu_jump_to_board:
+                jumpToBoard();
+                break;
             case R.id.menu_nightmode:
                 ThemeManager.getInstance().setNightMode(true);
                 break;
@@ -376,6 +455,10 @@ public class ArticleTabFragment extends BaseRxFragment {
                 }
                 break;
             case R.id.menu_open_by_browser:
+                if (mRequestParam.source == ContentSource.LINUX_DO) {
+                    LinuxDoNavigation.openTopicInBrowser(requireContext(), mRequestParam.tid);
+                    break;
+                }
                 ARouterUtils.build(ARouterConstants.ACTIVITY_FRAGMENT_TEMPLATE)
                         .withString("url", getCurrentUrl())
                         .withString("title", mRequestParam.title)
@@ -453,6 +536,9 @@ public class ArticleTabFragment extends BaseRxFragment {
     public void onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.menu_goto_floor).setVisible(mReplyCount != 0);
 
+        MenuItem jumpToBoard = menu.findItem(R.id.menu_jump_to_board);
+        if (jumpToBoard != null) jumpToBoard.setVisible(canJumpToBoard());
+
         if (ThemeManager.getInstance().isNightModeFollowSystem()) {
             menu.findItem(R.id.menu_nightmode).setVisible(false);
             menu.findItem(R.id.menu_daymode).setVisible(false);
@@ -474,10 +560,25 @@ public class ArticleTabFragment extends BaseRxFragment {
         super.onPrepareOptionsMenu(menu);
     }
 
+    private boolean canJumpToBoard() {
+        return mTopicBoardInfo != null && mTopicBoardInfo.getFid() > 0;
+    }
+
+    private void jumpToBoard() {
+        if (!canJumpToBoard() || getContext() == null) return;
+        String name = mTopicBoardInfo.getBoard();
+        if (TextUtils.isEmpty(name)) name = getActivity() == null
+                ? "" : String.valueOf(getActivity().getTitle());
+        LinuxDoNavigation.openTopicBoard(
+                requireContext(),
+                mRequestParam == null ? ContentSource.NGA : mRequestParam.source,
+                mTopicBoardInfo.getFid(), name, null);
+    }
+
     private void createGotoDialog() {
 
         Bundle args = new Bundle();
-        args.putInt("page", mPagerAdapter.getCount());
+        args.putInt("page", mPagerAdapter.getNormalPageCount());
         args.putInt("floor", mReplyCount);
 
         DialogFragment df = new GotoDialogFragment();
@@ -501,11 +602,15 @@ public class ArticleTabFragment extends BaseRxFragment {
                     mPagerAdapter.getServerPageAt(mViewPager.getCurrentItem()));
         } else if (requestCode == ActivityUtils.REQUEST_CODE_JUMP_PAGE) {
             if (data.hasExtra("page")) {
-                mViewPager.setCurrentItem(data.getIntExtra("page", 0));
+                mViewPager.setCurrentItem(mPagerAdapter.getAdapterPositionForPageSelection(
+                        data.getIntExtra("page", 0)));
             } else {
                 int floor = data.getIntExtra("floor", 0);
-                mViewPager.setCurrentItem(floor / 20);
-                RxBus.getInstance().post(new RxEvent(RxEvent.EVENT_ARTICLE_GO_FLOOR, mViewPager.getCurrentItem(), floor % 20));
+                int targetPosition = mPagerAdapter.getAdapterPositionForFloor(floor);
+                mViewPager.setCurrentItem(targetPosition);
+                RxBus.getInstance().post(new RxEvent(
+                        RxEvent.EVENT_ARTICLE_GO_FLOOR,
+                        mPagerAdapter.getServerPageAt(targetPosition), floor % 20));
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);

@@ -139,9 +139,9 @@ public class ArticleConvertFactory {
     }
 
     private static boolean containsWebFallbackRows(JSONObject data) {
-        Object rawRows = data.get("__R");
-        if (!(rawRows instanceof JSONObject)) return false;
-        for (Object value : ((JSONObject) rawRows).values()) {
+        JSONObject rows = indexedObjectMap(data.get("__R"));
+        if (rows == null) return false;
+        for (Object value : rows.values()) {
             if (value instanceof JSONObject
                     && ((JSONObject) value).getBooleanValue("__WEB_FALLBACK_HTML")) {
                 return true;
@@ -154,7 +154,7 @@ public class ArticleConvertFactory {
     static ThreadPageInfo buildThreadPageInfo(
             JSONObject obj, List<ThreadRowInfo> rows) {
         Object rawThread = obj.get("__T");
-        JSONObject subObj = rawThread instanceof JSONObject ? (JSONObject) rawThread : null;
+        JSONObject subObj = firstRecord(rawThread);
         if (subObj != null && subObj.size() == 1 && subObj.get("0") instanceof JSONObject) {
             subObj = subObj.getJSONObject("0");
         }
@@ -182,10 +182,9 @@ public class ArticleConvertFactory {
     private static List<ThreadRowInfo> buildThreadRowList(
             JSONObject obj, WebRenderOptions webRenderOptions) {
         Object rawRows = obj.get("__R");
-        JSONObject subObj = rawRows instanceof JSONObject ? (JSONObject) rawRows : null;
+        JSONObject subObj = indexedObjectMap(rawRows);
         Object rawUserInfoMap = obj.get("__U");
-        JSONObject userInfoMap = rawUserInfoMap instanceof JSONObject
-                ? (JSONObject) rawUserInfoMap : null;
+        JSONObject userInfoMap = userRecordMap(rawUserInfoMap);
         if (subObj == null) {
             return new ArrayList<>();
         }
@@ -222,6 +221,53 @@ public class ArticleConvertFactory {
             }
         }
         return max;
+    }
+
+    /** NGA output=11 uses arrays where output=8 commonly uses numeric-key objects. */
+    private static JSONObject indexedObjectMap(Object value) {
+        if (value instanceof JSONObject) return (JSONObject) value;
+        if (!(value instanceof JSONArray)) return null;
+        JSONArray array = (JSONArray) value;
+        JSONObject mapped = new JSONObject();
+        for (int i = 0; i < array.size(); i++) {
+            Object item = array.get(i);
+            if (item != null) mapped.put(String.valueOf(i), item);
+        }
+        return mapped;
+    }
+
+    private static JSONObject firstRecord(Object value) {
+        if (value instanceof JSONArray) {
+            JSONArray array = (JSONArray) value;
+            for (Object item : array) {
+                if (item instanceof JSONObject) return (JSONObject) item;
+            }
+            return null;
+        }
+        if (!(value instanceof JSONObject)) return null;
+        JSONObject object = (JSONObject) value;
+        if (object.size() == 1) {
+            for (Object item : object.values()) {
+                if (item instanceof JSONObject) return (JSONObject) item;
+            }
+        }
+        return object;
+    }
+
+    static JSONObject userRecordMap(Object value) {
+        if (value instanceof JSONObject) return (JSONObject) value;
+        if (!(value instanceof JSONArray)) return null;
+        JSONArray array = (JSONArray) value;
+        JSONObject mapped = new JSONObject();
+        for (int i = 0; i < array.size(); i++) {
+            Object item = array.get(i);
+            if (!(item instanceof JSONObject)) continue;
+            JSONObject user = (JSONObject) item;
+            mapped.put(String.valueOf(i), user);
+            Object uid = user.get("uid");
+            if (uid != null) mapped.put(String.valueOf(uid), user);
+        }
+        return mapped;
     }
 
     private static int nonNegativeInt(Object value, int fallback) {

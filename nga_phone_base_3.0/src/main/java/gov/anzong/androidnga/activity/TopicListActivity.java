@@ -18,6 +18,7 @@ import gov.anzong.androidnga.ui.fragment.TopicListSimpleFragment;
 import sp.phone.param.ParamKey;
 import sp.phone.param.TopicListParam;
 import sp.phone.param.ContentSource;
+import sp.phone.linuxdo.LinuxDoNavigation;
 import sp.phone.linuxdo.LinuxDoWebSession;
 import sp.phone.ui.fragment.TopicFavoriteFragment;
 import sp.phone.ui.fragment.TopicListFragment;
@@ -143,10 +144,14 @@ public class TopicListActivity extends BaseActivity {
                 showTwentyFourList();
                 break;
             case R.id.menu_search:
-                ARouter.getInstance()
-                        .build(ARouterConstants.ACTIVITY_SEARCH)
-                        .withInt("fid", mRequestParam.fid)
-                        .navigation(this);
+                if (mRequestParam.source == ContentSource.LINUX_DO) {
+                    LinuxDoNavigation.openSearch(this);
+                } else {
+                    ARouter.getInstance()
+                            .build(ARouterConstants.ACTIVITY_SEARCH)
+                            .withInt("fid", mRequestParam.fid)
+                            .navigation(this);
+                }
                 break;
             default:
                 return super.onOptionsItemSelected(item);

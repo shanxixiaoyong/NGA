@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="330dp"
+    android:layout_width="360dp"
     android:layout_height="52dp"
     android:background="@drawable/bg_topic_block_dialog"
     android:orientation="horizontal"
@@ -48,6 +48,24 @@
         android:background="?attr/selectableItemBackground"
         android:gravity="center"
         android:text="@string/hide_board"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="15sp" />
+
+    <View
+        android:id="@+id/divider_hide_tag"
+        android:layout_width="1dp"
+        android:layout_height="28dp"
+        android:layout_gravity="center_vertical"
+        android:background="?android:attr/listDivider" />
+
+    <TextView
+        android:id="@+id/action_hide_tag"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:text="屏蔽标签"
         android:textColor="?android:attr/textColorPrimary"
         android:textSize="15sp" />
 

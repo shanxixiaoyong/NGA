@@ -59,6 +59,9 @@ public class PageAttachmentPrefixFlowTest {
         assertTrue(html.contains(PAGE_PREFIX + "/mon_202608/a.jpg"));
         assertTrue(html.contains(PAGE_PREFIX + "/mon_202608/a.mp3"));
         assertTrue(html.contains(PAGE_PREFIX + "/mon_202608/v.mp4"));
+        assertTrue(html.contains("<video controls='controls' preload='metadata' playsinline"));
+        assertTrue(html.contains("<source src='" + PAGE_PREFIX + "/mon_202608/v.mp4'>"));
+        assertTrue(html.contains("<a href='" + PAGE_PREFIX + "/mon_202608/v.mp4'>nga_video</a>"));
         assertEquals(Arrays.asList(PAGE_PREFIX + "/mon_202608/a.jpg"), images);
     }
 

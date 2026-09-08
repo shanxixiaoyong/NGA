@@ -202,9 +202,16 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        checkUpgrade();
-        NotificationController.getInstance().checkNotificationDelay();
+        if (shouldRunMainProcessResumeTasks()) {
+            checkUpgrade();
+            NotificationController.getInstance().checkNotificationDelay();
+        }
         super.onResume();
+    }
+
+    /** Isolated utility activities can opt out of NGA database/router dependent work. */
+    protected boolean shouldRunMainProcessResumeTasks() {
+        return true;
     }
 
     private void checkUpgrade() {

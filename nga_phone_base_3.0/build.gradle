@@ -136,6 +136,8 @@ dependencies {
     implementation "com.google.android.material:material:$androidx_material_version"
     implementation "androidx.cardview:cardview:1.0.0"
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
+    // Process-scoped proxy control for the isolated LINUX DO login WebView.
+    implementation "androidx.webkit:webkit:1.12.1"
 
     implementation 'commons-io:commons-io:2.11.0'
 

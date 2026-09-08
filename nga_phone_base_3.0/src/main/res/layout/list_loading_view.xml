@@ -1,31 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/loading_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_gravity="center"
-    android:layout_marginBottom="8dp"
-    android:background="@color/window_background"
-    android:gravity="center"
-    android:orientation="vertical">
+    android:background="@color/window_background">
 
-    <ProgressBar
-        android:id="@+id/progress"
-        style="@android:style/Widget.Material.ProgressBar"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:indeterminateTint="?attr/colorAccent"
-        android:indeterminateTintMode="src_in" />
-
-    <TextView
-        android:id="@+id/saying"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="32dp"
+        android:orientation="vertical"
         android:gravity="center"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="15sp" />
-</LinearLayout>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.375">
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/progress"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:indeterminate="true"
+            app:indicatorColor="?attr/colorAccent"
+            app:indicatorSize="52dp"
+            app:trackColor="@android:color/transparent"
+            app:trackThickness="5dp" />
+
+        <TextView
+            android:id="@+id/saying"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="32dp"
+            android:gravity="center"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="15sp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

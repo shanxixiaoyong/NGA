@@ -24,6 +24,65 @@
         androidnga:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/menu_linuxdo_quick_menu"
+        android:icon="@drawable/ic_more_ver_24dp"
+        android:title="更多"
+        android:visible="false"
+        androidnga:showAsAction="always" />
+
+    <item
+        android:id="@+id/menu_sub_board"
+        android:icon="@drawable/btn_ic_search"
+        android:title="@string/menu_sub_board"
+        androidnga:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_linuxdo_notifications"
+        android:icon="@drawable/btn_ic_mail"
+        android:title="通知"
+        android:visible="false"
+        androidnga:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_linuxdo_profile"
+        android:title="我的资料"
+        android:visible="false"
+        androidnga:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_linuxdo_login"
+        android:title="登录"
+        android:visible="false"
+        androidnga:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_linuxdo_filters"
+        android:title="屏蔽设置"
+        android:visible="false"
+        androidnga:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_linuxdo_doh"
+        android:title="专用 DNS"
+        android:visible="false"
+        androidnga:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_linuxdo_settings"
+        android:title="LINUX DO 设置"
+        android:visible="false"
+        androidnga:showAsAction="never" />
+
+    <!-- LinuxDo actions are intentionally flat in the board overflow.  Keep the
+         legacy settings id above for old deep links, but do not expose a nested
+         “LINUX DO 设置” screen from a LinuxDo topic list. -->
+    <item
+        android:id="@+id/menu_linuxdo_categories"
+        android:title="子板块"
+        android:visible="false"
+        androidnga:showAsAction="never" />
+
+    <item
         android:id="@+id/menu_twenty_four"
         android:icon="@drawable/btn_ic_search"
         android:title="@string/twenty_four"
@@ -44,12 +103,6 @@
         android:id="@+id/menu_recommend"
         android:icon="@drawable/btn_ic_search"
         android:title="@string/menu_recommend"
-        androidnga:showAsAction="never" />
-
-    <item
-        android:id="@+id/menu_sub_board"
-        android:icon="@drawable/btn_ic_search"
-        android:title="@string/menu_sub_board"
         androidnga:showAsAction="never" />
 
     <item

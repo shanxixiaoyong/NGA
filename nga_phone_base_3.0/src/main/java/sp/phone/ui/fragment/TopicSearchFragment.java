@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.appcompat.app.AlertDialog;
 
 import com.alibaba.android.arouter.launcher.ARouter;
 import com.alibaba.fastjson.JSON;
@@ -25,6 +26,8 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.activity.BaseActivity;
+import gov.anzong.androidnga.activity.compose.topic.TopicLocalState;
+import gov.anzong.androidnga.activity.compose.topic.TopicReadProgress;
 import gov.anzong.androidnga.arouter.ARouterConstants;
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.base.widget.DividerItemDecorationEx;
@@ -40,6 +43,7 @@ import sp.phone.param.ParamKey;
 import sp.phone.param.TopicListParam;
 import sp.phone.param.ContentSource;
 import sp.phone.linuxdo.LinuxDoNavigation;
+import sp.phone.linuxdo.LinuxDoRepository;
 import sp.phone.ui.adapter.BaseAppendableAdapter;
 import sp.phone.ui.adapter.ReplyListAdapter;
 import sp.phone.ui.adapter.TopicListAdapter;
@@ -188,14 +192,19 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
             }
         });
 
+        mPresenter.getTopicListMetadata().observe(getViewLifecycleOwner(), metadata -> {
+            if (metadata == null || !(mAdapter instanceof TopicListAdapter)) return;
+            ((TopicListAdapter) mAdapter).updateMetadata(metadata);
+        });
+
         mPresenter.getNextTopicList().observe(getViewLifecycleOwner(), this::setData);
 
         mPresenter.getErrorMsg().observe(getViewLifecycleOwner(), res -> {
             if (mRequestParam.source == ContentSource.LINUX_DO
                     && res != null
                     && res.contains("会话已失效")) {
-                LinuxDoNavigation.openVerification(requireContext());
-                requireActivity().finish();
+                showToast("访问被网络盾拦截；请从右上角“网络验证”手动验证");
+                setNextPageEnabled(false);
                 return;
             }
             showToast(res);
@@ -294,15 +303,17 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
         TextView hideTopic = content.findViewById(R.id.action_hide_topic);
         TextView followTopic = content.findViewById(R.id.action_follow_topic);
         TextView hideBoard = content.findViewById(R.id.action_hide_board);
+        TextView hideTag = content.findViewById(R.id.action_hide_tag);
+        View hideTagDivider = content.findViewById(R.id.divider_hide_tag);
         hideTopic.setOnClickListener(ignored -> {
             dialog.dismiss();
             adapter.hideTopic(topic);
         });
-        followTopic.setText(adapter.isTopicFollowed(topic)
-                ? R.string.unfollow_topic : R.string.follow_topic);
+        followTopic.setText("跳转板块");
         followTopic.setOnClickListener(ignored -> {
             dialog.dismiss();
-            adapter.toggleFollowTopic(topic);
+            sp.phone.linuxdo.LinuxDoNavigation.openTopicBoard(
+                    requireContext(), mRequestParam.source, topic.getFid(), boardName, null);
         });
         hideBoard.setEnabled(topic.getFid() != 0);
         hideBoard.setAlpha(topic.getFid() == 0 ? 0.38f : 1f);
@@ -310,6 +321,23 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
             if (topic.getFid() == 0) return;
             dialog.dismiss();
             adapter.hideBoard(topic, boardName);
+        });
+        java.util.List<String> tags = adapter.tagNames(topic);
+        boolean canHideTag = mRequestParam.source == ContentSource.LINUX_DO && !tags.isEmpty();
+        hideTag.setVisibility(canHideTag ? View.VISIBLE : View.GONE);
+        hideTagDivider.setVisibility(canHideTag ? View.VISIBLE : View.GONE);
+        hideTag.setOnClickListener(ignored -> {
+            if (!canHideTag) return;
+            dialog.dismiss();
+            if (tags.size() == 1) {
+                adapter.hideTag(tags.get(0));
+            } else {
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("选择要屏蔽的标签")
+                        .setItems(tags.toArray(new String[0]), (selector, which) ->
+                                adapter.hideTag(tags.get(which)))
+                        .show();
+            }
         });
         dialog.setCancelable(true);
         dialog.setCanceledOnTouchOutside(true);
@@ -352,11 +380,37 @@ public class TopicSearchFragment extends BaseFragment implements View.OnClickLis
             param.tid = info.getTid();
             param.page = info.getPage();
             param.title = StringUtils.unEscapeHtml(info.getSubject());
+            if (requestParam.source == ContentSource.LINUX_DO) {
+                // Topic-list reply_count excludes the original post, while the article stream
+                // includes it. Never reuse a snapshot whose floor directory is older than the
+                // row the user just tapped.
+                LinuxDoRepository.getInstance().invalidateTopicIfBehind(
+                        info.getTid(), Math.max(1, info.getReplies() + 1));
+                TopicReadProgress progress = new TopicLocalState(ContentSource.LINUX_DO)
+                        .readProgress(info.getTid());
+                if (progress != null) {
+                    int knownReplies = Math.max(Math.max(0, info.getReplies()),
+                            Math.max(progress.getObservedReplies(), progress.getHighestReadFloor()));
+                    int targetFloor = UnreadJumpPolicy.restoreFloor(
+                            progress.getHighestReadFloor(), knownReplies);
+                    if (targetFloor != UnreadJumpPolicy.NO_TARGET) {
+                        param.targetFloor = targetFloor;
+                        param.page = UnreadJumpPolicy.serverPageForFloor(targetFloor);
+                    }
+                }
+                // Begin the exact destination page before Activity inflation. The destination
+                // joins the same repository request/cache, so this does not duplicate traffic.
+                LinuxDoRepository.getInstance().prefetchArticle(info.getTid(), param.page);
+            }
             if (requestParam.searchPost != 0) {
                 param.pid = info.getPid();
                 param.authorId = info.getAuthorId();
                 param.searchPost = requestParam.searchPost;
             }
+            // Persist the source before serializing the history row. This is important for
+            // LinuxDo: an upgraded history entry must reopen through the LinuxDo parser rather
+            // than silently falling back to the NGA request path.
+            info.setSource(requestParam.source);
             param.topicInfo = JSON.toJSONString(info);
 
             Intent intent = new Intent();

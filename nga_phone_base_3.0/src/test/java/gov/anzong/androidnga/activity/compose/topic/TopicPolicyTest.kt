@@ -43,4 +43,11 @@ class TopicPolicyTest {
         )
         assertEquals(null, TopicLocalState.decodeProgressEntry("broken"))
     }
+
+    @Test
+    fun linuxDoFilterTextIsTrimmedAndCaseNormalized() {
+        assertEquals("人工智能", TopicLocalState.normalizeFilterText("  人工智能  "))
+        assertEquals("linux", TopicLocalState.normalizeFilterText("LiNuX"))
+        assertEquals("", TopicLocalState.normalizeFilterText(null))
+    }
 }

@@ -1,6 +1,7 @@
 package gov.anzong.androidnga.core.corebuild;
 
 import java.util.List;
+import java.util.Locale;
 
 import gov.anzong.androidnga.core.data.AttachmentData;
 import gov.anzong.androidnga.core.data.HtmlData;
@@ -27,14 +28,35 @@ public class HtmlAttachmentBuilder implements IHtmlBuild {
     private static StringBuilder buildVideoAttachment(
             StringBuilder ret, AttachmentData attachment, String attachmentsPrefix) {
         String url = attachment.getAttachUrl();
-        ret.append("<tr><td><a href='")
-                .append(attachmentsPrefix)
-                .append("/")
-                .append(url)
-                .append("'>")
-                .append("nga_video.mp4</a>")
-                .append("</td></tr>");
+        String source = escapeAttribute(attachmentsPrefix + "/" + url);
+        // Keep a normal link inside the video element as a provider/browser fallback. WebView
+        // can play common NGA attachment formats inline, while older providers still expose the
+        // original attachment instead of silently dropping it.
+        ret.append("<tr><td><video controls='controls' preload='metadata' playsinline "
+                + "style='display:block;max-width:100%;width:auto;height:auto;background:#000'>")
+                .append("<source src='").append(source).append("'>")
+                .append("<a href='").append(source).append("'>nga_video</a>")
+                .append("</video></td></tr>");
         return ret;
+    }
+
+    private static boolean isVideoAttachment(String attachUrl) {
+        String normalized = attachUrl.toLowerCase(Locale.ROOT);
+        // Keep the original broad MP4 match because NGA has historically returned attachment
+        // paths whose generated name did not contain a dot before the extension. The other
+        // formats use the same token matching so query strings and CDN rewriting do not hide the
+        // media type.
+        return normalized.contains("mp4") || normalized.contains("webm")
+                || normalized.contains("mov") || normalized.contains("m4v")
+                || normalized.contains("m3u8");
+    }
+
+    private static String escapeAttribute(String value) {
+        if (value == null) return "";
+        return value.replace("&", "&amp;")
+                .replace("'", "&#39;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 
     private static StringBuilder buildImageAttachment(
@@ -81,9 +103,12 @@ public class HtmlAttachmentBuilder implements IHtmlBuild {
 
         for (AttachmentData attach : htmlData.getAttachmentList()) {
             String attachUrl = attach.getAttachUrl();
-            if (attachUrl.contains("mp3")) {
+            if (attachUrl == null || attachUrl.trim().isEmpty()) {
+                continue;
+            }
+            if (attachUrl.toLowerCase(Locale.ROOT).contains("mp3")) {
                 ret = buildAudioAttachment(ret, attach, attachmentsPrefix);
-            } else if (attachUrl.contains("mp4")) {
+            } else if (isVideoAttachment(attachUrl)) {
                 ret = buildVideoAttachment(ret, attach, attachmentsPrefix);
             } else {
                 imageAttachmentCount++;

@@ -8,6 +8,7 @@ import androidx.annotation.ColorInt;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import gov.anzong.androidnga.R;
@@ -129,9 +130,12 @@ public class HtmlUtils {
             // String url = "http://img.nga.178.com/attachments/" +
             // entry.getValue().getAttachurl();
             String attachUrl = entry.getValue().getAttachurl();
-            if (attachUrl.contains("mp3")) {
+            if (attachUrl == null || attachUrl.trim().isEmpty()) {
+                continue;
+            }
+            if (attachUrl.toLowerCase(Locale.ROOT).contains("mp3")) {
                 ret = buildAudioAttachment(ret, entry.getValue());
-            } else if (attachUrl.contains("mp4")) {
+            } else if (isVideoAttachment(attachUrl)) {
                 ret = buildVideoAttachment(ret, entry.getValue());
             } else {
                 imageAttachmentCount++;
@@ -163,14 +167,29 @@ public class HtmlUtils {
 
     private static StringBuilder buildVideoAttachment(StringBuilder ret, Attachment attachment) {
         String url = attachment.getAttachurl();
-        ret.append("<tr><td><a href='")
-                .append(NgaImageHost.attachmentsPrefix())
-                .append("/")
-                .append(url)
-                .append("'>")
-                .append("nga_video.mp4</a>")
-                .append("</td></tr>");
+        String source = escapeAttribute(NgaImageHost.attachmentsPrefix() + "/" + url);
+        ret.append("<tr><td><video controls='controls' preload='metadata' playsinline "
+                + "style='display:block;max-width:100%;width:auto;height:auto;background:#000'>")
+                .append("<source src='").append(source).append("'>")
+                .append("<a href='").append(source).append("'>nga_video</a>")
+                .append("</video></td></tr>");
         return ret;
+    }
+
+    private static boolean isVideoAttachment(String attachUrl) {
+        String normalized = attachUrl.toLowerCase(Locale.ROOT);
+        // Match the legacy MP4 behavior as well as extensionless/query-string CDN paths.
+        return normalized.contains("mp4") || normalized.contains("webm")
+                || normalized.contains("mov") || normalized.contains("m4v")
+                || normalized.contains("m3u8");
+    }
+
+    private static String escapeAttribute(String value) {
+        if (value == null) return "";
+        return value.replace("&", "&amp;")
+                .replace("'", "&#39;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 
     private static StringBuilder buildImageAttachment(StringBuilder ret, Attachment attachment, int index, List<String> imageUrls) {

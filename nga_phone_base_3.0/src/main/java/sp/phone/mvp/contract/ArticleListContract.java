@@ -63,6 +63,11 @@ public interface ArticleListContract {
 
         void loadPage(ArticleListParam param, Map<String, String> header, OnHttpCallBack<ThreadData> callBack);
 
+        /**
+         * Recover one failed native THREAD.PAGE request from NGA's noBBCode
+         * web page. The implementation must return the same ThreadData shape
+         * as the native parser; it must not expose rendered web HTML to the UI.
+         */
         void loadWebFallbackPage(ArticleListParam param, OnHttpCallBack<ThreadData> callBack);
 
         void cachePage(ArticleListParam param, String rawData);

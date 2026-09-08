@@ -17,7 +17,6 @@ import java.util.List;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import gov.anzong.androidnga.common.util.NgaImageHost;
-import sp.phone.linuxdo.LinuxDoDohConfig;
 
 public class DefaultSettingsContractTest {
 
@@ -29,7 +28,6 @@ public class DefaultSettingsContractTest {
 
         assertDefault(document, "nga_domain", "1");
         assertDefault(document, "pref_image_domain", "0");
-        assertDefault(document, "pref_linux_do_doh_url", LinuxDoDohConfig.DEFAULT_URL);
         assertDefault(document, "nightmode", "false");
         assertDefault(document, "key_night_mode_follow_system",
                 Boolean.toString(Constants.NIGHT_MODE_FOLLOW_SYSTEM_DEFAULT));
@@ -55,6 +53,8 @@ public class DefaultSettingsContractTest {
 
         assertMissingPreference(document, "left_hand");
         assertMissingPreference(document, "bottom_tab");
+        assertMissingPreference(document, "pref_linux_do_doh_url");
+        assertMissingPreference(document, "pref_linux_do_filters");
     }
 
     /**
@@ -120,8 +120,7 @@ public class DefaultSettingsContractTest {
                 "PreferenceCategory:发帖设置",
                 "PreferenceScreen:实验室");
         assertCategory(preferenceScreen, "域名与账号",
-                "nga_domain", "pref_image_domain", "pref_linux_do_doh_url",
-                "pref_user_compose");
+                "nga_domain", "pref_image_domain", "pref_user_compose");
         assertCategory(preferenceScreen, "外观设置",
                 "nightmode", "key_night_mode_follow_system", "use_solid_color_bg",
                 "material_theme", "adjust_size");

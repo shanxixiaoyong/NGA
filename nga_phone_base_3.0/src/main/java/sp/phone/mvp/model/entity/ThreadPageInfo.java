@@ -6,6 +6,9 @@ import gov.anzong.androidnga.common.base.JavaBean;
 
 public class ThreadPageInfo implements JavaBean {
 
+    /** Persisted origin so mixed NGA/LINUX DO history can reopen through the right parser. */
+    private int mSource;
+
     private int mTid;
 
     private String mAuthor;
@@ -44,6 +47,11 @@ public class ThreadPageInfo implements JavaBean {
 
     private String mTags;
 
+    private String mVisibility;
+
+    /** Optional source-owned board/category icon URL used by external topic lists. */
+    private String mBoardIconUrl;
+
     private int mParentFid;
 
     /**
@@ -73,6 +81,14 @@ public class ThreadPageInfo implements JavaBean {
 
     public int getTid() {
         return mTid;
+    }
+
+    public int getSource() {
+        return mSource;
+    }
+
+    public void setSource(int source) {
+        mSource = source;
     }
 
     public void setTid(int tid) {
@@ -208,6 +224,22 @@ public class ThreadPageInfo implements JavaBean {
         mTags = tags;
     }
 
+    public String getVisibility() {
+        return mVisibility;
+    }
+
+    public void setVisibility(String visibility) {
+        mVisibility = visibility;
+    }
+
+    public String getBoardIconUrl() {
+        return mBoardIconUrl;
+    }
+
+    public void setBoardIconUrl(String boardIconUrl) {
+        mBoardIconUrl = boardIconUrl;
+    }
+
     public int getParentFid() {
         return mParentFid;
     }
@@ -283,7 +315,8 @@ public class ThreadPageInfo implements JavaBean {
     public boolean equals(Object obj) {
         return obj instanceof ThreadPageInfo
                 && mTid == ((ThreadPageInfo) obj).getTid()
-                && mPid == ((ThreadPageInfo) obj).getPid();
+                && mPid == ((ThreadPageInfo) obj).getPid()
+                && mSource == ((ThreadPageInfo) obj).getSource();
     }
 
     @NonNull

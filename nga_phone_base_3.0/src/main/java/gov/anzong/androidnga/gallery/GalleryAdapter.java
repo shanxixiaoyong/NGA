@@ -2,6 +2,7 @@ package gov.anzong.androidnga.gallery;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.widget.ImageView;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -13,6 +14,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.resource.gif.GifDrawable;
+import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.CustomTarget;
@@ -45,8 +47,17 @@ public class GalleryAdapter extends PagerAdapter {
     public View instantiateItem(ViewGroup container, int position) {
         PhotoView photoView = new PhotoView(container.getContext());
         photoView.setMaximumScale(10.0f);
+        // Let PhotoView fit the original drawable in the viewport. Glide's fit-center transform
+        // decodes only to the screen bounds, which makes the image visibly soft as soon as the
+        // user zooms. The gallery is an explicit full-image surface, so retain source pixels.
+        photoView.setScaleType(ImageView.ScaleType.FIT_CENTER);
         String url = mGalleryUrls[position];
-        Glide.with(mContext).load(url).listener(mRequestListener).apply(RequestOptions.fitCenterTransform()).into(photoView);
+        RequestOptions options = new RequestOptions()
+                .dontTransform()
+                .downsample(DownsampleStrategy.NONE)
+                .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
+                .dontAnimate();
+        Glide.with(mContext).load(url).listener(mRequestListener).apply(options).into(photoView);
         container.addView(photoView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         return photoView;
     }

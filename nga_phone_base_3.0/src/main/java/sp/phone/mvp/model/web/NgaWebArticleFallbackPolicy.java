@@ -29,8 +29,12 @@ public final class NgaWebArticleFallbackPolicy {
         if (!isAllowedBase(base)) {
             throw new IllegalArgumentException("Unsupported NGA domain");
         }
+        // noBBCode keeps the server's original UBB in postcontent.  The Android
+        // reader can then use the same image/emoticon decoder as THREAD.PAGE
+        // instead of trying to render a second, web-only HTML representation.
         StringBuilder query = new StringBuilder("page=")
-                .append(Math.max(1, param.page));
+                .append(Math.max(1, param.page))
+                .append("&noBBCode");
         if (param.tid > 0) query.append("&tid=").append(param.tid);
         if (param.pid > 0) query.append("&pid=").append(param.pid);
         if (param.authorId != 0) query.append("&authorid=").append(param.authorId);

@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import org.junit.Before;
@@ -197,6 +198,32 @@ public class ArticleConvertFactoryTest {
 
         assertNull(outcome.getDiagnostic());
         assertNotNull(outcome.getData());
+    }
+
+    @Test
+    public void output11ArrayShapeParsesThreadRowsAndUsers() {
+        String payload = "{\"data\":{" +
+                "\"__ROWS\":1,\"__R__ROWS\":1,"
+                + "\"__T\":[{\"tid\":123,\"fid\":7,\"subject\":\"topic\",\"replies\":0}],"
+                + "\"__R\":[{\"tid\":123,\"fid\":7,\"pid\":99,\"authorid\":42,"
+                + "\"author\":\"tester\",\"postdate\":1,\"lou\":0,"
+                + "\"subject\":\"topic\",\"content\":\"body\","
+                + "\"__WEB_FALLBACK_HTML\":true}],"
+                + "\"__U\":[]}}";
+
+        ArticleConvertFactory.ParseOutcome outcome =
+                ArticleConvertFactory.parseWebArticleInfo(payload, 18, false, true);
+
+        assertNull(outcome.getDiagnostic());
+        assertNotNull(outcome.getData());
+        assertEquals(123, outcome.getData().getThreadInfo().getTid());
+        assertEquals(1, outcome.getData().getRowList().size());
+        assertEquals(99, outcome.getData().getRowList().get(0).getPid());
+
+        JSONObject users = ArticleConvertFactory.userRecordMap(
+                JSON.parseArray("[{\"uid\":42,\"username\":\"tester\"}]"));
+        assertNotNull(users);
+        assertEquals("tester", users.getJSONObject("42").getString("username"));
     }
 
     @Test

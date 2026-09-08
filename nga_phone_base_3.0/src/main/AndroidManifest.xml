@@ -53,6 +53,7 @@
         <activity
             android:name=".activity.LinuxDoSessionActivity"
             android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
         <activity
             android:name=".activity.PostActivity"
@@ -174,6 +175,9 @@
         </activity>
         <activity android:name=".gallery.ImageZoomActivity" />
         <activity android:name=".activity.RecentNotificationActivity" />
+        <activity
+            android:name="sp.phone.linuxdo.LinuxDoHubActivity"
+            android:exported="false" />
         <activity android:name=".activity.LauncherSubActivity" />
 
         <activity android:name=".activity.compose.TemplateComposeActivity" />

@@ -132,7 +132,17 @@ public class TopicListModel extends BaseModel implements TopicListContract.Model
     public void loadTopicList(final int page, TopicListParam param, final OnHttpCallBack<TopicListInfo> callBack) {
         if (param.source == ContentSource.LINUX_DO) {
             try {
-                LinuxDoRepository.getInstance().loadTopics(page, callBack);
+                LinuxDoRepository repository = LinuxDoRepository.getInstance();
+                if ((param.linuxDoCategorySlug != null
+                        && !param.linuxDoCategorySlug.trim().isEmpty())
+                        || param.linuxDoCategoryId > 0) {
+                    repository.loadTopics(page, param.linuxDoCategorySlug,
+                            param.linuxDoCategoryId,
+                            LinuxDoRepository.Feed.fromCode(param.linuxDoFeed), callBack);
+                } else {
+                    repository.loadTopics(page, null, 0,
+                            LinuxDoRepository.Feed.fromCode(param.linuxDoFeed), callBack);
+                }
             } catch (RuntimeException | LinkageError error) {
                 callBack.onError("LINUX DO 初始化失败，请稍后重试");
             }
@@ -145,7 +155,6 @@ public class TopicListModel extends BaseModel implements TopicListContract.Model
                 .map(new Function<String, TopicListInfo>() {
                     @Override
                     public TopicListInfo apply(@NonNull String js) throws Exception {
-                        //NLog.d(js);
                         TopicListInfo result = mConvertFactory.getTopicListInfo(js, page);
                         if (result != null) {
                             return result;

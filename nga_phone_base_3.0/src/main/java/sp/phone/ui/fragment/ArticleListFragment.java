@@ -3,6 +3,7 @@ package sp.phone.ui.fragment;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -29,9 +30,13 @@ import gov.anzong.androidnga.activity.BaseActivity;
 import gov.anzong.androidnga.activity.compose.topic.TopicLocalState;
 import gov.anzong.androidnga.arouter.ARouterConstants;
 import io.reactivex.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import sp.phone.common.PhoneConfiguration;
 import sp.phone.common.User;
 import sp.phone.common.UserManagerImpl;
+import sp.phone.http.bean.PostReaction;
 import sp.phone.http.bean.ThreadData;
 import sp.phone.http.bean.ThreadRowInfo;
 import sp.phone.linuxdo.LinuxDoActionDialogs;
@@ -62,6 +67,7 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     private static final String TAG = ArticleListFragment.class.getSimpleName();
     private static final int MENU_LINUXDO_REPLY = 10_001;
     private static final int MENU_LINUXDO_BOOST = 10_002;
+    private static final long LINUX_DO_CONTENT_READY_TIMEOUT_MS = 3_500L;
 
     @BindView(R.id.list)
     public RecyclerViewEx mListView;
@@ -85,8 +91,18 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     private int mRestoreMarkerFloor = RecyclerView.NO_POSITION;
 
     private boolean mHasArticleData;
+    private boolean mHasCompleteArticleData;
+
+    /** Header information retained for article-level actions such as “跳到本板块”. */
+    private sp.phone.mvp.model.entity.ThreadPageInfo mThreadInfo;
 
     protected ArticleListParam mRequestParam;
+
+    private final Runnable mLinuxDoContentReadyTimeout = () -> {
+        if (mRequestParam != null && mRequestParam.source == ContentSource.LINUX_DO) {
+            hideLoadingView();
+        }
+    };
 
     private OnTopicMenuItemClickListener mMenuItemClickListener = new OnTopicMenuItemClickListener() {
 
@@ -181,12 +197,12 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
                 popupMenu.getMenu().add(Menu.NONE, MENU_LINUXDO_BOOST, 1, "Boost 回复");
                 popupMenu.setOnMenuItemClickListener(item -> {
                     if (item.getItemId() == MENU_LINUXDO_REPLY) {
-                        showLinuxDoReply(row);
+                        showLinuxDoReply(view, row);
                         return true;
                     }
                     if (item.getItemId() == MENU_LINUXDO_BOOST) {
                         LinuxDoActionDialogs.showBoost(
-                                requireContext(), row.getTid(), row.getPid(),
+                                requireContext(), view, row.getTid(), row.getPid(),
                                 ArticleListFragment.this::loadPage);
                         return true;
                     }
@@ -236,20 +252,8 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         public void onClick(View view) {
             if (mRequestParam.source == ContentSource.LINUX_DO) {
                 ThreadRowInfo row = (ThreadRowInfo) view.getTag();
-                LinuxDoRepository.getInstance().likePost(
-                        row.getTid(), row.getPid(), new LinuxDoRepository.MutationCallback() {
-                            @Override
-                            public void onSuccess() {
-                                row.setScore(row.getScore() + 1);
-                                mArticleAdapter.notifyDataSetChanged();
-                                showToast("点赞成功");
-                            }
-
-                            @Override
-                            public void onError(String message) {
-                                showToast(message);
-                            }
-                        });
+                if (row == null) return;
+                showLinuxDoReactionPicker(view, row);
                 return;
             }
             ThreadRowInfo row = ((ThreadRowInfo) view.getTag());
@@ -261,13 +265,101 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         @Override
         public void onClick(View view) {
             if (mRequestParam.source == ContentSource.LINUX_DO) {
-                showToast("LINUX DO 暂不支持点踩");
+                ThreadRowInfo row = (ThreadRowInfo) view.getTag();
+                if (row == null) return;
+                showLinuxDoReactionPicker(view, row);
                 return;
             }
             ThreadRowInfo row = ((ThreadRowInfo) view.getTag());
             mPresenter.postOpposeTask(row.getTid(), row.getPid());
         }
     };
+
+    private View.OnClickListener mReactionListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            if (mRequestParam == null || mRequestParam.source != ContentSource.LINUX_DO) return;
+            ThreadRowInfo row = (ThreadRowInfo) view.getTag();
+            if (row != null) showLinuxDoReactionPicker(view, row);
+        }
+    };
+
+    private void showLinuxDoReactionPicker(View anchor, ThreadRowInfo row) {
+        LinkedHashSet<String> ids = new LinkedHashSet<>();
+        ids.addAll(LinuxDoRepository.getInstance().getEnabledReactions());
+        if (row.getReactions() != null) {
+            for (PostReaction reaction : row.getReactions()) {
+                if (reaction != null && !StringUtils.isEmpty(reaction.getId())) {
+                    ids.add(reaction.getId());
+                }
+            }
+        }
+        LinuxDoActionDialogs.showReactionPicker(
+                requireContext(), anchor, new ArrayList<>(ids), row.getCurrentReaction(),
+                selected -> toggleLinuxDoReaction(anchor, row, selected));
+    }
+
+    private void toggleLinuxDoReaction(View sourceView, ThreadRowInfo row, String reactionId) {
+        if (StringUtils.isEmpty(reactionId)) return;
+        if (sourceView != null) sourceView.setEnabled(false);
+        LinuxDoRepository.getInstance().toggleReaction(
+                row.getTid(), row.getPid(), reactionId,
+                new LinuxDoRepository.MutationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        boolean removing = reactionId.equalsIgnoreCase(
+                                row.getCurrentReaction() == null ? "" : row.getCurrentReaction());
+                        applyLocalReactionToggle(row, reactionId);
+                        if (mArticleAdapter != null) mArticleAdapter.notifyRowChanged(row);
+                        if (sourceView != null) sourceView.setEnabled(true);
+                        LinuxDoActionDialogs.showReactionFeedback(
+                                requireContext(), sourceView, reactionId, removing);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        if (sourceView != null) sourceView.setEnabled(true);
+                        showToast(message);
+                    }
+                });
+    }
+
+    /** Mirrors Discourse's one-current-reaction projection until the next page refresh. */
+    private static void applyLocalReactionToggle(ThreadRowInfo row, String reactionId) {
+        List<PostReaction> current = row.getReactions() == null
+                ? new ArrayList<>() : row.getReactions();
+        List<PostReaction> updated = new ArrayList<>(current.size() + 1);
+        String previous = row.getCurrentReaction();
+        boolean removing = previous != null && reactionId.equalsIgnoreCase(previous);
+        boolean found = false;
+        for (PostReaction reaction : current) {
+            if (reaction == null || StringUtils.isEmpty(reaction.getId())) continue;
+            PostReaction copy = reaction.copy();
+            if (previous != null && reaction.getId().equalsIgnoreCase(previous) && !removing) {
+                copy.setCount(copy.getCount() - 1);
+                copy.setReacted(false);
+            }
+            if (reaction.getId().equalsIgnoreCase(reactionId)) {
+                found = true;
+                if (removing) {
+                    copy.setCount(copy.getCount() - 1);
+                    copy.setReacted(false);
+                } else {
+                    copy.setCount(copy.getCount() + 1);
+                    copy.setReacted(true);
+                }
+            }
+            if (copy.getCount() > 0) updated.add(copy);
+        }
+        if (!removing && !found) {
+            updated.add(new PostReaction(reactionId, "emoji", 1, true));
+        }
+        row.setReactions(updated);
+        row.setCurrentReaction(removing ? null : reactionId);
+        if (PostReaction.isMainLikeId(reactionId)) {
+            row.setLikedByViewer(!removing);
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -306,13 +398,15 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     private boolean isOnlineTopicPagerPage() {
         return !mRequestParam.loadCache
                 && mRequestParam.searchPost == 0
+                && (mRequestParam.source == ContentSource.NGA
+                || mRequestParam.source == ContentSource.LINUX_DO)
                 && getParentFragment() instanceof ArticleTabFragment;
     }
 
     @Override
     protected void accept(@NonNull RxEvent rxEvent) {
         if (rxEvent.what == RxEvent.EVENT_ARTICLE_GO_FLOOR
-                && rxEvent.arg + 1 == mRequestParam.page
+                && rxEvent.arg == mRequestParam.page
                 && rxEvent.obj != null) {
             mListView.scrollToPosition((Integer) rxEvent.obj);
         }
@@ -336,24 +430,73 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         mArticleAdapter = new ArticleListAdapter(getContext(),getActivity().getSupportFragmentManager());
         mArticleAdapter.setReadOnlyExternalSource(
                 mRequestParam.source == ContentSource.LINUX_DO);
+        mArticleAdapter.setExternalContentReadyListener(this::onLinuxDoContentReady);
         mArticleAdapter.setSupportListener(mSupportListener);
         mArticleAdapter.setOpposeListener(mOpposeListener);
+        mArticleAdapter.setReactionListener(mReactionListener);
         mArticleAdapter.setMenuTogglerListener(mMenuTogglerListener);
         mArticleAdapter.setExternalReplyListener(view1 -> {
             ThreadRowInfo row = (ThreadRowInfo) view1.getTag();
             if (row == null) return;
+            showLinuxDoReply(view1, row);
+        });
+        mArticleAdapter.setExternalBoostListener(view1 -> {
+            ThreadRowInfo row = (ThreadRowInfo) view1.getTag();
+            if (row == null) return;
             LinuxDoActionDialogs.showBoost(
-                    requireContext(), row.getTid(), row.getPid(), this::loadPage);
+                    requireContext(), view1, row.getTid(), row.getPid(), this::loadPage);
+        });
+        mArticleAdapter.setExternalPollVoteListener((source, row, poll, optionIds) -> {
+            source.setEnabled(false);
+            LinuxDoRepository.getInstance().votePoll(
+                    row.getTid(), row.getPid(), poll.getName(), optionIds,
+                    new LinuxDoRepository.MutationCallback() {
+                        @Override
+                        public void onSuccess() {
+                            source.setEnabled(true);
+                            ActivityUtils.showToast("投票已更新");
+                            loadPage();
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            source.setEnabled(true);
+                            ActivityUtils.showToast(message);
+                        }
+                    });
         });
         mListView.setLayoutManager(new LinearLayoutManager(getContext()));
+        // Keep the existing holder cache: external floor WebViews are detached and reused by the
+        // adapter, so lowering this cache would force expensive holder/WebView reattachment while
+        // flinging through a page.
         mListView.setItemViewCacheSize(20);
         mListView.setAdapter(mArticleAdapter);
         mListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(
                     @androidx.annotation.NonNull RecyclerView recyclerView, int newState) {
+                mArticleAdapter.setListScrolling(newState != RecyclerView.SCROLL_STATE_IDLE);
+                LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (manager != null) {
+                    mArticleAdapter.setVisibleRange(
+                            manager.findFirstVisibleItemPosition(),
+                            manager.findLastVisibleItemPosition());
+                }
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     recordHighestExposedFloor();
+                }
+            }
+
+            @Override
+            public void onScrolled(
+                    @androidx.annotation.NonNull RecyclerView recyclerView,
+                    int dx,
+                    int dy) {
+                LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (manager != null) {
+                    mArticleAdapter.setVisibleRange(
+                            manager.findFirstVisibleItemPosition(),
+                            manager.findLastVisibleItemPosition());
                 }
             }
         });
@@ -378,15 +521,16 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         notifyArticlePageReady();
     }
 
-    private void showLinuxDoReply(ThreadRowInfo row) {
+    private void showLinuxDoReply(View anchor, ThreadRowInfo row) {
         if (row == null) return;
         LinuxDoActionDialogs.showReply(
-                requireContext(), row.getTid(), row.getLou() + 1,
+                requireContext(), anchor, row.getTid(), row.getLou() + 1,
                 this::loadPage);
     }
 
     private boolean isReadProgressEligible() {
-        return mRequestParam != null && UnreadJumpPolicy.isEligibleRoute(
+        return mRequestParam != null && !mRequestParam.topLikedPage
+                && UnreadJumpPolicy.isEligibleRoute(
                 mRequestParam.tid,
                 mRequestParam.pid,
                 mRequestParam.authorId,
@@ -492,11 +636,11 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     }
 
     private void positionPendingRestoreFloor() {
-        if (!mHasArticleData || mPendingRestoreFloor == RecyclerView.NO_POSITION
+        if (!mHasCompleteArticleData || mPendingRestoreFloor == RecyclerView.NO_POSITION
                 || mListView == null || mArticleAdapter == null) {
             return;
         }
-        final int position = mArticleAdapter.findPositionForFloor(mPendingRestoreFloor);
+        final int position = mArticleAdapter.findPositionForRestoreFloor(mPendingRestoreFloor);
         mPendingRestoreFloor = RecyclerView.NO_POSITION;
         if (position == RecyclerView.NO_POSITION) {
             notifyAutomaticRestoreFinished(false);
@@ -530,6 +674,20 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         }
     }
 
+    private void notifyArticlePagePreview() {
+        if (getParentFragment() instanceof ArticleTabFragment) {
+            ((ArticleTabFragment) getParentFragment()).onArticlePagePreview(
+                    this, mRequestParam == null ? 0 : mRequestParam.page);
+        }
+    }
+
+    private void notifyArticlePageDataReady() {
+        if (getParentFragment() instanceof ArticleTabFragment) {
+            ((ArticleTabFragment) getParentFragment()).onArticlePageDataReady(
+                    this, mRequestParam == null ? 0 : mRequestParam.page);
+        }
+    }
+
     private void notifyAutomaticRestoreFinished(boolean positioned) {
         if (getParentFragment() instanceof ArticleTabFragment) {
             ((ArticleTabFragment) getParentFragment()).onAutomaticRestoreFinished(positioned);
@@ -546,13 +704,32 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
 
     @Override
     public void setData(ThreadData data) {
+        if (!isAdded() || getView() == null) return;
+        boolean progressivePreview = data != null && data.isProgressivePreview();
+        mHasCompleteArticleData = !progressivePreview && data != null
+                && data.getRowList() != null && !data.getRowList().isEmpty();
+        // Mark the partial payload before publishing its temporary one-row count. Otherwise
+        // ArticleTabFragment can finalize automatic restore against the preview and never retry
+        // when the complete page arrives.
+        if (progressivePreview) {
+            notifyArticlePagePreview();
+        }
         ArticleShareViewModel viewModel = getActivityViewModelProvider().get(ArticleShareViewModel.class);
         if (getActivity() != null && data != null) {
             viewModel.setReplyCount(data.get__ROWS());
             mObservedReplies = Math.max(0, data.get__ROWS() - 1);
+            if (mRequestParam.topLikedPage) {
+                mTopicLocalState.recordTopLikedPage(
+                        mRequestParam.tid, mObservedReplies, System.currentTimeMillis());
+            } else if (isReadProgressEligible()) {
+                mTopicLocalState.markChronologicalPageOpened(mRequestParam.tid);
+            }
         }
         if (data != null && getActivity() != null && mRequestParam.title == null) {
             getActivity().setTitle(data.getThreadInfo().getSubject());
+        }
+        if (data != null && data.getThreadInfo() != null) {
+            mThreadInfo = data.getThreadInfo();
         }
 
         if (data != null && data.getRowList() != null && !data.getRowList().isEmpty()) {
@@ -564,16 +741,37 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         if (mRequestParam.authorId == 0 && mRequestParam.searchPost == 0) {
             mArticleAdapter.setTopicOwner(viewModel.getTopicOwner().getValue());
         }
+        if (mRequestParam.source == ContentSource.LINUX_DO && mListView != null) {
+            mListView.removeCallbacks(mLinuxDoContentReadyTimeout);
+            mListView.postDelayed(
+                    mLinuxDoContentReadyTimeout, LINUX_DO_CONTENT_READY_TIMEOUT_MS);
+        }
         mArticleAdapter.setData(data);
         mArticleAdapter.notifyDataSetChanged();
         mHasArticleData = data != null && data.getRowList() != null;
         mListView.invalidateItemDecorations();
+        if (progressivePreview) {
+            return;
+        }
         positionPendingRestoreFloor();
+        notifyArticlePageDataReady();
+    }
+
+    /** Returns the source-native board/category header once the page has loaded. */
+    public sp.phone.mvp.model.entity.ThreadPageInfo getThreadInfo() {
+        return mThreadInfo;
     }
 
     @Override
     public void onDestroyView() {
         mHasArticleData = false;
+        mHasCompleteArticleData = false;
+        if (mListView != null) {
+            mListView.removeCallbacks(mLinuxDoContentReadyTimeout);
+        }
+        if (mArticleAdapter != null) {
+            mArticleAdapter.releaseWebViews();
+        }
         mBottomPageAdvanceGesture = null;
         super.onDestroyView();
     }
@@ -614,6 +812,20 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
         mSwipeRefreshLayout.setVisibility(View.VISIBLE);
     }
 
+    private void onLinuxDoContentReady() {
+        if (mRequestParam == null || mRequestParam.source != ContentSource.LINUX_DO) {
+            return;
+        }
+        if (mListView != null) {
+            mListView.removeCallbacks(mLinuxDoContentReadyTimeout);
+            // Let RecyclerView attach the preloaded WebViews and consume their first painted
+            // frame before replacing the full-screen loading layer.
+            mListView.postOnAnimation(this::hideLoadingView);
+            return;
+        }
+        hideLoadingView();
+    }
+
     interface OnTopicMenuItemClickListener extends PopupMenu.OnMenuItemClickListener {
 
         void setThreadRowInfo(ThreadRowInfo threadRowInfo);
@@ -624,6 +836,9 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
     private final class RestoreMarkerDecoration extends RecyclerView.ItemDecoration {
         private final Paint mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint mMaskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mBadgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF mBadgeBounds = new RectF();
         private final float mHorizontalPadding;
         private final float mVerticalPadding;
 
@@ -634,6 +849,11 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
             mTextPaint.setTextSize(13f * getResources().getDisplayMetrics().scaledDensity);
             mTextPaint.setColor(sp.phone.theme.ThemeManager.getInstance().getAccentColor(getContext()));
             mMaskPaint.setColor(ContextCompat.getColor(getContext(), R.color.background_color));
+            mLinePaint.setColor(ContextCompat.getColor(getContext(), R.color.text_color));
+            mLinePaint.setAlpha(48);
+            mLinePaint.setStrokeWidth(Math.max(1f, density));
+            mBadgePaint.setColor(ContextCompat.getColor(getContext(), R.color.background_color));
+            mBadgePaint.setStyle(Paint.Style.FILL);
         }
 
         @Override
@@ -657,6 +877,26 @@ public class ArticleListFragment extends BaseMvpFragment<ArticleListPresenter> i
                 float baseline = centerY - (metrics.ascent + metrics.descent) / 2f;
                 float textWidth = mTextPaint.measureText(label);
                 float centerX = parent.getWidth() / 2f;
+                if (mRequestParam != null && mRequestParam.source == ContentSource.LINUX_DO) {
+                    float left = centerX - textWidth / 2f - mHorizontalPadding;
+                    float top = baseline + metrics.ascent - mVerticalPadding * 2f;
+                    float right = centerX + textWidth / 2f + mHorizontalPadding;
+                    float bottom = baseline + metrics.descent + mVerticalPadding * 2f;
+                    canvas.drawLine(parent.getPaddingLeft(), centerY,
+                            parent.getWidth() - parent.getPaddingRight(), centerY, mLinePaint);
+                    mBadgeBounds.set(left, top, right, bottom);
+                    canvas.drawRoundRect(mBadgeBounds, bottom - top, bottom - top, mBadgePaint);
+                    Paint.Style previousStyle = mBadgePaint.getStyle();
+                    mBadgePaint.setStyle(Paint.Style.STROKE);
+                    mBadgePaint.setStrokeWidth(Math.max(1f,
+                            getResources().getDisplayMetrics().density));
+                    mBadgePaint.setColor(ThemeManager.getInstance().getAccentColor(getContext()));
+                    canvas.drawRoundRect(mBadgeBounds, bottom - top, bottom - top, mBadgePaint);
+                    mBadgePaint.setStyle(previousStyle);
+                    mBadgePaint.setColor(ContextCompat.getColor(getContext(), R.color.background_color));
+                    canvas.drawText(label, centerX - textWidth / 2f, baseline, mTextPaint);
+                    return;
+                }
                 canvas.drawRect(
                         centerX - textWidth / 2f - mHorizontalPadding,
                         baseline + metrics.ascent - mVerticalPadding,

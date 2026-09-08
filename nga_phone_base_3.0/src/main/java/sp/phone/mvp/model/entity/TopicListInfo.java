@@ -11,6 +11,9 @@ public class TopicListInfo {
 
     private List<ThreadPageInfo> mThreadPageList = new ArrayList<>();
 
+    /** True when this result only enriches rows already shown on screen. */
+    private boolean mMetadataOnly;
+
     public List<ThreadPageInfo> getThreadPageList() {
         return mThreadPageList;
     }
@@ -30,6 +33,14 @@ public class TopicListInfo {
 
     public void addThreadPage(ThreadPageInfo threadPage) {
         mThreadPageList.add(threadPage);
+    }
+
+    public boolean isMetadataOnly() {
+        return mMetadataOnly;
+    }
+
+    public void setMetadataOnly(boolean metadataOnly) {
+        mMetadataOnly = metadataOnly;
     }
 
     public void addSubBoard(SubBoard subBoard) {

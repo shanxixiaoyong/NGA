@@ -19,14 +19,6 @@
             android:key="pref_image_domain"
             android:title="@string/setting_image_domain" />
 
-        <EditTextPreference
-            android:defaultValue="https://cloudflare-dns.com/dns-query"
-            android:dialogTitle="LINUX DO 原生请求专用 DoH"
-            android:key="pref_linux_do_doh_url"
-            android:singleLine="true"
-            android:summary="用于原生帖子列表和正文请求；首次登录网页仍使用系统 DNS"
-            android:title="LINUX DO 原生请求专用 DoH" />
-
         <PreferenceScreen
             android:fragment="com.justwent.androidnga.bu.user.UserManagerFragment"
             android:key="pref_user_compose"

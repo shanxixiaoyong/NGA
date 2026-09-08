@@ -72,4 +72,10 @@ public interface RetrofitService {
     @GET
     Observable<String> get(@Url String url, @HeaderMap Map<String,String> map);
 
+    @GET
+    Observable<ResponseBody> getRaw(@Url String url);
+
+    @GET
+    Observable<ResponseBody> getRaw(@Url String url, @HeaderMap Map<String, String> map);
+
 }

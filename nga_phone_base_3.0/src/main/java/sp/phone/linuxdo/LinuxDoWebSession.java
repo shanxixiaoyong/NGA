@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.ViewGroup;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -26,9 +27,23 @@ import gov.anzong.androidnga.base.util.ContextUtils;
 /** Lazy, serialized, same-origin read transport for linux.do's browser session. */
 public final class LinuxDoWebSession {
 
+    private static final String TAG = "LinuxDoLoginWeb";
+
     public interface Callback {
         void onSuccess(String json);
         void onFailure(Failure failure);
+    }
+
+    /**
+     * Marker for callers whose success path immediately hands the payload to a background
+     * parser. Native transports may deliver successful responses on their worker thread and
+     * avoid a main-thread round trip; failures remain serialized on the main thread.
+     */
+    public interface BackgroundSuccessCallback extends Callback {
+    }
+
+    /** A small response that gates the first readable article frame. */
+    public interface CriticalSuccessCallback extends BackgroundSuccessCallback {
     }
 
     public enum Failure {
@@ -41,6 +56,23 @@ public final class LinuxDoWebSession {
 
     public interface PageListener {
         void onPageFinished();
+
+        /**
+         * Reports the finished main-frame URL when a caller needs to distinguish the login
+         * document from a post-login redirect. The default implementation keeps the original
+         * callback contract for list/browser owners that only care that a page is ready.
+         */
+        default void onPageFinished(String url) {
+            onPageFinished();
+        }
+
+        /**
+         * Reports a main-frame navigation error without exposing response bodies or cookies.
+         * Login uses this signal to leave the WebView TCP fallback when the current network
+         * only permits the native Cronet/QUIC path.
+         */
+        default void onPageError(String url, int errorCode, String description) {
+        }
     }
 
     private static final int CHUNK_SIZE = 64 * 1024;
@@ -54,6 +86,7 @@ public final class LinuxDoWebSession {
     private MutableContextWrapper mContextWrapper;
     private Request mActiveRequest;
     private PageListener mPageListener;
+    private boolean mKeepNavigationInWebView;
     private int mOwners;
     private long mRequestDeadline;
     private int mRequestGeneration;
@@ -99,9 +132,29 @@ public final class LinuxDoWebSession {
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             mPageListener = pageListener;
             Uri current = Uri.parse(mWebView.getUrl() == null ? "" : mWebView.getUrl());
-            if (!isExactOrigin(current)) {
+            // A login-only owner calls showLoginPage() explicitly. Do not start /latest in
+            // parallel: it can replace the login document while its challenge is running.
+            if (pageListener != null && !isExactOrigin(current)) {
                 mWebView.loadUrl(LinuxDoConstants.ORIGIN + "/latest");
             }
+        });
+    }
+
+    /**
+     * Attaches a newly-created WebView after a scoped proxy override has become active.
+     * Chromium may retain resolver/socket state on an existing instance, so explicit browser
+     * mode must not reuse the login/native-fetch WebView that existed before the DoH proxy.
+     */
+    public void attachFresh(Activity activity, ViewGroup container, PageListener pageListener) {
+        runOnMain(() -> {
+            destroy();
+            mMainHandler.removeCallbacks(mDestroyRunnable);
+            createWebView(activity);
+            mContextWrapper.setBaseContext(activity);
+            container.removeAllViews();
+            container.addView(mWebView, new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            mPageListener = pageListener;
         });
     }
 
@@ -117,10 +170,84 @@ public final class LinuxDoWebSession {
 
     public void showLoginPage() {
         runOnMain(() -> {
-            if (mWebView != null) {
-                mWebView.loadUrl(LinuxDoConstants.ORIGIN + "/login");
-            }
+            if (mWebView == null) return;
+            // Keep the login document, hCaptcha/Turnstile challenge and /session submission
+            // inside this exact WebView. Fetching HTML with OkHttp and attaching it through
+            // loadDataWithBaseURL splits the browser's challenge/cookie context and can leave
+            // a completed challenge spinning forever during login.
+            mWebView.loadUrl(LinuxDoConstants.ORIGIN + "/login");
         });
+    }
+
+    /** Flushes WebView cookies at a trusted session boundary. */
+    public void flushCookies(Runnable completion) {
+        runOnMain(() -> {
+            try {
+                android.webkit.CookieManager.getInstance().flush();
+            } catch (RuntimeException ignored) {
+                // Cookie flushing is best effort; the platform store remains authoritative.
+            }
+            if (completion != null) mMainHandler.post(completion);
+        });
+    }
+
+    public void setPageListener(PageListener listener) {
+        runOnMain(() -> mPageListener = listener);
+    }
+
+    /**
+     * Keeps the authentication document and any OAuth/challenge redirects in this WebView.
+     * The normal topic browser leaves this disabled so ordinary foreign links can still use
+     * the platform browser when explicitly opened.
+     */
+    public void setKeepNavigationInWebView(boolean keep) {
+        runOnMain(() -> mKeepNavigationInWebView = keep);
+    }
+
+    /** Exact-origin browser navigation used by the explicit browser-mode screen. */
+    public void showPage(String url) {
+        runOnMain(() -> {
+            if (mWebView == null) return;
+            Uri destination = Uri.parse(url == null ? "" : url);
+            if (isExactOrigin(destination)) mWebView.loadUrl(destination.toString());
+        });
+    }
+
+    /** Removes only linux.do cookies, keeping NGA and unrelated WebView sessions intact. */
+    public void clearExactOriginCookies(Runnable completion) {
+        runOnMain(() -> {
+            android.webkit.CookieManager manager = android.webkit.CookieManager.getInstance();
+            String header = manager.getCookie(LinuxDoConstants.ORIGIN);
+            if (TextUtils.isEmpty(header)) {
+                if (completion != null) completion.run();
+                return;
+            }
+            java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>();
+            for (String part : header.split(";")) {
+                int separator = part.indexOf('=');
+                if (separator > 0) names.add(part.substring(0, separator).trim());
+            }
+            java.util.ArrayList<String> safeNames = new java.util.ArrayList<>();
+            for (String name : names) {
+                if (name.matches("[A-Za-z0-9_!#$%&'*+.^`|~-]{1,128}")) safeNames.add(name);
+            }
+            clearCookieAt(manager, safeNames, 0, completion);
+        });
+    }
+
+    private static void clearCookieAt(
+            android.webkit.CookieManager manager,
+            java.util.List<String> names,
+            int index,
+            Runnable completion) {
+        if (index >= names.size()) {
+            manager.flush();
+            if (completion != null) completion.run();
+            return;
+        }
+        manager.setCookie(LinuxDoConstants.ORIGIN,
+                names.get(index) + "=; Max-Age=0; Path=/; Secure",
+                ignored -> clearCookieAt(manager, names, index + 1, completion));
     }
 
     public void destroyNow() {
@@ -150,13 +277,69 @@ public final class LinuxDoWebSession {
         WebSettings settings = mWebView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
+        // Cloudflare Turnstile uses a cross-origin iframe and an internal
+        // about:blank/srcdoc document while the login form is bootstrapped.
+        // Keep the normal WebView cookie jar available to that challenge; native
+        // JSON requests still send cookies only to the exact linux.do origin.
+        android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            cookieManager.setAcceptThirdPartyCookies(mWebView, true);
+        }
         mWebView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri destination = request.getUrl();
-                if (isExactOrigin(destination)) return false;
+                if (mKeepNavigationInWebView) {
+                    // Keep HTTP(S) redirects and challenge-internal documents in this WebView;
+                    // explicitly block custom schemes instead of allowing Android to resolve
+                    // them through another browser or external application.
+                    return !isWebNavigation(destination);
+                }
+                if (isExactOrigin(destination)
+                        || LinuxDoTransportPolicy.isAllowedChallengeHost(
+                        destination.getScheme(), destination.getHost(), destination.getPort(),
+                        destination.getUserInfo())
+                        || LinuxDoTransportPolicy.isAllowedChallengeDocument(
+                        destination.toString())) {
+                    // Keep the Cloudflare managed challenge iframe/navigation in this
+                    // WebView. Other cross-origin navigations are still externalized below.
+                    return false;
+                }
+                try {
+                    Context context = mContextWrapper == null
+                            ? view.getContext() : mContextWrapper.getBaseContext();
+                    Intent intent = new Intent(Intent.ACTION_VIEW, destination);
+                    if (!(context instanceof Activity)) {
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    }
+                    context.startActivity(intent);
+                } catch (Exception ignored) {
+                    // The foreign URL remains outside this session even without a handler.
+                }
+                return true;
+            }
+
+            @SuppressWarnings("deprecation")
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                Uri destination = Uri.parse(url == null ? "" : url);
+                if (mKeepNavigationInWebView) {
+                    return !isWebNavigation(destination);
+                }
+                if (isExactOrigin(destination)
+                        || LinuxDoTransportPolicy.isAllowedChallengeHost(
+                        destination.getScheme(), destination.getHost(), destination.getPort(),
+                        destination.getUserInfo())
+                        || LinuxDoTransportPolicy.isAllowedChallengeDocument(
+                        destination.toString())) {
+                    return false;
+                }
                 try {
                     Context context = mContextWrapper == null
                             ? view.getContext() : mContextWrapper.getBaseContext();
@@ -173,8 +356,45 @@ public final class LinuxDoWebSession {
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                Log.i(TAG, "page finished " + url);
                 PageListener listener = mPageListener;
-                if (listener != null) listener.onPageFinished();
+                if (listener != null) listener.onPageFinished(url);
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request,
+                    android.webkit.WebResourceError error) {
+                if (request != null && request.isForMainFrame()) {
+                    Log.e(TAG, "main frame error " + request.getUrl() + " code="
+                            + error.getErrorCode() + " " + error.getDescription());
+                    PageListener listener = mPageListener;
+                    if (listener != null) {
+                        listener.onPageError(request.getUrl().toString(), error.getErrorCode(),
+                                error.getDescription() == null
+                                        ? "" : error.getDescription().toString());
+                    }
+                }
+                super.onReceivedError(view, request, error);
+            }
+
+            @SuppressWarnings("deprecation")
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description,
+                    String failingUrl) {
+                Log.e(TAG, "legacy frame error " + failingUrl + " code=" + errorCode
+                        + " " + description);
+                PageListener listener = mPageListener;
+                if (listener != null && isExactOrigin(Uri.parse(failingUrl == null ? "" : failingUrl))) {
+                    listener.onPageError(failingUrl, errorCode, description == null ? "" : description);
+                }
+                super.onReceivedError(view, errorCode, description, failingUrl);
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, android.webkit.SslErrorHandler handler,
+                    android.net.http.SslError error) {
+                Log.e(TAG, "SSL error " + (error == null ? "unknown" : error.toString()));
+                super.onReceivedSslError(view, handler, error);
             }
         });
     }
@@ -183,6 +403,14 @@ public final class LinuxDoWebSession {
         return uri != null && "https".equalsIgnoreCase(uri.getScheme())
                 && "linux.do".equalsIgnoreCase(uri.getHost())
                 && uri.getPort() == -1 && TextUtils.isEmpty(uri.getUserInfo());
+    }
+
+    private static boolean isWebNavigation(Uri uri) {
+        if (uri == null) return false;
+        String scheme = uri.getScheme();
+        return "http".equalsIgnoreCase(scheme)
+                || "https".equalsIgnoreCase(scheme)
+                || LinuxDoTransportPolicy.isAllowedChallengeDocument(uri.toString());
     }
 
     private void pump() {

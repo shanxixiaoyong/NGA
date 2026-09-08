@@ -27,6 +27,12 @@ public class ArticleListParam implements Parcelable, Cloneable {
 
     public boolean loadCache;
 
+    /** Client-generated page containing the twenty highest-scored floors. */
+    public boolean topLikedPage;
+
+    /** Optional absolute floor used by native search/notification deep links. */
+    public int targetFloor = -1;
+
     public int source = ContentSource.NGA;
 
     public ArticleListParam() {
@@ -44,6 +50,8 @@ public class ArticleListParam implements Parcelable, Cloneable {
         topicInfo = in.readString();
         loadCache = in.readInt() == 1;
         source = in.dataAvail() > 0 ? in.readInt() : ContentSource.NGA;
+        topLikedPage = in.dataAvail() > 0 && in.readInt() == 1;
+        targetFloor = in.dataAvail() > 0 ? in.readInt() : -1;
     }
 
     @Override
@@ -58,6 +66,8 @@ public class ArticleListParam implements Parcelable, Cloneable {
         dest.writeString(topicInfo);
         dest.writeInt(loadCache ? 1 : 0);
         dest.writeInt(source);
+        dest.writeInt(topLikedPage ? 1 : 0);
+        dest.writeInt(targetFloor);
     }
 
     @Override
@@ -97,6 +107,8 @@ public class ArticleListParam implements Parcelable, Cloneable {
                     && authorId == ((ArticleListParam) obj).authorId
                     && page == ((ArticleListParam) obj).page
                     && source == ((ArticleListParam) obj).source
+                    && topLikedPage == ((ArticleListParam) obj).topLikedPage
+                    && targetFloor == ((ArticleListParam) obj).targetFloor
                     && content == ((ArticleListParam) obj).content
                     && searchPost == ((ArticleListParam) obj).searchPost;
         } else {
