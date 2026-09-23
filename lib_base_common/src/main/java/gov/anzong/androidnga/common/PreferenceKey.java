@@ -20,6 +20,7 @@ public class PreferenceKey {
     String VERSION = "version";
     public static final String REFRESH_AFTERPOST_SETTING_MODE = "refresh_after_post_setting_mode";
     public static final String SHOW_SIGNATURE = "showSignature";
+    public static final String KEY_SHOW_NGA_TOP_LIKED_PAGE = "show_nga_top_liked_page";
     String SHOW_STATIC = "showStatic";
     public static final String SHOW_COLORTXT = "showColortxt";
     String SHOW_NEWWEIBA = "showNewweiba";

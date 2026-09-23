@@ -414,6 +414,21 @@ if (gesture.onUp(event.getY())) requestNextPageFromBottom();
 return false;
 ```
 
+## Optional NGA top-liked page
+
+- `show_nga_top_liked_page` defaults to `true` in both settings XML and the
+  adapter's runtime fallback. It controls the synthetic NGA top-liked page 0,
+  not the first chronological server page.
+- Snapshot this preference when `ArticlePagerAdapter` is created. Changes take
+  effect when a topic is reopened; never shift the pages of an active reader.
+- Gate `isTopLikedPageEligible`, rather than hiding only a tab label. Counts,
+  request parameters, floor restore, server-page lookup, and page selection must
+  all use the existing `mHasTopLikedPage` mapping.
+- Disabled means no page-0 request and no `topLikedPage` flag. Preserve saved
+  chronological reading positions and all source/filter/cache eligibility rules.
+- Cover the real adapter and persisted settings in debug instrumentation; keep
+  the debug test Activity and instrumentation out of Release APKs.
+
 ## Article current-page refresh
 
 - Do not expose refresh in `article_list_option_menu.xml`; the article overflow

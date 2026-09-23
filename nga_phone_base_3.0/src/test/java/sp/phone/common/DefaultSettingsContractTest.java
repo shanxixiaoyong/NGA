@@ -41,6 +41,7 @@ public class DefaultSettingsContractTest {
         assertDefault(document, "@string/pref_load_pic_strategy", "0");
         assertDefault(document, "@string/pref_load_avatar_strategy", "0");
         assertDefault(document, "showSignature", "false");
+        assertDefault(document, "show_nga_top_liked_page", "true");
         assertDefault(document, "showColortxt", "false");
         assertDefault(document, "refresh_after_post_setting_mode", "true");
     }
@@ -132,6 +133,7 @@ public class DefaultSettingsContractTest {
         assertCategory(preferenceScreen, "主题列表设置",
                 "sort_by_post", "filter_sub_board");
         assertCategory(preferenceScreen, "主题详情设置",
+                "show_nga_top_liked_page",
                 "@string/pref_load_pic_strategy", "@string/pref_load_avatar_strategy",
                 "showSignature");
         assertCategory(preferenceScreen, "发帖设置",

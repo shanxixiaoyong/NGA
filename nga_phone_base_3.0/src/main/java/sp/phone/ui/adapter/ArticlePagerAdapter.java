@@ -10,6 +10,8 @@ import androidx.fragment.app.FragmentStatePagerAdapter;
 
 import java.util.List;
 
+import gov.anzong.androidnga.base.util.PreferenceUtils;
+import gov.anzong.androidnga.common.PreferenceKey;
 import sp.phone.param.ArticleListParam;
 import sp.phone.param.ParamKey;
 import sp.phone.param.ContentSource;
@@ -49,6 +51,7 @@ public class ArticlePagerAdapter extends FragmentStatePagerAdapter {
 
     private static boolean isTopLikedPageEligible(ArticleListParam param) {
         return param != null
+                && PreferenceUtils.getData(PreferenceKey.KEY_SHOW_NGA_TOP_LIKED_PAGE, true)
                 && param.source == ContentSource.NGA
                 && param.tid > 0
                 && param.pid == 0
